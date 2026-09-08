@@ -1,0 +1,11 @@
+{
+  "name": "Remix VERIXA",
+  "description": "AI-Powered Safe Social Media Platform with real-time comment moderation, toxicity prevention, image/video safety scanning, and threat intelligence dashboard.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

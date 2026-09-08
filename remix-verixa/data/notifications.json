@@ -1,0 +1,182 @@
+[
+  {
+    "id": "notif_1788809188811_0e74eff3",
+    "recipient_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your story",
+    "post_id": "0f3e02eb-b935-459f-a7b2-4072016d48ca",
+    "detail": null,
+    "read": true,
+    "created_at": "2026-09-07T19:26:28.811Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788809185828_2e5e0ade",
+    "recipient_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your story",
+    "post_id": "5934b2fe-ac73-419f-9965-980749566e32",
+    "detail": null,
+    "read": true,
+    "created_at": "2026-09-07T19:26:25.828Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788809183394_1afe4b86",
+    "recipient_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "comment",
+    "message": "reacted to your story: \"😮\"",
+    "post_id": "5934b2fe-ac73-419f-9965-980749566e32",
+    "detail": "Story reaction: 😮",
+    "read": true,
+    "created_at": "2026-09-07T19:26:23.395Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788808974410_40d1f5ef",
+    "recipient_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "sender_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "type": "comment",
+    "message": "reacted to your story: \"hloo\"",
+    "post_id": "26b84324-80b6-4046-84d9-976a2882f379",
+    "detail": "Story reaction: hloo",
+    "read": true,
+    "created_at": "2026-09-07T19:22:54.410Z",
+    "sender": {
+      "id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+      "username": "gist12",
+      "name": "gist",
+      "avatar": "https://ui-avatars.com/api/?name=gist&background=4285F4&color=fff&size=256&bold=true",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788808936957_b787baf6",
+    "recipient_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "sender_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "type": "like",
+    "message": "liked your story",
+    "post_id": "26b84324-80b6-4046-84d9-976a2882f379",
+    "detail": null,
+    "read": true,
+    "created_at": "2026-09-07T19:22:16.957Z",
+    "sender": {
+      "id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+      "username": "gist12",
+      "name": "gist",
+      "avatar": "https://ui-avatars.com/api/?name=gist&background=4285F4&color=fff&size=256&bold=true",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788808934059_20c25612",
+    "recipient_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "sender_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "type": "comment",
+    "message": "reacted to your story: \"🔥\"",
+    "post_id": "26b84324-80b6-4046-84d9-976a2882f379",
+    "detail": "Story reaction: 🔥",
+    "read": true,
+    "created_at": "2026-09-07T19:22:14.059Z",
+    "sender": {
+      "id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+      "username": "gist12",
+      "name": "gist",
+      "avatar": "https://ui-avatars.com/api/?name=gist&background=4285F4&color=fff&size=256&bold=true",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788808929460_4bb4bd2a",
+    "recipient_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "sender_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "type": "comment",
+    "message": "reacted to your story: \"😮\"",
+    "post_id": "26b84324-80b6-4046-84d9-976a2882f379",
+    "detail": "Story reaction: 😮",
+    "read": true,
+    "created_at": "2026-09-07T19:22:09.460Z",
+    "sender": {
+      "id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+      "username": "gist12",
+      "name": "gist",
+      "avatar": "https://ui-avatars.com/api/?name=gist&background=4285F4&color=fff&size=256&bold=true",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788808887034_e546eed4",
+    "recipient_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your story",
+    "post_id": "0f3e02eb-b935-459f-a7b2-4072016d48ca",
+    "detail": null,
+    "read": true,
+    "created_at": "2026-09-07T19:21:27.034Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788808882185_eae10834",
+    "recipient_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your story",
+    "post_id": "5934b2fe-ac73-419f-9965-980749566e32",
+    "detail": null,
+    "read": true,
+    "created_at": "2026-09-07T19:21:22.185Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  }
+]

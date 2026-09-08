@@ -1,0 +1,102 @@
+[
+  {
+    "id": "act_1788677575321_0hlnv",
+    "admin_id": "admin_usr_1788677567984",
+    "admin_username": "SafetyLeadAdmin",
+    "action_type": "REJECT_APPEAL",
+    "target_type": "appeal",
+    "target_id": "apl_1788677567988_55er5",
+    "analysis_id": "mod_img_1788677567988_xyz456",
+    "affected_user_id": "user_rev_b_1788677567984",
+    "reason": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "notes": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "prior_state": {
+      "status": "PENDING",
+      "original_decision": "QUARANTINE"
+    },
+    "new_state": {
+      "status": "REJECTED",
+      "admin_decision": "REJECT",
+      "admin_notes": "Prop weapons without safety orange tips violate weapon policy section 4."
+    },
+    "guardian_adjustment": 0,
+    "reputation_adjustment": 0,
+    "ip_address": null,
+    "created_at": "2026-09-06T06:52:55.319Z"
+  },
+  {
+    "id": "act_1788677575318_f3qxw",
+    "admin_id": "admin_usr_1788677567984",
+    "admin_username": "SafetyLeadAdmin",
+    "action_type": "APPROVE_APPEAL",
+    "target_type": "appeal",
+    "target_id": "apl_1788677567985_4qsmw",
+    "analysis_id": "mod_txt_1788677567984_abc123",
+    "affected_user_id": "user_rev_a_1788677567984",
+    "reason": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "notes": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "prior_state": {
+      "status": "PENDING",
+      "original_decision": "BLOCK"
+    },
+    "new_state": {
+      "status": "APPROVED",
+      "admin_decision": "APPROVE",
+      "admin_notes": "False positive verified upon human moderator inspection. Citations legitimate."
+    },
+    "guardian_adjustment": 30,
+    "reputation_adjustment": 20,
+    "ip_address": null,
+    "created_at": "2026-09-06T06:52:55.314Z"
+  },
+  {
+    "id": "act_1788676726541_h7ixk",
+    "admin_id": "admin_usr_1788676718847",
+    "admin_username": "SafetyLeadAdmin",
+    "action_type": "REJECT_APPEAL",
+    "target_type": "appeal",
+    "target_id": "apl_1788676718852_y9du3",
+    "analysis_id": "mod_img_1788676718852_xyz456",
+    "affected_user_id": "user_rev_b_1788676718847",
+    "reason": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "notes": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "prior_state": {
+      "status": "PENDING",
+      "original_decision": "QUARANTINE"
+    },
+    "new_state": {
+      "status": "REJECTED",
+      "admin_decision": "REJECT",
+      "admin_notes": "Prop weapons without safety orange tips violate weapon policy section 4."
+    },
+    "guardian_adjustment": 0,
+    "reputation_adjustment": 0,
+    "ip_address": null,
+    "created_at": "2026-09-06T06:38:46.539Z"
+  },
+  {
+    "id": "act_1788676726536_de4no",
+    "admin_id": "admin_usr_1788676718847",
+    "admin_username": "SafetyLeadAdmin",
+    "action_type": "APPROVE_APPEAL",
+    "target_type": "appeal",
+    "target_id": "apl_1788676718847_muibt",
+    "analysis_id": "mod_txt_1788676718847_abc123",
+    "affected_user_id": "user_rev_a_1788676718847",
+    "reason": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "notes": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "prior_state": {
+      "status": "PENDING",
+      "original_decision": "BLOCK"
+    },
+    "new_state": {
+      "status": "APPROVED",
+      "admin_decision": "APPROVE",
+      "admin_notes": "False positive verified upon human moderator inspection. Citations legitimate."
+    },
+    "guardian_adjustment": 30,
+    "reputation_adjustment": 20,
+    "ip_address": null,
+    "created_at": "2026-09-06T06:38:46.531Z"
+  }
+]

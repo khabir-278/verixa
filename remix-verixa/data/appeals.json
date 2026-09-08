@@ -1,0 +1,82 @@
+[
+  {
+    "id": "apl_1788676718847_muibt",
+    "user_id": "user_rev_a_1788676718847",
+    "analysis_id": "mod_txt_1788676718847_abc123",
+    "content_id": "post_1788676718847_9988",
+    "content_type": "post",
+    "original_decision": "BLOCK",
+    "reason": "False positive context",
+    "appeal_text": "This post was quoting an educational textbook on online safety, not making personal threats.",
+    "evidence_urls": [
+      "https://storage.verixa.ai/evidence/book_citation.pdf"
+    ],
+    "status": "APPROVED",
+    "admin_decision": "APPROVE",
+    "admin_id": "admin_usr_1788676718847",
+    "admin_notes": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "created_at": "2026-09-06T06:38:38.847Z",
+    "resolved_at": "2026-09-06T06:38:46.531Z",
+    "guardian_impact": 30,
+    "reputation_impact": 20
+  },
+  {
+    "id": "apl_1788676718852_y9du3",
+    "user_id": "user_rev_b_1788676718847",
+    "analysis_id": "mod_img_1788676718852_xyz456",
+    "content_id": "reel_1788676718852_5544",
+    "content_type": "reel",
+    "original_decision": "QUARANTINE",
+    "reason": "Artistic performance",
+    "appeal_text": "Stunt performance using licensed theatrical prop, not an actual weapon.",
+    "evidence_urls": [],
+    "status": "REJECTED",
+    "admin_decision": "REJECT",
+    "admin_id": "admin_usr_1788676718847",
+    "admin_notes": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "created_at": "2026-09-06T06:38:38.852Z",
+    "resolved_at": "2026-09-06T06:38:46.539Z",
+    "guardian_impact": 0,
+    "reputation_impact": 0
+  },
+  {
+    "id": "apl_1788677567985_4qsmw",
+    "user_id": "user_rev_a_1788677567984",
+    "analysis_id": "mod_txt_1788677567984_abc123",
+    "content_id": "post_1788677567984_9988",
+    "content_type": "post",
+    "original_decision": "BLOCK",
+    "reason": "False positive context",
+    "appeal_text": "This post was quoting an educational textbook on online safety, not making personal threats.",
+    "evidence_urls": [
+      "https://storage.verixa.ai/evidence/book_citation.pdf"
+    ],
+    "status": "APPROVED",
+    "admin_decision": "APPROVE",
+    "admin_id": "admin_usr_1788677567984",
+    "admin_notes": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "created_at": "2026-09-06T06:52:47.985Z",
+    "resolved_at": "2026-09-06T06:52:55.314Z",
+    "guardian_impact": 30,
+    "reputation_impact": 20
+  },
+  {
+    "id": "apl_1788677567988_55er5",
+    "user_id": "user_rev_b_1788677567984",
+    "analysis_id": "mod_img_1788677567988_xyz456",
+    "content_id": "reel_1788677567988_5544",
+    "content_type": "reel",
+    "original_decision": "QUARANTINE",
+    "reason": "Artistic performance",
+    "appeal_text": "Stunt performance using licensed theatrical prop, not an actual weapon.",
+    "evidence_urls": [],
+    "status": "REJECTED",
+    "admin_decision": "REJECT",
+    "admin_id": "admin_usr_1788677567984",
+    "admin_notes": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "created_at": "2026-09-06T06:52:47.988Z",
+    "resolved_at": "2026-09-06T06:52:55.319Z",
+    "guardian_impact": 0,
+    "reputation_impact": 0
+  }
+]

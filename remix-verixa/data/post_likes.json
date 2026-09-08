@@ -1,0 +1,26 @@
+{
+  "post_likes": {
+    "post_1788676718847_9988": [
+      "e825d91d-4d19-4283-bd1f-9da12cf0ff10"
+    ],
+    "349ffe3e-a5d6-4c0f-9d5b-eb36b36f8b45": [
+      "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "6f2053db-15e7-4cc6-9bc3-4e0d91046acb"
+    ],
+    "9e65e06a-a2d0-4278-8bb2-45b30caf7c08": [
+      "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "6f2053db-15e7-4cc6-9bc3-4e0d91046acb"
+    ]
+  },
+  "user_likes": {
+    "e825d91d-4d19-4283-bd1f-9da12cf0ff10": [
+      "post_1788676718847_9988",
+      "349ffe3e-a5d6-4c0f-9d5b-eb36b36f8b45",
+      "9e65e06a-a2d0-4278-8bb2-45b30caf7c08"
+    ],
+    "6f2053db-15e7-4cc6-9bc3-4e0d91046acb": [
+      "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+      "349ffe3e-a5d6-4c0f-9d5b-eb36b36f8b45"
+    ]
+  }
+}
