@@ -108,6 +108,18 @@ create table if not exists public.likes (
 create index if not exists idx_likes_post_id on public.likes (post_id);
 create index if not exists idx_likes_user_id on public.likes (user_id);
 
+-- 5b. Post Likes Table (Dedicated Post Likes Table)
+create table if not exists public.post_likes (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references public.posts(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint unique_post_likes unique(post_id, user_id)
+);
+
+create index if not exists idx_post_likes_post_id on public.post_likes (post_id);
+create index if not exists idx_post_likes_user_id on public.post_likes (user_id);
+
 -- 6. Follows Table
 create table if not exists public.follows (
   id uuid primary key default gen_random_uuid(),
@@ -426,6 +438,16 @@ create policy "Users can toggle their own likes" on public.likes for insert with
 
 drop policy if exists "Users can delete their own likes" on public.likes;
 create policy "Users can delete their own likes" on public.likes for delete using (auth.uid() = user_id);
+
+-- Post Likes Policies
+drop policy if exists "Post likes are viewable by everyone" on public.post_likes;
+create policy "Post likes are viewable by everyone" on public.post_likes for select using (true);
+
+drop policy if exists "Users can toggle their own post likes" on public.post_likes;
+create policy "Users can toggle their own post likes" on public.post_likes for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users can delete their own post likes" on public.post_likes;
+create policy "Users can delete their own post likes" on public.post_likes for delete using (auth.uid() = user_id);
 
 -- Follows Policies (Enforce no self-following)
 drop policy if exists "Follows are viewable by everyone" on public.follows;

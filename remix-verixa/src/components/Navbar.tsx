@@ -41,6 +41,10 @@ export const Navbar: React.FC<{
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
+  const isPublicView =
+    ['login', 'signup', 'landing', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact', 'ai-architecture'].includes(currentPage) ||
+    (!isAuthenticated && (currentPage === 'ai-dashboard' || (currentPage as string) === 'ai_dashboard'));
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentPage !== 'explore') {
@@ -53,7 +57,7 @@ export const Navbar: React.FC<{
       <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between gap-4">
         {/* Left Brand + Back Button + Mobile Menu Button */}
         <div className="flex items-center gap-3">
-          {!['login', 'signup', 'landing', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact'].includes(currentPage) && (
+          {!isPublicView && (
             <button
               onClick={() => onOpenMobileSidebar?.()}
               className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition"
@@ -63,7 +67,7 @@ export const Navbar: React.FC<{
             </button>
           )}
 
-          {canGoBack && (
+          {canGoBack && !['about', 'privacy', 'terms', 'help', 'contact', 'ai-architecture'].includes(currentPage) && (
             <button
               onClick={goBack}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-xs font-semibold transition"
@@ -95,7 +99,7 @@ export const Navbar: React.FC<{
         </div>
 
         {/* Search Bar with AI Smart Suggestions */}
-        {!['login', 'signup', 'landing', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact'].includes(currentPage) && (
+        {!isPublicView && (
           <form
             onSubmit={handleSearchSubmit}
             className="hidden md:flex flex-1 max-w-md relative items-center mx-8"
@@ -123,7 +127,7 @@ export const Navbar: React.FC<{
         {/* Right Actions & Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Quick AI Scanner Launcher */}
-          {!['login', 'signup', 'landing', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact'].includes(currentPage) && (
+          {!isPublicView && (
             <button
               onClick={() => openScannerModal('image')}
               title="Scan Media with AI"
@@ -135,7 +139,7 @@ export const Navbar: React.FC<{
           )}
 
           {/* AI Shield Status Badge */}
-          {!['login', 'signup', 'landing', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact'].includes(currentPage) && (
+          {!isPublicView && (
             <button
               onClick={() => setCurrentPage('settings')}
               className="hidden xl:flex items-center gap-1.5 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[11px] font-bold text-green-400 hover:bg-green-500/20 transition"
@@ -145,21 +149,23 @@ export const Navbar: React.FC<{
             </button>
           )}
 
-          {isAuthenticated && !['login', 'signup', 'landing', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact'].includes(currentPage) ? (
+          {isAuthenticated ? (
             <>
               {/* Create Post Button */}
-              <button
-                onClick={onOpenCreatePost}
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)]"
-              >
-                <PlusSquare className="w-4 h-4" />
-                <span className="hidden sm:inline uppercase tracking-wider">POST</span>
-              </button>
+              {!isPublicView && (
+                <button
+                  onClick={onOpenCreatePost}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] cursor-pointer"
+                >
+                  <PlusSquare className="w-4 h-4" />
+                  <span className="hidden sm:inline uppercase tracking-wider">POST</span>
+                </button>
+              )}
 
               {/* Messages Shortcut */}
               <button
                 onClick={() => setCurrentPage('messages')}
-                className={`relative p-2 rounded-xl transition ${
+                className={`relative p-2 rounded-xl transition cursor-pointer ${
                   currentPage === 'messages'
                     ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                     : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
@@ -175,7 +181,7 @@ export const Navbar: React.FC<{
               {/* Notifications */}
               <button
                 onClick={() => setCurrentPage('notifications')}
-                className={`relative p-2 rounded-xl transition ${
+                className={`relative p-2 rounded-xl transition cursor-pointer ${
                   currentPage === 'notifications'
                     ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                     : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
@@ -192,7 +198,7 @@ export const Navbar: React.FC<{
               <div className="relative">
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center gap-2 p-0.5 rounded-full border-2 border-purple-500/50 hover:border-purple-400 transition overflow-hidden"
+                  className="flex items-center gap-2 p-0.5 rounded-full border-2 border-purple-500/50 hover:border-purple-400 transition overflow-hidden cursor-pointer"
                 >
                   <img
                     src={currentUser?.avatar}
@@ -218,7 +224,7 @@ export const Navbar: React.FC<{
                           openUserProfile(currentUser);
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-gray-200 flex items-center gap-2.5 transition"
+                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-gray-200 flex items-center gap-2.5 transition cursor-pointer"
                       >
                         <User className="w-4 h-4 text-blue-400" /> My Profile
                       </button>
@@ -228,7 +234,7 @@ export const Navbar: React.FC<{
                           setCurrentPage('settings');
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-gray-200 flex items-center gap-2.5 transition"
+                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-gray-200 flex items-center gap-2.5 transition cursor-pointer"
                       >
                         <Sliders className="w-4 h-4 text-gray-400" /> Settings
                       </button>
@@ -238,7 +244,7 @@ export const Navbar: React.FC<{
                           setCurrentPage('help');
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-gray-200 flex items-center gap-2.5 transition"
+                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-gray-200 flex items-center gap-2.5 transition cursor-pointer"
                       >
                         <HelpCircle className="w-4 h-4 text-gray-400" /> Help Center
                       </button>
@@ -250,7 +256,7 @@ export const Navbar: React.FC<{
                           logout();
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-400 flex items-center gap-2.5 transition font-medium"
+                        className="w-full text-left px-4 py-2 hover:bg-red-500/10 text-red-400 flex items-center gap-2.5 transition font-medium cursor-pointer"
                       >
                         <LogOut className="w-4 h-4 text-red-400" /> Log Out
                       </button>
@@ -263,13 +269,13 @@ export const Navbar: React.FC<{
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage('login')}
-                className="px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition"
+                className="px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
               >
                 Log In
               </button>
               <button
                 onClick={() => setCurrentPage('signup')}
-                className="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)]"
+                className="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-full font-bold text-xs sm:text-sm text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] cursor-pointer"
               >
                 Sign Up
               </button>

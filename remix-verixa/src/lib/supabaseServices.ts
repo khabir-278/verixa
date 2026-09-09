@@ -656,20 +656,111 @@ export async function togglePostLike(
   // 2. Best-effort Supabase sync (does not throw if RLS / anon permissions are restricted)
   try {
     if (!shouldLike) {
-      await supabase.from('likes').delete().eq('post_id', postId).eq('user_id', userId);
+      await Promise.allSettled([
+        supabase.from('likes').delete().eq('post_id', postId).eq('user_id', userId),
+        supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId),
+      ]);
       return { isLiked: false };
     } else {
-      await supabase.from('likes').upsert({
-        post_id: postId,
-        user_id: userId,
-        created_at: new Date().toISOString(),
-      }, { onConflict: 'post_id,user_id' });
+      await Promise.allSettled([
+        supabase.from('likes').upsert({
+          post_id: postId,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'post_id,user_id' }),
+        supabase.from('post_likes').upsert({
+          post_id: postId,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'post_id,user_id' }),
+      ]);
       return { isLiked: true };
     }
   } catch (err: any) {
     console.warn('Supabase togglePostLike notice (permission restricted):', err?.message || err);
     return { isLiked: shouldLike };
   }
+}
+
+/**
+ * Fetch all user profiles who liked a specific post
+ * Queries server endpoint /api/posts/:id/likes with fallback to Supabase likes & post_likes
+ */
+export async function fetchPostLikedUsers(postId: string): Promise<User[]> {
+  try {
+    // 1. Authoritative server endpoint query
+    const res = await fetch(`/api/posts/${postId}/likes`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.users)) {
+        return data.users.map((u: any) => ({
+          id: u.id,
+          name: u.name || 'User',
+          username: u.username || 'user',
+          avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
+          bio: u.bio || '',
+          verified: Boolean(u.verified),
+          aiTrustBadge: u.aiTrustBadge || 'Verified Human • 100% Trust',
+          safetyScore: u.safetyScore || 98,
+          followersCount: u.followersCount || 0,
+          followingCount: u.followingCount || 0,
+          postsCount: u.postsCount || 0,
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('Notice fetching post likes from server:', err);
+  }
+
+  // 2. Direct Supabase fallback
+  try {
+    const [likesRes, postLikesRes] = await Promise.allSettled([
+      supabase.from('likes').select('user_id').eq('post_id', postId),
+      supabase.from('post_likes').select('user_id').eq('post_id', postId),
+    ]);
+
+    const userIds: string[] = [];
+    if (likesRes.status === 'fulfilled' && likesRes.value?.data) {
+      likesRes.value.data.forEach((r: any) => {
+        if (r.user_id) userIds.push(r.user_id);
+      });
+    }
+    if (postLikesRes.status === 'fulfilled' && postLikesRes.value?.data) {
+      postLikesRes.value.data.forEach((r: any) => {
+        if (r.user_id) userIds.push(r.user_id);
+      });
+    }
+
+    const uniqueIds = Array.from(new Set(userIds));
+    if (uniqueIds.length === 0) return [];
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', uniqueIds);
+
+    if (profiles && profiles.length > 0) {
+      return profiles.map((p: any) => ({
+        id: p.id,
+        name: p.name || p.username || 'User',
+        username: p.username || 'user',
+        avatar:
+          p.avatar ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=6366F1&color=fff&size=256&bold=true`,
+        bio: p.bio || '',
+        verified: Boolean(p.verified),
+        aiTrustBadge: p.ai_trust_badge || 'Verified Human • 100% Trust',
+        safetyScore: p.safety_score || 98,
+        followersCount: p.followers_count || 0,
+        followingCount: p.following_count || 0,
+        postsCount: p.posts_count || 0,
+      }));
+    }
+  } catch (err) {
+    console.warn('Notice querying Supabase directly for post likes:', err);
+  }
+
+  return [];
 }
 
 export async function getUserLikedPostIds(userId: string): Promise<string[]> {

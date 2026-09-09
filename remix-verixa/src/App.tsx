@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { SentinelProvider } from './context/SentinelContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { ToastContainer } from './components/ToastContainer';
@@ -22,6 +23,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AIDashboardPage } from './pages/AIDashboardPage';
+import { AIArchitecturePreviewPage } from './pages/AIArchitecturePreviewPage';
 import { SentinelAIChatbotPage } from './pages/SentinelAIChatbotPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
@@ -32,7 +34,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { ShieldCheck, Heart } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { currentPage, setCurrentPage } = useApp();
+  const { currentPage, setCurrentPage, isAuthenticated } = useApp();
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -53,7 +55,19 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('hashchange', stripHash);
   }, []);
 
-  const hideSidebarPages = ['landing', 'login', 'signup', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact'];
+  const hideSidebarPages = [
+    'landing',
+    'login',
+    'signup',
+    'verify-email',
+    'about',
+    'privacy',
+    'terms',
+    'help',
+    'contact',
+    'ai-architecture',
+    ...(!isAuthenticated ? ['ai-dashboard', 'ai_dashboard'] : []),
+  ];
   const showSidebar = !hideSidebarPages.includes(currentPage);
 
   const renderPage = () => {
@@ -82,7 +96,9 @@ const MainLayout: React.FC = () => {
         return <SettingsPage />;
       case 'ai-dashboard':
       case 'ai_dashboard':
-        return <AIDashboardPage />;
+        return isAuthenticated ? <AIDashboardPage /> : <AIArchitecturePreviewPage />;
+      case 'ai-architecture':
+        return <AIArchitecturePreviewPage />;
       case 'sentinel-ai':
       case 'sentinel_ai':
       case 'sentinel-chatbot':
@@ -155,8 +171,8 @@ const MainLayout: React.FC = () => {
             <button onClick={() => setCurrentPage('about')} className="hover:text-blue-400 transition-colors">
               About
             </button>
-            <button onClick={() => setCurrentPage('ai-dashboard')} className="hover:text-blue-400 transition-colors">
-              AI Dashboard
+            <button onClick={() => setCurrentPage('ai-architecture')} className="hover:text-blue-400 transition-colors">
+              AI Architecture
             </button>
             <button onClick={() => setCurrentPage('privacy')} className="hover:text-blue-400 transition-colors">
               Privacy
@@ -189,7 +205,9 @@ const MainLayout: React.FC = () => {
 export default function App() {
   return (
     <AppProvider>
-      <MainLayout />
+      <SentinelProvider>
+        <MainLayout />
+      </SentinelProvider>
     </AppProvider>
   );
 }

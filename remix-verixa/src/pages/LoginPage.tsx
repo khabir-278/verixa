@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { ShieldCheck, Mail, Lock, LogIn, ArrowRight, Loader2, Sparkles, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, LogIn, ArrowRight, Loader2, Sparkles, AlertCircle, CheckCircle2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const LoginPage: React.FC = () => {
   const { currentUser, login, loginWithGoogle, resetPassword, setCurrentUser, setCurrentPage, addToast, canGoBack, goBack, openUnauthorizedDomainModal } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -72,8 +73,33 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password.length > 100) {
+      setErrorMessage('Password must not exceed 100 characters.');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setErrorMessage('Password must contain at least one capital letter (A-Z).');
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setErrorMessage('Password must contain at least one small letter (a-z).');
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setErrorMessage('Password must contain at least one number (0-9).');
+      return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      setErrorMessage('Password must contain at least one special symbol (e.g. !@#$%^&*).');
       return;
     }
 
@@ -287,7 +313,7 @@ export const LoginPage: React.FC = () => {
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     name="verixa_auth_password_clean"
                     id="verixa_auth_password_clean"
                     autoComplete="new-password"
@@ -302,9 +328,22 @@ export const LoginPage: React.FC = () => {
                       setPassword(e.target.value);
                     }}
                     placeholder="Enter your Password"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500 transition"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500 transition"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-2.5 text-slate-500 hover:text-purple-400 focus:outline-none transition-colors p-1 rounded-lg hover:bg-slate-800/60 cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4 text-purple-400" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-slate-400 hover:text-slate-200" />
+                    )}
+                  </button>
                 </div>
               </div>
             )}

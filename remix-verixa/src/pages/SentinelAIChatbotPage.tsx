@@ -18,48 +18,65 @@ import {
   Zap,
 } from 'lucide-react';
 
-interface ChatMessage {
-  id: string;
-  sender: 'user' | 'bot';
-  text: string;
-  timestamp: string;
-  mode?: 'chat' | 'test' | 'report';
-  details?: any;
-}
+import { useSentinel } from '../context/SentinelContext';
 
 export const SentinelAIChatbotPage: React.FC = () => {
   const { currentUser, addToast } = useApp();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-1',
-      sender: 'bot',
-      text: `👋 **Welcome to VERIXA Sentinel AI.**
-
-I am your AI safety assistant and content moderation co-pilot.
-
-You can ask me to:
-- **Analyze text** for toxic language, cyberbullying, or hate speech.
-- **Constructively rephrase** heated or aggressive comments.
-- **Provide guidance** on digital safety and handling harassment.
-- **Generate incident reports** for severe violations.
-
-Select a quick action below or type your message to get started.`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const {
+    messages,
+    isLoading,
+    activeTab,
+    setActiveTab,
+    draftInput,
+    setDraftInput,
+    sendMessage,
+    clearChat: contextClearChat,
+  } = useSentinel();
 
   const [inputText, setInputText] = useState('');
-  const [activeTab, setActiveTab] = useState<'chat' | 'test' | 'report'>('chat');
-  const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
+  const lastSpokenMsgIdRef = useRef<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  // Pick up any draft input typed in floating sentinel
+  useEffect(() => {
+    if (draftInput) {
+      setInputText(draftInput);
+      setDraftInput('');
+    }
+  }, [draftInput, setDraftInput]);
+
+  // Speech synthesis for newest bot message
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (
+      speechEnabled &&
+      lastMsg &&
+      lastMsg.sender === 'bot' &&
+      lastMsg.id !== lastSpokenMsgIdRef.current
+    ) {
+      lastSpokenMsgIdRef.current = lastMsg.id;
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(lastMsg.text.replace(/[*#`>]/g, ''));
+          utterance.rate = 1.0;
+          window.speechSynthesis.speak(utterance);
+          setIsSpeaking(true);
+          utterance.onend = () => setIsSpeaking(false);
+        } catch (e) {
+          // Ignore speech errors
+        }
+      }
+    }
+  }, [messages, speechEnabled]);
 
   const quickPrompts = [
     {
@@ -83,117 +100,8 @@ Select a quick action below or type your message to get started.`,
     const textToSend = customText || inputText;
     if (!textToSend.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      sender: 'user',
-      text: textToSend.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      mode: activeTab,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
     if (!customText) setInputText('');
-    setIsLoading(true);
-
-    try {
-      if (activeTab === 'test') {
-        const res = await fetch('/api/moderate/comment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comment: textToSend.trim(), context: 'Sentinel Chatbot Audit' }),
-        });
-        const data = await res.json();
-
-        const status = data.status || (data.allowed ? 'SAFE' : 'BLOCKED');
-        const score = data.toxicity_score ?? data.toxicityScore ?? 0;
-        const confidence = data.confidence ?? 98;
-        const category = data.category || 'General Assessment';
-        const labels = (data.detected_labels || data.categories || []).join(', ');
-        const reason = data.reason || 'No harmful language detected.';
-        const action = data.suggested_action || (status === 'SAFE' ? 'Allow submission' : 'Block comment and flag account');
-        const rewrite = data.safe_rewrite || data.suggestion;
-
-        let formattedReport = `### 🔍 Toxicity Audit Result
-
-* **Status**: **${status === 'BLOCKED' ? '⛔ BLOCKED' : status === 'WARNING' ? '⚠️ WARNING' : '✅ SAFE'}**
-* **Toxicity Score**: \`${score}/100\`
-* **Category**: **${category}**
-* **Confidence**: \`${confidence}%\`
-* **Detected Labels**: ${labels ? `\`${labels}\`` : '_None_'}
-
-**Reasoning**:
-> ${reason}
-
-**Recommended Action**: ${action}
-
-${rewrite ? `**Suggested Polite Rewrite**:
-> "${rewrite}"` : ''}`;
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: 'bot',
-            text: formattedReport,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            details: data,
-          },
-        ]);
-      } else {
-        const apiHistory = messages.map((m) => ({
-          sender: m.sender,
-          text: m.text,
-        }));
-
-        const res = await fetch('/api/ai-assistant', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: textToSend.trim(),
-            history: apiHistory,
-            mode: activeTab,
-          }),
-        });
-
-        const data = await res.json();
-        const botReply = data.reply || 'VERIXA Sentinel AI actively analyzed your message and confirmed safe parameters.';
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: 'bot',
-            text: botReply,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
-
-        if (speechEnabled && 'speechSynthesis' in window) {
-          try {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(botReply.replace(/[*#`>]/g, ''));
-            utterance.rate = 1.0;
-            window.speechSynthesis.speak(utterance);
-            setIsSpeaking(true);
-            utterance.onend = () => setIsSpeaking(false);
-          } catch (e) {
-            // Ignore speech errors
-          }
-        }
-      }
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: 'VERIXA Sentinel AI analyzed your message and confirmed safe parameters.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessage(textToSend, activeTab);
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -204,14 +112,7 @@ ${rewrite ? `**Suggested Polite Rewrite**:
   };
 
   const clearChat = () => {
-    setMessages([
-      {
-        id: 'welcome-reset',
-        sender: 'bot',
-        text: '🔄 **Conversation Reset.** VERIXA Sentinel AI is ready for new queries or toxicity checks.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+    contextClearChat();
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);

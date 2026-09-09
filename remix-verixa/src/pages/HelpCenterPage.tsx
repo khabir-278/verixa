@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { HelpCircle, Search, Sparkles, ShieldCheck, ChevronRight, FileQuestion } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { HelpCircle, Search, Sparkles, ShieldCheck, ChevronRight, FileQuestion, ArrowLeft } from 'lucide-react';
 
 export const HelpCenterPage: React.FC = () => {
+  const { setCurrentPage, isAuthenticated } = useApp();
   const [search, setSearch] = useState('');
 
   const faqs = [
@@ -30,7 +32,18 @@ export const HelpCenterPage: React.FC = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+      {/* Top Left Navigation */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+        <button
+          onClick={() => setCurrentPage(isAuthenticated ? 'home' : 'landing')}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white text-xs font-semibold transition cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4 text-purple-400" />
+          <span>{isAuthenticated ? 'Back to Feed' : 'Back to Welcome'}</span>
+        </button>
+      </div>
+
       <div className="text-center space-y-3">
         <h1 className="text-3xl font-extrabold text-white flex items-center justify-center gap-2">
           Help Center & FAQs <HelpCircle className="w-7 h-7 text-purple-400" />

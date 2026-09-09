@@ -31,7 +31,7 @@ import { Post, Story, User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { extractVideoFrames } from '../lib/videoFrameExtractor';
 import { scanPrivacyInText } from '../lib/privacyScanner';
-import { recordPostInteraction } from '../lib/supabaseServices';
+import { recordPostInteraction, fetchPostLikedUsers } from '../lib/supabaseServices';
 
 interface UserStoryGroup {
   userId: string;
@@ -114,6 +114,40 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
   const [feedMode, setFeedMode] = useState<'for-you' | 'following' | 'latest'>('for-you');
   const [selectedExplainPost, setSelectedExplainPost] = useState<Post | null>(null);
+
+  // Collapsible comments state
+  const [expandedCommentsPostIds, setExpandedCommentsPostIds] = useState<Set<string>>(new Set());
+
+  const toggleComments = (postId: string) => {
+    setExpandedCommentsPostIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
+  };
+
+  // Likes modal state & handler
+  const [likesModalPostId, setLikesModalPostId] = useState<string | null>(null);
+  const [likedUsers, setLikedUsers] = useState<User[]>([]);
+  const [isLikedUsersLoading, setIsLikedUsersLoading] = useState<boolean>(false);
+
+  const handleOpenLikesModal = async (postId: string) => {
+    setLikesModalPostId(postId);
+    setIsLikedUsersLoading(true);
+    setLikedUsers([]);
+    try {
+      const users = await fetchPostLikedUsers(postId);
+      setLikedUsers(users);
+    } catch (err) {
+      console.error('Failed to load liked users:', err);
+    } finally {
+      setIsLikedUsersLoading(false);
+    }
+  };
 
   // Derive displayed posts based on active feed tab
   const displayedPosts = React.useMemo(() => {
@@ -347,7 +381,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6">
+    <div className="w-full max-w-3xl mx-auto space-y-6">
       {/* Stories Bar */}
       {/* Active Story Upload Progress Banner */}
       {isStoryUploading && (
@@ -720,244 +754,302 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-white/5 border border-white/10 rounded-2xl p-6 relative backdrop-blur-sm shadow-xl"
                 >
-                  {/* AI Verified Badge Overlay, Explainability Pill & Options Menu */}
-                  <div className="absolute top-6 right-6 flex items-center gap-2">
-                    {post.explainability && (
+                  {/* Post Header: Avatar circle is permanently FIXED before username */}
+                  <div className="flex items-center justify-between gap-3 mb-3.5">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Fixed Profile Avatar Circle */}
                       <button
                         type="button"
-                        onClick={() => setSelectedExplainPost(post)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[10px] font-semibold text-blue-300 transition cursor-pointer shadow-sm"
-                        title="Why was this recommended to you?"
+                        onClick={() => openUserProfile(post.user)}
+                        className="relative shrink-0 focus:outline-none group cursor-pointer"
+                        title={`View @${post.user.username}'s profile`}
                       >
-                        <Sparkles className="w-3 h-3 text-blue-400" />
-                        <span>Why this?</span>
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-purple-500/40 via-blue-500/40 to-emerald-400/40 border border-white/15 shadow-sm group-hover:border-blue-400/60 transition-all duration-200">
+                          <img
+                            src={post.user.avatar}
+                            alt={post.user.name}
+                            className="w-full h-full rounded-full object-cover bg-slate-900"
+                          />
+                        </div>
                       </button>
-                    )}
 
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-[10px] uppercase tracking-widest font-bold text-green-400">
-                        AI Verified Safe
-                      </span>
+                      {/* User Info (Name, Verified, AI Trust Badge, Handle) */}
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className="font-bold text-gray-100 hover:text-blue-400 transition cursor-pointer text-sm sm:text-base truncate"
+                            onClick={() => openUserProfile(post.user)}
+                          >
+                            {post.user.name}
+                          </span>
+                          {post.user.verified && (
+                            <span title="Verified User" className="inline-flex items-center shrink-0">
+                              <CheckCircle2 className="w-4 h-4 text-blue-400 fill-blue-400/20" />
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shrink-0 shadow-sm">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20" />
+                            <span>{post.user.aiTrustBadge || 'Verified Human'}</span>
+                          </span>
+                        </div>
+                        <div className="text-gray-500 text-xs truncate mt-0.5">
+                          @{post.user.username} • {post.timestamp}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="relative">
-                      <button
-                        onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-
-                      {openMenuPostId === post.id && (
-                        <div className="absolute right-0 top-8 w-40 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl py-1.5 z-20 text-xs">
-                          {post.user.id === currentUser?.id ? (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingPost(post);
-                                  setEditCaptionText(post.caption);
-                                  setOpenMenuPostId(null);
-                                }}
-                                className="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition"
-                              >
-                                <Edit3 className="w-3.5 h-3.5 text-blue-400" /> Edit Caption
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setOpenMenuPostId(null);
-                                  if (confirm('Are you sure you want to delete this post?')) {
-                                    removePost(post.id);
-                                  }
-                                }}
-                                className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-950/30 flex items-center gap-2 transition"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" /> Delete Post
-                              </button>
-                            </>
-                          ) : null}
-                          <button
-                            onClick={() => {
-                              handleShare(post);
-                              setOpenMenuPostId(null);
-                            }}
-                            className="w-full text-left px-3 py-2 text-slate-300 hover:bg-slate-800 flex items-center gap-2 transition"
-                          >
-                            <Share2 className="w-3.5 h-3.5 text-purple-400" /> Share Post
-                          </button>
-                        </div>
+                    {/* Top Right: Explainability & Options Menu */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {post.explainability && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedExplainPost(post)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-[10px] font-semibold text-blue-300 transition cursor-pointer shadow-sm"
+                          title="Why was this recommended to you?"
+                        >
+                          <Sparkles className="w-3 h-3 text-blue-400" />
+                          <span className="hidden sm:inline">Why this?</span>
+                        </button>
                       )}
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+
+                        {openMenuPostId === post.id && (
+                          <div className="absolute right-0 top-8 w-40 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl py-1.5 z-20 text-xs">
+                            {post.user.id === currentUser?.id ? (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingPost(post);
+                                    setEditCaptionText(post.caption);
+                                    setOpenMenuPostId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5 text-blue-400" /> Edit Caption
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenMenuPostId(null);
+                                    if (confirm('Are you sure you want to delete this post?')) {
+                                      removePost(post.id);
+                                    }
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-950/30 flex items-center gap-2 transition"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete Post
+                                </button>
+                              </>
+                            ) : null}
+                            <button
+                              onClick={() => {
+                                handleShare(post);
+                                setOpenMenuPostId(null);
+                              }}
+                              className="w-full text-left px-3 py-2 text-slate-300 hover:bg-slate-800 flex items-center gap-2 transition"
+                            >
+                              <Share2 className="w-3.5 h-3.5 text-purple-400" /> Share Post
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Post Header */}
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => openUserProfile(post.user)}
-                      className="relative shrink-0 focus:outline-none"
-                    >
-                      <img
-                        src={post.user.avatar}
-                        alt={post.user.name}
-                        className="w-12 h-12 rounded-full object-cover border border-white/10 hover:border-blue-500/50 transition"
-                      />
-                    </button>
-                    <div className="flex-1 min-w-0 pr-12 sm:pr-28">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-gray-100 hover:text-blue-400 transition cursor-pointer" onClick={() => openUserProfile(post.user)}>
-                          {post.user.name}
-                        </span>
-                        {post.user.verified && (
-                          <ShieldCheck className="w-4 h-4 text-blue-400 fill-blue-400/20" />
-                        )}
-                        <span className="text-gray-500 text-sm truncate">
-                          @{post.user.username} • {post.timestamp}
-                        </span>
-                      </div>
-                      <p className="text-gray-200 leading-relaxed text-sm whitespace-pre-line">
-                        {post.caption}
-                      </p>
+                  {/* Post Caption */}
+                  {post.caption && (
+                    <p className="text-gray-200 leading-relaxed text-sm whitespace-pre-line mb-3">
+                      {post.caption}
+                    </p>
+                  )}
 
-                      {post.tags && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {post.tags.map((tag, idx) => (
-                            <span
-                              key={idx}
-                              className="text-xs text-blue-400 font-semibold hover:underline cursor-pointer"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
+                  {/* Post Tags */}
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="mb-3.5 flex flex-wrap gap-2">
+                      {post.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs text-blue-400 font-semibold hover:underline cursor-pointer"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Post / Reel Media (Moderate ratio, not zoomed nor compressed) */}
+                  {post.mediaUrl && (
+                    <div className="mb-4 rounded-2xl overflow-hidden border border-white/10 bg-black/90 relative w-full max-h-[500px] sm:max-h-[520px] flex items-center justify-center shadow-lg">
+                      {post.mediaType === 'video' ? (
+                        <video
+                          src={post.mediaUrl}
+                          controls
+                          className="w-full max-h-[500px] sm:max-h-[520px] object-contain rounded-2xl"
+                        />
+                      ) : (
+                        <img
+                          src={post.mediaUrl}
+                          alt="Post media"
+                          className="w-full max-h-[500px] sm:max-h-[520px] object-contain rounded-2xl"
+                        />
                       )}
 
-                      {/* Post Media (If present) */}
-                      {post.mediaUrl && (
-                        <div className="mt-4 rounded-xl overflow-hidden border border-white/10 bg-black/40 relative max-h-[480px]">
-                          {post.mediaType === 'video' ? (
-                            <video src={post.mediaUrl} controls className="w-full max-h-[480px] object-cover" />
+                      {/* AI Vision Scan Badge Overlay */}
+                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/80 border border-white/10 backdrop-blur-md text-[10px] text-gray-300 font-mono flex items-center gap-1.5 shadow-lg">
+                        <Scan className="w-3.5 h-3.5 text-green-400" />
+                        <span>AI Verified • NSFW {post.aiScanDetails.nsfwScore}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions Bar */}
+                  <div className="flex gap-8 mt-4 text-gray-400 text-xs font-medium">
+                    {/* Likes (Heart toggles like, count opens who liked) */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => likePost(post.id)}
+                        className={`p-1 -ml-1 rounded-full hover:bg-white/5 transition active:scale-90 duration-75 cursor-pointer ${
+                          post.isLiked ? 'text-red-400' : 'hover:text-red-400'
+                        }`}
+                        title={post.isLiked ? 'Unlike post' : 'Like post'}
+                      >
+                        <Heart className={`w-5 h-5 transition-transform duration-75 ${post.isLiked ? 'fill-red-400 scale-110' : ''}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenLikesModal(post.id)}
+                        className="text-xs font-semibold text-gray-400 hover:text-white hover:underline cursor-pointer transition px-1 py-0.5 rounded hover:bg-white/5"
+                        title="View who liked this post"
+                      >
+                        {post.likes}
+                      </button>
+                    </div>
+
+                    {/* Comment Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => toggleComments(post.id)}
+                      className={`flex items-center gap-2 transition-colors active:scale-95 duration-75 cursor-pointer ${
+                        expandedCommentsPostIds.has(post.id) ? 'text-blue-400 font-semibold' : 'hover:text-blue-400'
+                      }`}
+                      title={expandedCommentsPostIds.has(post.id) ? 'Collapse comments' : 'Expand comments'}
+                    >
+                      <MessageCircle className={`w-5 h-5 ${expandedCommentsPostIds.has(post.id) ? 'fill-blue-400/20' : ''}`} />
+                      <span>{post.comments.length}</span>
+                    </button>
+                    <button
+                      onClick={() => handleShare(post)}
+                      className="flex items-center gap-2 hover:text-purple-400 transition-colors active:scale-90 duration-75 cursor-pointer"
+                    >
+                      <Share2 className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => bookmarkPost(post.id)}
+                      className={`flex items-center gap-2 hover:text-yellow-400 transition-colors ml-auto active:scale-90 duration-75 cursor-pointer ${
+                        post.isBookmarked ? 'text-yellow-400' : ''
+                      }`}
+                    >
+                      <Bookmark className={`w-5 h-5 transition-transform duration-75 ${post.isBookmarked ? 'fill-yellow-400 scale-110' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Comments Sub-Panel (Only displayed when clicking the comments button) */}
+                  <AnimatePresence>
+                    {expandedCommentsPostIds.has(post.id) && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
+                          {post.comments.length > 0 ? (
+                            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                              {post.comments.map((comment) => (
+                                <div
+                                  key={comment.id}
+                                  className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs flex items-start gap-2.5"
+                                >
+                                  <img
+                                    src={comment.user.avatar}
+                                    alt={comment.user.name}
+                                    className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-gray-200">
+                                        {comment.user.name}
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-green-400 font-mono flex items-center gap-1">
+                                          <CheckCircle2 className="w-3 h-3" /> Safe
+                                        </span>
+                                        {comment.user.id === currentUser?.id && (
+                                          <button
+                                            type="button"
+                                            onClick={() => removeComment(post.id, comment.id)}
+                                            className="text-gray-500 hover:text-red-400 p-0.5 rounded transition"
+                                            title="Delete comment"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <p className="text-gray-300 mt-0.5 leading-snug">
+                                      {comment.content}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           ) : (
-                            <img
-                              src={post.mediaUrl}
-                              alt="Post media"
-                              className="w-full max-h-[480px] object-cover"
-                            />
+                            <p className="text-xs text-gray-500 italic py-1">
+                              No comments yet. Be the first to start the discussion!
+                            </p>
                           )}
 
-                          {/* AI Vision Scan Badge Overlay */}
-                          <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/80 border border-white/10 backdrop-blur-md text-[10px] text-gray-300 font-mono flex items-center gap-1.5 shadow-lg">
-                            <Scan className="w-3.5 h-3.5 text-green-400" />
-                            <span>AI Verified • NSFW {post.aiScanDetails.nsfwScore}%</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Actions Bar */}
-                      <div className="flex gap-8 mt-5 text-gray-400 text-xs font-medium">
-                        <button
-                          onClick={() => likePost(post.id)}
-                          className={`flex items-center gap-2 hover:text-red-400 transition-colors active:scale-90 duration-75 cursor-pointer ${
-                            post.isLiked ? 'text-red-400 font-bold' : ''
-                          }`}
-                        >
-                          <Heart className={`w-5 h-5 transition-transform duration-75 ${post.isLiked ? 'fill-red-400 scale-110' : ''}`} />
-                          <span>{post.likes}</span>
-                        </button>
-                        <button className="flex items-center gap-2 hover:text-blue-400 transition-colors active:scale-95 duration-75">
-                          <MessageCircle className="w-5 h-5" />
-                          <span>{post.comments.length}</span>
-                        </button>
-                        <button
-                          onClick={() => handleShare(post)}
-                          className="flex items-center gap-2 hover:text-purple-400 transition-colors active:scale-90 duration-75 cursor-pointer"
-                        >
-                          <Share2 className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => bookmarkPost(post.id)}
-                          className={`flex items-center gap-2 hover:text-yellow-400 transition-colors ml-auto active:scale-90 duration-75 cursor-pointer ${
-                            post.isBookmarked ? 'text-yellow-400' : ''
-                          }`}
-                        >
-                          <Bookmark className={`w-5 h-5 transition-transform duration-75 ${post.isBookmarked ? 'fill-yellow-400 scale-110' : ''}`} />
-                        </button>
-                      </div>
-
-                      {/* Comments Sub-Panel */}
-                      <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
-                        {post.comments.length > 0 && (
-                          <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
-                            {post.comments.map((comment) => (
-                              <div
-                                key={comment.id}
-                                className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs flex items-start gap-2.5"
-                              >
-                                <img
-                                  src={comment.user.avatar}
-                                  alt={comment.user.name}
-                                  className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-bold text-gray-200">
-                                      {comment.user.name}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] text-green-400 font-mono flex items-center gap-1">
-                                        <CheckCircle2 className="w-3 h-3" /> Safe
-                                      </span>
-                                      {comment.user.id === currentUser?.id && (
-                                        <button
-                                          type="button"
-                                          onClick={() => removeComment(post.id, comment.id)}
-                                          className="text-gray-500 hover:text-red-400 p-0.5 rounded transition"
-                                          title="Delete comment"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <p className="text-gray-300 mt-0.5 leading-snug">
-                                    {comment.content}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Comment Input */}
-                        <form
-                          onSubmit={(e) => handleCommentSubmit(post.id, e)}
-                          className="flex items-center gap-2 pt-1"
-                        >
-                          <input
-                            type="text"
-                            value={postCommentText}
-                            disabled={submittingCommentId === post.id}
-                            onChange={(e) =>
-                              setCommentInputs({ ...commentInputs, [post.id]: e.target.value })
-                            }
-                            placeholder={submittingCommentId === post.id ? "Scanning safety..." : "Write a comment... (AI verified safe)"}
-                            className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
-                          />
-                          <button
-                            type="submit"
-                            disabled={!postCommentText.trim() || submittingCommentId === post.id}
-                            className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-bold text-xs disabled:opacity-40 transition-all duration-75 flex items-center gap-1.5 shadow-[0_0_10px_rgba(37,99,235,0.3)] shrink-0 cursor-pointer"
-                            title={submittingCommentId === post.id ? "AI Safety Scan in progress..." : "Post Comment"}
+                          {/* Comment Input */}
+                          <form
+                            onSubmit={(e) => handleCommentSubmit(post.id, e)}
+                            className="flex items-center gap-2 pt-1"
                           >
-                            {submittingCommentId === post.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
+                            <input
+                              type="text"
+                              value={postCommentText}
+                              disabled={submittingCommentId === post.id}
+                              onChange={(e) =>
+                                setCommentInputs({ ...commentInputs, [post.id]: e.target.value })
+                              }
+                              placeholder={submittingCommentId === post.id ? "Scanning safety..." : "Write a comment... (AI verified safe)"}
+                              className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
+                            />
+                            <button
+                              type="submit"
+                              disabled={!postCommentText.trim() || submittingCommentId === post.id}
+                              className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-bold text-xs disabled:opacity-40 transition-all duration-75 flex items-center gap-1.5 shadow-[0_0_10px_rgba(37,99,235,0.3)] shrink-0 cursor-pointer"
+                              title={submittingCommentId === post.id ? "AI Safety Scan in progress..." : "Post Comment"}
+                            >
+                              {submittingCommentId === post.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Send className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </form>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.article>
               );
             })
@@ -1518,6 +1610,104 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                 className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition"
               >
                 Close Explanation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= POST LIKES MODAL ================= */}
+      {likesModalPostId && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[80vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                  <Heart className="w-5 h-5 fill-rose-500/20" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">Liked By</h3>
+                  <p className="text-xs text-slate-400">
+                    {likedUsers.length} {likedUsers.length === 1 ? 'person' : 'people'} liked this post
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLikesModalPostId(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Users List */}
+            <div className="flex-1 overflow-y-auto space-y-2.5 custom-scrollbar pr-1 min-h-[160px]">
+              {isLikedUsersLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                  <span className="text-xs">Fetching likes from database...</span>
+                </div>
+              ) : likedUsers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-center space-y-2">
+                  <div className="p-3 rounded-full bg-slate-800/80 text-slate-500">
+                    <Heart className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-300">No likes yet</p>
+                  <p className="text-xs text-slate-500">Be the first to like this post!</p>
+                </div>
+              ) : (
+                likedUsers.map((u) => (
+                  <div
+                    key={u.id}
+                    onClick={() => {
+                      openUserProfile(u);
+                      setLikesModalPostId(null);
+                    }}
+                    className="p-3 rounded-2xl bg-slate-800/50 hover:bg-slate-800/80 border border-slate-700/50 hover:border-purple-500/30 transition flex items-center justify-between gap-3 cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full p-[1.5px] bg-gradient-to-tr from-purple-500/40 to-blue-500/40 shrink-0">
+                        <img
+                          src={u.avatar}
+                          alt={u.name}
+                          className="w-full h-full rounded-full object-cover bg-slate-900"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-white text-sm group-hover:text-blue-400 transition truncate">
+                            {u.name}
+                          </span>
+                          {u.verified && (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 fill-blue-400/20 shrink-0" />
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-400 truncate">@{u.username}</div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium">
+                        <Shield className="w-3 h-3 text-emerald-400" />
+                        <span className="hidden sm:inline">{u.aiTrustBadge || 'Verified Human'}</span>
+                        <span className="sm:hidden">Verified</span>
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-2 border-t border-slate-800 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setLikesModalPostId(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>

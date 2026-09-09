@@ -158,6 +158,7 @@ export type PageView =
   | 'profile'
   | 'settings'
   | 'ai-dashboard'
+  | 'ai-architecture'
   | 'sentinel-ai'
   | 'about'
   | 'contact'

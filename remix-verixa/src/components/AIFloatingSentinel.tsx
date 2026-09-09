@@ -1,95 +1,59 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Markdown from 'react-markdown';
 import { Bot, Send, X, Shield, Sparkles, CheckCircle2, ShieldAlert, Zap, RefreshCw, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
+import { useSentinel } from '../context/SentinelContext';
 
 export const AIFloatingSentinel: React.FC = () => {
-  const { setCurrentPage } = useApp();
+  const { currentPage, setCurrentPage } = useApp();
+  const { messages, isLoading, sendMessage, setDraftInput } = useSentinel();
+
+  const hiddenPages = [
+    'messages',
+    'landing',
+    'about',
+    'ai-architecture',
+    'ai-dashboard',
+    'ai_dashboard',
+    'privacy',
+    'terms',
+    'help',
+    'contact',
+    'login',
+    'signup',
+    'verify-email',
+    'sentinel-ai',
+  ];
+
+  if (hiddenPages.includes(currentPage as string)) {
+    return null;
+  }
+
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ sender: 'user' | 'bot'; text: string; details?: any }[]>([
-    {
-      sender: 'bot',
-      text: 'Greetings! I am VERIXA Sentinel AI. I continuously scan for hate speech, cyberbullying, NSFW content, and fake profiles. You can test any text or ask me safety advice here!',
-    },
-  ]);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isLoading]);
+
+  const handleOpenFullChat = () => {
+    if (inputText.trim()) {
+      setDraftInput(inputText.trim());
+      setInputText('');
+    }
+    setIsOpen(false);
+    setCurrentPage('sentinel-ai');
+  };
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputText.trim() || isLoading) return;
+    const query = inputText.trim();
+    if (!query || isLoading) return;
 
-    const userQuery = inputText.trim();
     setInputText('');
-    setMessages((prev) => [...prev, { sender: 'user', text: userQuery }]);
-    setIsLoading(true);
-
-    try {
-      const lower = userQuery.toLowerCase();
-      // If user is explicitly testing a comment toxicity or asking to check a text
-      if (lower.startsWith('test') || lower.startsWith('check') || lower.includes('toxicity') || lower.includes('analyze')) {
-        const modRes = await fetch('/api/moderate/comment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comment: userQuery }),
-        });
-        const modData = await modRes.json();
-
-        if (modData && (modData.status || typeof modData.toxicity_score === 'number' || typeof modData.toxicityScore === 'number')) {
-          const status = modData.status || (modData.allowed ? 'SAFE' : 'BLOCKED');
-          const score = modData.toxicity_score ?? modData.toxicityScore ?? 0;
-          const confidence = modData.confidence ?? 98;
-          const category = modData.category || 'General';
-          const labels = (modData.detected_labels || modData.categories || []).join(', ');
-          const reason = modData.reason || 'No issue detected.';
-          const action = modData.suggested_action || (status === 'SAFE' ? 'Allow' : status === 'WARNING' ? 'Show warning before posting.' : 'Block comment and flag account.');
-          const rewrite = modData.safe_rewrite || modData.suggestion;
-
-          let botResponse = '';
-          if (status === 'BLOCKED') {
-            botResponse = `⛔ STATUS: BLOCKED\nToxicity Score: ${score}/100\nCategory: ${category}\nConfidence: ${confidence}%\nReason: ${reason}${labels ? `\nDetected Flags: [${labels}]` : ''}\nAction: ${action}${rewrite ? `\nSuggested Rewrite: "${rewrite}"` : ''}`;
-          } else if (status === 'WARNING') {
-            botResponse = `⚠️ STATUS: WARNING\nToxicity Score: ${score}/100\nCategory: ${category}\nConfidence: ${confidence}%\nReason: ${reason}${labels ? `\nDetected Flags: [${labels}]` : ''}\nAction: ${action}${rewrite ? `\nSuggested Rewrite: "${rewrite}"` : ''}`;
-          } else {
-            botResponse = `✅ STATUS: SAFE\nToxicity Score: ${score}/100\nCategory: ${category}\nConfidence: ${confidence}%\nReason: ${reason}\nSuggested Action: ${action}`;
-          }
-
-          setMessages((prev) => [...prev, { sender: 'bot', text: botResponse, details: modData }]);
-          return;
-        }
-      }
-
-      // Default Chatbot Assistant Call
-      const apiHistory = messages.map((m) => ({
-        sender: m.sender,
-        text: m.text,
-      }));
-
-      const chatRes = await fetch('/api/ai-assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userQuery, history: apiHistory }),
-      });
-      const chatData = await chatRes.json();
-      const botResponse = chatData.reply || 'VERIXA AI Guard is active and shielding your session.';
-
-      setMessages((prev) => [...prev, { sender: 'bot', text: botResponse }]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'bot',
-          text: 'VERIXA Sentinel AI actively analyzed your message and verified safe parameters.',
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessage(query, 'chat');
   };
 
   return (
@@ -119,10 +83,7 @@ export const AIFloatingSentinel: React.FC = () => {
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    setCurrentPage('sentinel-ai');
-                  }}
+                  onClick={handleOpenFullChat}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
                   title="Open Full Screen Chatbot"
                 >
@@ -145,13 +106,19 @@ export const AIFloatingSentinel: React.FC = () => {
                   className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`p-3 rounded-2xl max-w-[85%] whitespace-pre-line leading-relaxed ${
+                    className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
                       m.sender === 'user'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-none'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-none whitespace-pre-line'
                         : 'bg-slate-800/80 border border-slate-700/80 text-slate-200 rounded-bl-none'
                     }`}
                   >
-                    {m.text}
+                    {m.sender === 'bot' ? (
+                      <div className="markdown-body text-slate-200">
+                        <Markdown>{m.text}</Markdown>
+                      </div>
+                    ) : (
+                      m.text
+                    )}
                   </div>
                 </div>
               ))}
@@ -167,10 +134,7 @@ export const AIFloatingSentinel: React.FC = () => {
             <div className="px-3 py-1.5 bg-purple-950/40 border-t border-purple-500/20 text-[11px] flex items-center justify-between text-purple-200">
               <span>Need deep analysis & reports?</span>
               <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setCurrentPage('sentinel-ai');
-                }}
+                onClick={handleOpenFullChat}
                 className="font-bold text-amber-300 hover:underline flex items-center gap-1"
               >
                 Full Chat Hub →
@@ -183,7 +147,7 @@ export const AIFloatingSentinel: React.FC = () => {
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Test a comment or ask AI Guard..."
+                placeholder="Ask anything, test a comment, get advice..."
                 className="flex-1 bg-slate-900 border border-purple-500/20 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
               />
               <button

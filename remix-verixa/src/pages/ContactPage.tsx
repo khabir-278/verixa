@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Mail, MessageSquare, Send, ShieldCheck, CheckCircle2, Clock } from 'lucide-react';
+import { Mail, MessageSquare, Send, ShieldCheck, CheckCircle2, Clock, ArrowLeft } from 'lucide-react';
 
 export const ContactPage: React.FC = () => {
-  const { addToast } = useApp();
+  const { addToast, setCurrentPage, isAuthenticated } = useApp();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -16,7 +16,18 @@ export const ContactPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
+      {/* Top Left Navigation */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+        <button
+          onClick={() => setCurrentPage(isAuthenticated ? 'home' : 'landing')}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white text-xs font-semibold transition cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4 text-purple-400" />
+          <span>{isAuthenticated ? 'Back to Feed' : 'Back to Welcome'}</span>
+        </button>
+      </div>
+
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold text-white flex items-center justify-center gap-2">
           Contact VERIXA Support <Mail className="w-6 h-6 text-purple-400" />
@@ -32,7 +43,7 @@ export const ContactPage: React.FC = () => {
             <div className="p-3 rounded-full bg-emerald-500/20 text-emerald-400 w-fit mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="font-bold text-lg text-white">Ticket Submitted to AI Sentinel</h3>
+            <h3 className="font-bold text-lg text-white">Ticket Submitted to VERIXA Support</h3>
             <p className="text-xs text-slate-300">
               Our automated system triaged your request. Typical response time is under 5 minutes.
             </p>

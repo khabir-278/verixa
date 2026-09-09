@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { ShieldCheck, User, Mail, Lock, Sparkles, Loader2, CheckCircle2, Shield, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ShieldCheck, User, Mail, Lock, Sparkles, Loader2, CheckCircle2, Shield, AlertCircle, ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const SignupPage: React.FC = () => {
@@ -9,6 +9,7 @@ export const SignupPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -57,19 +58,25 @@ export const SignupPage: React.FC = () => {
       setIsGoogleLoading(false);
       setErrorMessage(res.error);
     }
-    // Do NOT navigate to 'home' here. The browser is redirecting to Google's account selection screen.
-    // Keeping isGoogleLoading true provides seamless feedback until the redirect occurs.
   };
+
+  // Password criteria verification
+  const passwordCriteria = {
+    length: password.length >= 8 && password.length <= 100,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  };
+  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
 
   // Password strength calculation
   const getPasswordStrength = () => {
     if (!password) return { score: 0, text: 'Empty', color: 'bg-slate-800' };
-    if (password.length < 6) return { score: 25, text: 'Weak', color: 'bg-rose-500' };
-    if (password.length < 10) return { score: 60, text: 'Medium', color: 'bg-amber-500' };
-    if (/[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
-      return { score: 100, text: 'Unbreakable AI Grade', color: 'bg-emerald-500' };
-    }
-    return { score: 80, text: 'Strong', color: 'bg-indigo-500' };
+    const metCount = Object.values(passwordCriteria).filter(Boolean).length;
+    if (metCount <= 2) return { score: 25, text: 'Weak', color: 'bg-rose-500' };
+    if (metCount === 3 || metCount === 4) return { score: 65, text: 'Medium', color: 'bg-amber-500' };
+    return { score: 100, text: 'Strong & AI-Shield Verified', color: 'bg-emerald-500' };
   };
 
   const strength = getPasswordStrength();
@@ -78,6 +85,37 @@ export const SignupPage: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     if (!name || !username || !email || !password) return;
+
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password.length > 100) {
+      setErrorMessage('Password must not exceed 100 characters.');
+      return;
+    }
+
+    if (!passwordCriteria.uppercase) {
+      setErrorMessage('Password must contain at least one capital letter (A-Z).');
+      return;
+    }
+
+    if (!passwordCriteria.lowercase) {
+      setErrorMessage('Password must contain at least one small letter (a-z).');
+      return;
+    }
+
+    if (!passwordCriteria.number) {
+      setErrorMessage('Password must contain at least one number (0-9).');
+      return;
+    }
+
+    if (!passwordCriteria.special) {
+      setErrorMessage('Password must contain at least one special symbol (e.g. !@#$%^&*).');
+      return;
+    }
+
     setIsLoading(true);
     const res = await signup(name, username, email, password);
     setIsLoading(false);
@@ -281,7 +319,7 @@ export const SignupPage: React.FC = () => {
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="verixa_signup_password_clean"
                 id="verixa_signup_password_clean"
                 autoComplete="new-password"
@@ -295,24 +333,78 @@ export const SignupPage: React.FC = () => {
                   hasUserInteracted.current = true;
                   setPassword(e.target.value);
                 }}
-                placeholder="••••••••••••"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500 transition"
+                placeholder="Create a strong password"
+                className="w-full pl-10 pr-11 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500 transition"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-2.5 text-slate-500 hover:text-purple-400 focus:outline-none transition-colors p-1 rounded-lg hover:bg-slate-800/60 cursor-pointer"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4 text-purple-400" />
+                ) : (
+                  <Eye className="w-4 h-4 text-slate-400 hover:text-slate-200" />
+                )}
+              </button>
             </div>
 
-            {/* Strength Meter */}
+            {/* Strength Meter & Requirements Checklist */}
             {password && (
-              <div className="mt-2 space-y-1">
+              <div className="mt-2.5 space-y-2">
                 <div className="flex justify-between text-[11px]">
                   <span className="text-slate-400">Password Strength</span>
-                  <span className="font-bold text-slate-200">{strength.text}</span>
+                  <span className={`font-bold ${isPasswordValid ? 'text-emerald-400' : 'text-slate-300'}`}>
+                    {strength.text}
+                  </span>
                 </div>
                 <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
                   <div
                     className={`h-full transition-all duration-500 ${strength.color}`}
                     style={{ width: `${strength.score}%` }}
                   />
+                </div>
+
+                {/* Password Criteria Badges */}
+                <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-1.5">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    Security Requirements:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+                    <div className={`flex items-center gap-1.5 transition-colors ${passwordCriteria.length ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordCriteria.length ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-500'}`}>
+                        {passwordCriteria.length ? '✓' : '•'}
+                      </span>
+                      <span>8 to 100 characters</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 transition-colors ${passwordCriteria.uppercase ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordCriteria.uppercase ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-500'}`}>
+                        {passwordCriteria.uppercase ? '✓' : '•'}
+                      </span>
+                      <span>One capital letter (A-Z)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 transition-colors ${passwordCriteria.lowercase ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordCriteria.lowercase ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-500'}`}>
+                        {passwordCriteria.lowercase ? '✓' : '•'}
+                      </span>
+                      <span>One small letter (a-z)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 transition-colors ${passwordCriteria.number ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordCriteria.number ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-500'}`}>
+                        {passwordCriteria.number ? '✓' : '•'}
+                      </span>
+                      <span>One number (0-9)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 transition-colors sm:col-span-2 ${passwordCriteria.special ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordCriteria.special ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-500'}`}>
+                        {passwordCriteria.special ? '✓' : '•'}
+                      </span>
+                      <span>One special symbol (!@#$%^&*...)</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

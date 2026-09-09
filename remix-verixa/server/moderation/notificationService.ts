@@ -80,11 +80,15 @@ function saveNotificationsToFile() {
 
 // Server Supabase Client Helper
 function getServerSupabase(): SupabaseClient | null {
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const url =
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    'https://jnbaumemwxydjktwedtz.supabase.co';
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+    process.env.SUPABASE_ANON_KEY ||
+    'sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2';
 
   if (!url || !key) return null;
 

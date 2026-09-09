@@ -1,5 +1,85 @@
 [
   {
+    "id": "notif_1788979921493_8fecf39c",
+    "recipient_id": "0faefab3-4c20-4222-afec-6a7cd96ca9a3",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your post: \"DOOM\"",
+    "post_id": "9bf7adb9-21a3-4701-87e3-0e552875d693",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-09T18:52:01.493Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788979918007_81435ed6",
+    "recipient_id": "0faefab3-4c20-4222-afec-6a7cd96ca9a3",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your post: \"DOOM\"",
+    "post_id": "9bf7adb9-21a3-4701-87e3-0e552875d693",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-09T18:51:58.007Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788979664241_bf749004",
+    "recipient_id": "8100e6d9-c75b-424a-98b3-f019d74eb9f2",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "comment",
+    "message": "commented on your post: \"good pic\"",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "detail": "good pic",
+    "read": false,
+    "created_at": "2026-09-09T18:47:44.241Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1788978801330_cf5f27b9",
+    "recipient_id": "8100e6d9-c75b-424a-98b3-f019d74eb9f2",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your post: \"GEETHANJALI INSTITUTE OF SCIENCE AN...\"",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-09T18:33:21.330Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
     "id": "notif_1788809188811_0e74eff3",
     "recipient_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
     "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",

@@ -24,6 +24,7 @@ import {
   Eye,
   ShieldX,
   UserCheck,
+  Layers,
 } from 'lucide-react';
 import {
   BarChart,
@@ -56,7 +57,7 @@ import {
 } from '../types';
 
 export const AIDashboardPage: React.FC = () => {
-  const { currentUser, openScannerModal } = useApp();
+  const { currentUser, openScannerModal, setCurrentPage } = useApp();
 
   // Active Dashboard Navigation Tab
   const [activeTab, setActiveTab] = useState<'overview' | 'appeals' | 'reports' | 'alerts' | 'audit' | 'tester'>('overview');
@@ -219,6 +220,14 @@ export const AIDashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCurrentPage('ai-architecture')}
+            className="px-3 py-2 rounded-xl bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/30 text-purple-200 text-xs font-medium flex items-center gap-2 transition cursor-pointer"
+            title="View AI Neural Architecture Diagram"
+          >
+            <Layers className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden md:inline">Architecture Diagram</span>
+          </button>
           <button
             onClick={() => loadDashboardData()}
             disabled={refreshing}
