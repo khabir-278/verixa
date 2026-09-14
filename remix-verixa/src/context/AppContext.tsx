@@ -11,8 +11,11 @@ import {
   UserSettings,
   DEFAULT_SETTINGS,
   Comment,
+  ActiveCallInfo,
+  CallType,
 } from '../types';
 import { supabase } from '../lib/supabase';
+import { webrtcCallService } from '../lib/webrtcCallService';
 import {
   saveUserProfile,
   getUserProfile,
@@ -41,8 +44,10 @@ import {
   resolvePostSignedUrls,
   deleteStorageFile,
   toggleStoryLike,
+  recordStoryViewInDatabase,
   createNotification,
   markSingleNotificationAsReadInApi,
+  markConversationAsRead,
 } from '../lib/supabaseServices';
 
 interface Toast {
@@ -117,6 +122,7 @@ interface AppContextType {
   viewStory: (storyId: string) => Promise<void>;
   likeStory: (storyId: string, explicitAuthorId?: string, explicitAuthorName?: string) => Promise<boolean>;
   sendStoryReaction: (storyId: string, authorId: string, reactionText: string, authorName?: string) => Promise<boolean>;
+  deleteStory: (storyId: string) => Promise<boolean>;
   isStoryUploading: boolean;
   storyUploadStage: string;
   setIsStoryUploading: (val: boolean) => void;
@@ -134,11 +140,29 @@ interface AppContextType {
   setActiveChatUser: (user: User | null) => void;
   messages: ChatMessage[];
   isMessagesLoading: boolean;
-  sendMessage: (text: string, mediaUrl?: string) => Promise<void>;
+  sendMessage: (
+    text: string,
+    mediaUrl?: string,
+    isVoice?: boolean,
+    voiceDuration?: number | string
+  ) => Promise<void>;
   unreadChatSenderIds: Set<string>;
   unreadChatSenders: Record<string, { count: number; lastText: string; lastTime: string }>;
   totalUnreadMessagesCount: number;
   markChatAsRead: (senderUserId: string) => void;
+
+  // WebRTC Calling
+  activeCall: ActiveCallInfo | null;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
+  startCall: (targetUser: { id: string; name: string; avatar?: string }, type: CallType) => Promise<void>;
+  acceptCall: () => Promise<void>;
+  rejectCall: () => Promise<void>;
+  endCall: () => Promise<void>;
+
+  // Online Presence
+  onlineUserIds: Set<string>;
+  isUserOnline: (userId: string) => boolean;
   
   // Notifications
   notifications: Notification[];
@@ -235,6 +259,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [selectedExploreCategory, setSelectedExploreCategory] = useState<string>('All');
   const [exploreSearchQuery, setExploreSearchQuery] = useState<string>('');
+
+  // WebRTC Calling state
+  const [activeCall, setActiveCall] = useState<ActiveCallInfo | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+
+  // Online Presence state
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   
   // Navigation helper with history tracking
   const setCurrentPage = (page: PageView) => {
@@ -315,18 +347,122 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const isAuthenticated = currentUser !== null;
 
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   // Add Toast helper
-  const addToast = (type: Toast['type'], title: string, message: string) => {
+  const addToast = useCallback((type: Toast['type'], title: string, message: string) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, type, title, message }]);
     setTimeout(() => {
       removeToast(id);
     }, 4500);
-  };
+  }, [removeToast]);
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  // Online Presence Tracking (Supabase Realtime Presence)
+  useEffect(() => {
+    if (!currentUser?.id) {
+      setOnlineUserIds(new Set());
+      return;
+    }
+
+    const presenceChannel = supabase.channel('online_users', {
+      config: { presence: { key: currentUser.id } },
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const ids = new Set<string>();
+        Object.keys(state).forEach((key) => {
+          ids.add(key);
+        });
+        setOnlineUserIds(ids);
+      })
+      .on('presence', { event: 'join' }, ({ key }) => {
+        setOnlineUserIds((prev) => new Set(prev).add(key));
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        setOnlineUserIds((prev) => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: currentUser.id,
+            username: currentUser.username,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      try {
+        presenceChannel.untrack();
+        supabase.removeChannel(presenceChannel);
+      } catch (e) {
+        // ignore
+      }
+    };
+  }, [currentUser?.id, currentUser?.username]);
+
+  const isUserOnline = useCallback(
+    (userId: string): boolean => {
+      if (!userId) return false;
+      if (currentUser?.id === userId) return true;
+      return onlineUserIds.has(userId);
+    },
+    [onlineUserIds, currentUser?.id]
+  );
+
+  // WebRTC Calling Service lifecycle
+  useEffect(() => {
+    if (!currentUser?.id) {
+      webrtcCallService.cleanup();
+      return;
+    }
+
+    webrtcCallService.init(currentUser);
+
+    const unsubState = webrtcCallService.subscribe((info, local, remote) => {
+      setActiveCall(info);
+      setLocalStream(local);
+      setRemoteStream(remote);
+    });
+
+    const unsubError = webrtcCallService.onError((msg) => {
+      addToast('info', 'Call Notice', msg);
+    });
+
+    return () => {
+      unsubState();
+      unsubError();
+      webrtcCallService.cleanup();
+    };
+  }, [currentUser?.id, addToast]);
+
+  const startCall = useCallback(
+    async (targetUser: { id: string; name: string; avatar?: string }, type: CallType) => {
+      await webrtcCallService.startCall(targetUser, type);
+    },
+    []
+  );
+
+  const acceptCall = useCallback(async () => {
+    await webrtcCallService.acceptCall();
+  }, []);
+
+  const rejectCall = useCallback(async () => {
+    await webrtcCallService.rejectCall();
+  }, []);
+
+  const endCall = useCallback(async () => {
+    await webrtcCallService.endCall();
+  }, []);
 
   // Helper to construct User profile from Supabase user session
   const mapSupabaseUserToProfile = (sbUser: any): User => {
@@ -382,7 +518,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       avatar,
       bio: 'Safe social media explorer 🛡️',
       verified: true,
-      aiTrustBadge: 'Verified Human • 100% Trust',
+      aiTrustBadge: 'Verified Member',
       safetyScore: 100,
       followersCount: 0,
       followingCount: 0,
@@ -491,6 +627,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUser?.id]);
 
+function formatStoryRelativeTime(dateString?: string): string {
+  if (!dateString) return 'Just now';
+  const time = new Date(dateString).getTime();
+  if (isNaN(time)) return 'Just now';
+  const diffSecs = Math.floor((Date.now() - time) / 1000);
+  if (diffSecs < 60) return 'Just now';
+  const diffMins = Math.floor(diffSecs / 60);
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
   const normalizeStoryItem = async (item: any, currentUserId?: string): Promise<Story> => {
     const rawMedia = item.mediaUrl || item.media_url || '';
     const resolvedMedia = await getSignedMediaUrl(rawMedia, 3600);
@@ -544,7 +694,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         avatar: finalAvatar,
         bio: item.user?.bio || '',
         verified: Boolean(item.user?.verified),
-        aiTrustBadge: item.user?.aiTrustBadge || 'Verified Human • 100% Trust',
+        aiTrustBadge: item.user?.aiTrustBadge || 'Verified Member',
         safetyScore: item.user?.safetyScore ?? 99,
         followersCount: item.user?.followersCount ?? 0,
         followingCount: item.user?.followingCount ?? 0,
@@ -555,7 +705,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: mediaType,
       mediaType: mediaType,
       media_type: mediaType,
-      timestamp: item.timestamp || (item.created_at ? 'Recent' : 'Just now'),
+      timestamp: item.timestamp && !item.timestamp.includes('Recent') ? item.timestamp : formatStoryRelativeTime(item.createdAt || item.created_at),
       viewed: isViewed,
       isAIModerated: item.isAIModerated ?? item.is_ai_moderated ?? true,
       viewsCount,
@@ -790,8 +940,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         delete next[senderUserId];
         return next;
       });
+      if (currentUser?.id) {
+        markConversationAsRead(currentUser.id, senderUserId);
+      }
     },
-    [updateLastRead]
+    [currentUser?.id, updateLastRead]
   );
 
   // Load initial unread incoming messages on mount/login
@@ -843,6 +996,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // If currently on Messages page AND actively chatting with this sender:
       if (activeChatUser?.id === newMsg.senderId && currentPage === 'messages') {
         updateLastRead(newMsg.senderId, new Date().toISOString());
+        markConversationAsRead(currentUser.id, newMsg.senderId);
       } else {
         // User is NOT currently viewing this chat!
         // DO NOT auto-open the chat!
@@ -873,6 +1027,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMessages([]);
       return;
     }
+    markConversationAsRead(currentUser.id, activeChatUser.id);
     setIsMessagesLoading(true);
     const unsubChat = subscribeSupabaseMessages(currentUser.id, activeChatUser.id, (realtimeMsgs) => {
       setMessages(realtimeMsgs || []);
@@ -1763,13 +1918,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       await toggleFollowUser(currentUser.id, targetUserId);
-      if (nextFollowing && targetUserId !== currentUser.id) {
-        sendNotificationToUser({
-          recipientId: targetUserId,
-          type: 'follow',
-          message: 'started following you',
-        });
-      }
       addToast(
         'info',
         nextFollowing ? 'Following User' : 'Unfollowed User',
@@ -1894,6 +2042,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (currentUser?.id) {
       try {
+        recordStoryViewInDatabase(storyId, currentUser.id).catch(() => {});
         await fetch(`/api/stories/${storyId}/view`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1943,7 +2092,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    // Call backend API
+    // Persist to Supabase and Backend API concurrently
+    try {
+      await toggleStoryLike(storyId, currentUser.id, targetLiked);
+    } catch {
+      // Non-blocking sync fallback
+    }
+
     try {
       const res = await fetch(`/api/stories/${storyId}/like`, {
         method: 'POST',
@@ -1952,7 +2107,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         const data = await res.json();
-        if (typeof data.likesCount === 'number') {
+        if (typeof data.likesCount === 'number' && data.success) {
           setStories((prev) =>
             prev.map((s) =>
               s.id === storyId
@@ -1971,13 +2126,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (err) {
       console.warn('Story like server call notice:', err);
-    }
-
-    // Persist to Supabase
-    try {
-      await toggleStoryLike(storyId, currentUser.id, targetLiked);
-    } catch {
-      // Non-blocking sync fallback
     }
 
     // Send notification to story author (User 1) if liked
@@ -2042,6 +2190,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return true;
   };
+
+  const deleteStory = async (storyId: string): Promise<boolean> => {
+    // 1. Optimistically remove from state
+    setStories((prev) => prev.filter((s) => s.id !== storyId));
+
+    try {
+      // 2. Call backend API to delete from memory buffer and file
+      await fetch(`/api/stories/${storyId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser?.id }),
+      });
+
+      // 3. Delete from Supabase if authenticated
+      if (currentUser?.id) {
+        try {
+          await supabase.from('stories').delete().eq('id', storyId);
+          await supabase.from('story_likes').delete().eq('story_id', storyId);
+        } catch (sbErr) {
+          console.warn('Notice deleting story from Supabase:', sbErr);
+        }
+      }
+
+      addToast('info', 'Story Deleted', 'Your story has been permanently removed.');
+      return true;
+    } catch (err) {
+      console.error('Failed to delete story:', err);
+      addToast('error', 'Delete Error', 'Could not delete story. Please try again.');
+      return false;
+    }
+  };
+
 
   const addReel = async (
     videoUrl: string,
@@ -2176,9 +2356,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Chat Messages
-  const sendMessage = async (text: string, mediaUrl?: string) => {
-    if (!text.trim() && !mediaUrl) return;
-
+  const sendMessage = async (
+    text: string,
+    mediaUrl?: string,
+    isVoice?: boolean,
+    voiceDuration?: number | string
+  ) => {
     if (!currentUser?.id) {
       addToast('warning', 'Sign In Required', 'Please sign in to send direct messages.');
       return;
@@ -2194,18 +2377,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: tempId,
       senderId: currentUser.id,
       receiverId: activeChatUser.id,
-      text,
+      text: text || (isVoice ? '🎙️ Voice message' : ''),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isAIVerified: true,
       mediaUrl,
+      isVoice: !!isVoice,
+      voiceDuration,
+      status: 'sent',
     };
 
     // Optimistic UI append
     setMessages((prev) => [...prev, optimisticMsg]);
 
     try {
-      // 1. Moderate DM Text through Centralized Gateway
-      if (text.trim()) {
+      // 1. Moderate DM Text through Centralized Gateway (skip for voice if text empty)
+      if (text && text.trim()) {
         const modRes = await fetch('/api/moderation/gateway', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2248,8 +2434,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             content: mediaUrl,
-            content_type: 'dm_media',
-            context: 'direct message media attachment',
+            content_type: isVoice ? 'dm_audio' : 'dm_media',
+            context: isVoice ? 'voice message audio' : 'direct message media attachment',
             user_id: currentUser.id,
             target_id: activeChatUser.id,
           }),
@@ -2267,7 +2453,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser.id,
         activeChatUser.id,
         text,
-        mediaUrl
+        mediaUrl,
+        isVoice,
+        voiceDuration
       );
       setMessages((prev) =>
         prev.map((m) => (m.id === tempId ? { ...m, id: realMsgId } : m))
@@ -2377,6 +2565,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         viewStory,
         likeStory,
         sendStoryReaction,
+        deleteStory,
         isStoryUploading,
         storyUploadStage,
         setIsStoryUploading,
@@ -2415,6 +2604,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         closeScannerModal,
         viewingProfileUserId,
         openUserProfile,
+        activeCall,
+        localStream,
+        remoteStream,
+        startCall,
+        acceptCall,
+        rejectCall,
+        endCall,
+        onlineUserIds,
+        isUserOnline,
       }}
     >
       {children}

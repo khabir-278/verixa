@@ -1411,5 +1411,70 @@ drop policy if exists "Services and admins can insert recommendation events" on 
 create policy "Services and admins can insert recommendation events" on public.recommendation_events for insert
   with check (auth.uid() = user_id or auth.jwt()->>'role' = 'service_role');
 
+-- ====================================================================
+-- 23. VERIXA SYSTEM EXTENSIONS & BUG-FIX MIGRATION
+-- ====================================================================
+
+-- Messages delivery status, timestamps, and voice fields
+alter table if exists public.messages add column if not exists status text default 'sent';
+alter table if exists public.messages add column if not exists delivered_at timestamp with time zone;
+alter table if exists public.messages add column if not exists read_at timestamp with time zone;
+alter table if exists public.messages add column if not exists is_voice boolean default false;
+alter table if exists public.messages add column if not exists voice_duration integer default 0;
+
+-- Allow receiver or sender to update delivery/read status on messages
+drop policy if exists "Users can update message delivery/read status" on public.messages;
+create policy "Users can update message delivery/read status" on public.messages
+  for update using (auth.uid() = receiver_id or auth.uid() = sender_id);
+
+-- Reel comments support: allow comments to attach to reels as well as posts
+alter table if exists public.comments alter column post_id drop not null;
+alter table if exists public.comments add column if not exists reel_id uuid references public.reels(id) on delete cascade;
+create index if not exists idx_comments_reel_id on public.comments (reel_id);
+
+-- Enforce username uniqueness at PostgreSQL level
+create unique index if not exists idx_profiles_username_unique on public.profiles (lower(username));
+
+-- Profile online presence tracking
+alter table if exists public.profiles add column if not exists is_online boolean default false;
+alter table if exists public.profiles add column if not exists last_seen timestamp with time zone default timezone('utc'::text, now());
+
+-- Stored function for 24-hour automatic story purge
+create or replace function public.cleanup_expired_stories()
+returns integer as $$
+declare
+  v_count integer;
+begin
+  delete from public.stories where expires_at <= timezone('utc'::text, now());
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$ language plpgsql security definer;
+
+-- Ensure all interactive tables are part of Supabase Realtime publication
+do $$
+begin
+  begin
+    alter publication supabase_realtime add table public.messages;
+  exception when others then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.comments;
+  exception when others then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.reels;
+  exception when others then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.stories;
+  exception when others then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.story_likes;
+  exception when others then null;
+  end;
+end $$;
+
 
 

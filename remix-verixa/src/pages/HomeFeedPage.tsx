@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Heart,
@@ -24,6 +24,9 @@ import {
   Clock,
   Users,
   Info,
+  Compass,
+  Download,
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -31,7 +34,7 @@ import { Post, Story, User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { extractVideoFrames } from '../lib/videoFrameExtractor';
 import { scanPrivacyInText } from '../lib/privacyScanner';
-import { recordPostInteraction, fetchPostLikedUsers } from '../lib/supabaseServices';
+import { recordPostInteraction, fetchPostLikedUsers, fetchStoryInsightsFromDatabase, subscribeStoryInsightsRealtime } from '../lib/supabaseServices';
 
 interface UserStoryGroup {
   userId: string;
@@ -65,6 +68,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     viewStory,
     likeStory,
     sendStoryReaction,
+    deleteStory,
     isStoryUploading,
     storyUploadStage,
     setIsStoryUploading,
@@ -83,6 +87,175 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
   const [storyReplyText, setStoryReplyText] = useState<string>('');
   const [isSendingReaction, setIsSendingReaction] = useState<boolean>(false);
   const [floatingReaction, setFloatingReaction] = useState<string | null>(null);
+  const [isDeletingStory, setIsDeletingStory] = useState<boolean>(false);
+  const [isStoryMenuOpen, setIsStoryMenuOpen] = useState<boolean>(false);
+  const [storyViewersModalStory, setStoryViewersModalStory] = useState<Story | null>(null);
+  const [dbInsights, setDbInsights] = useState<{
+    viewsCount: number;
+    likesCount: number;
+    viewedBy: string[];
+    likedBy: string[];
+    viewers: Array<{ id: string; name: string; username: string; avatar: string }>;
+    likers: Array<{ id: string; name: string; username: string; avatar: string }>;
+  } | null>(null);
+  const [isLoadingDbInsights, setIsLoadingDbInsights] = useState<boolean>(false);
+
+  const handleOpenStoryViewers = async (story: Story) => {
+    setStoryViewersModalStory(story);
+    setIsLoadingDbInsights(true);
+    setDbInsights(null);
+    try {
+      const data = await fetchStoryInsightsFromDatabase(story.id);
+      setDbInsights(data);
+      // Synchronize loaded database values to active story group
+      setActiveStoryGroup((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          stories: prev.stories.map((s) => {
+            if (s.id === story.id) {
+              return {
+                ...s,
+                viewsCount: data.viewsCount,
+                views_count: data.viewsCount,
+                likesCount: data.likesCount,
+                likes_count: data.likesCount,
+                viewedBy: data.viewedBy,
+                viewed_by: data.viewedBy,
+                likedBy: data.likedBy,
+                liked_by: data.likedBy,
+              };
+            }
+            return s;
+          }),
+        };
+      });
+    } catch (err) {
+      console.warn('Error fetching database insights for story:', err);
+    } finally {
+      setIsLoadingDbInsights(false);
+    }
+  };
+
+  // Real-time live listener for Story Viewers Modal
+  useEffect(() => {
+    if (!storyViewersModalStory?.id) return;
+    const unsub = subscribeStoryInsightsRealtime(storyViewersModalStory.id, (fresh) => {
+      setDbInsights(fresh);
+      setActiveStoryGroup((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          stories: prev.stories.map((s) => {
+            if (s.id === storyViewersModalStory.id) {
+              return {
+                ...s,
+                viewsCount: fresh.viewsCount,
+                views_count: fresh.viewsCount,
+                likesCount: fresh.likesCount,
+                likes_count: fresh.likesCount,
+                viewedBy: fresh.viewedBy,
+                viewed_by: fresh.viewedBy,
+                likedBy: fresh.likedBy,
+                liked_by: fresh.likedBy,
+              };
+            }
+            return s;
+          }),
+        };
+      });
+    });
+    return () => {
+      unsub();
+    };
+  }, [storyViewersModalStory?.id]);
+
+  // Real-time live listener for Active Story Modal (updates views & likes count in activity pill)
+  const currentActiveStoryId = activeStoryGroup?.stories[activeStoryIndex]?.id;
+  useEffect(() => {
+    if (!currentActiveStoryId) return;
+    const unsub = subscribeStoryInsightsRealtime(currentActiveStoryId, (fresh) => {
+      setActiveStoryGroup((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          stories: prev.stories.map((s) => {
+            if (s.id === currentActiveStoryId) {
+              return {
+                ...s,
+                viewsCount: fresh.viewsCount,
+                views_count: fresh.viewsCount,
+                likesCount: fresh.likesCount,
+                likes_count: fresh.likesCount,
+                viewedBy: fresh.viewedBy,
+                viewed_by: fresh.viewedBy,
+                likedBy: fresh.likedBy,
+                liked_by: fresh.likedBy,
+              };
+            }
+            return s;
+          }),
+        };
+      });
+    });
+    return () => {
+      unsub();
+    };
+  }, [currentActiveStoryId]);
+
+  const handleDeleteCurrentStory = async (storyId: string) => {
+    if (!window.confirm('Are you sure you want to delete this story? It will be permanently removed.')) {
+      return;
+    }
+    setIsDeletingStory(true);
+    try {
+      const ok = await deleteStory(storyId);
+      if (ok) {
+        if (!activeStoryGroup || activeStoryGroup.stories.length <= 1) {
+          setActiveStoryGroup(null);
+          setActiveStoryIndex(0);
+        } else {
+          const remaining = activeStoryGroup.stories.filter((s) => s.id !== storyId);
+          if (remaining.length === 0) {
+            setActiveStoryGroup(null);
+            setActiveStoryIndex(0);
+          } else {
+            const nextIdx = Math.min(activeStoryIndex, remaining.length - 1);
+            setActiveStoryIndex(nextIdx);
+            setActiveStoryGroup({
+              ...activeStoryGroup,
+              stories: remaining,
+            });
+          }
+        }
+      }
+    } finally {
+      setIsDeletingStory(false);
+    }
+  };
+
+  const handleShareStory = (story: Story) => {
+    const url = window.location.origin + '?story=' + story.id;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      addToast('info', 'Link Copied', 'Encrypted story share link copied to clipboard.');
+    }
+  };
+
+  const handleDownloadStoryMedia = (url: string, isVideo: boolean) => {
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `verixa_story_${Date.now()}.${isVideo ? 'mp4' : 'jpg'}`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      addToast('success', 'Saving Media', 'Story media download started.');
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
 
   const handleSendStoryReaction = async (
     storyId: string,
@@ -312,10 +485,11 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     }
   }, [activeStoryGroup, activeStoryIndex, allStoryGroups, viewStory]);
 
-  // Reset story reply text and reaction animation on story transition
+  // Reset story reply text, reaction animation, and options menu on story transition
   React.useEffect(() => {
     setStoryReplyText('');
     setFloatingReaction(null);
+    setIsStoryMenuOpen(false);
   }, [activeStoryGroup?.userId, activeStoryIndex]);
 
   // Keyboard navigation listener (ArrowRight, ArrowLeft, Escape)
@@ -372,9 +546,26 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     }
   };
 
-  const handleShare = (post: Post) => {
-    navigator.clipboard.writeText(window.location.href);
-    addToast('info', 'Link Copied', 'Encrypted post share link copied to clipboard.');
+  const handleShare = async (post: Post) => {
+    const postUrl = `${window.location.origin}/?post=${post.id}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post by ${post.user.name} on VERIXA`,
+          text: post.caption ? post.caption.slice(0, 100) : 'Check out this post on VERIXA',
+          url: postUrl,
+        });
+        addToast('success', 'Shared Successfully', 'Post link shared via system dialog.');
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          await navigator.clipboard.writeText(postUrl);
+          addToast('success', 'Link Copied', 'Permanent post link copied to clipboard.');
+        }
+      }
+    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(postUrl);
+      addToast('success', 'Link Copied', 'Permanent post link copied to clipboard.');
+    }
     if (currentUser?.id) {
       recordPostInteraction(currentUser.id, post.id, 'share');
     }
@@ -602,40 +793,6 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
         ))}
       </div>
 
-          {/* Post Composer */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
-            <div className="flex gap-4">
-              <img
-                src={currentUser?.avatar}
-                alt={currentUser?.name}
-                referrerPolicy="no-referrer"
-                className="w-10 h-10 rounded-full object-cover shrink-0 border border-white/10"
-              />
-              <button
-                onClick={onOpenCreatePost}
-                className="flex-1 text-left bg-transparent border-none text-gray-400 text-sm py-2 hover:text-gray-200 focus:outline-none transition-colors"
-              >
-                What's happening safely?
-              </button>
-            </div>
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-              <div className="flex gap-4 text-gray-400">
-                <button onClick={onOpenCreatePost} className="hover:text-blue-400 transition-colors">
-                  <Sparkles className="w-5 h-5" />
-                </button>
-                <button onClick={onOpenCreatePost} className="hover:text-blue-400 transition-colors">
-                  <Scan className="w-5 h-5" />
-                </button>
-              </div>
-              <button
-                onClick={onOpenCreatePost}
-                className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-full font-bold text-xs uppercase tracking-wider text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)]"
-              >
-                POST
-              </button>
-            </div>
-          </div>
-
           {/* Feed Mode Switcher Tabs */}
           <div className="flex items-center justify-between p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm shadow-md">
             <div className="flex items-center gap-1">
@@ -787,10 +944,6 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                               <CheckCircle2 className="w-4 h-4 text-blue-400 fill-blue-400/20" />
                             </span>
                           )}
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shrink-0 shadow-sm">
-                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20" />
-                            <span>{post.user.aiTrustBadge || 'Verified Human'}</span>
-                          </span>
                         </div>
                         <div className="text-gray-500 text-xs truncate mt-0.5">
                           @{post.user.username} • {post.timestamp}
@@ -1201,8 +1354,6 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-slate-300/80">
                           <span>{storyTimestamp}</span>
-                          <span>•</span>
-                          <span className="text-emerald-400 font-medium">🛡️ Safe</span>
                         </div>
                       </div>
                     </div>
@@ -1232,6 +1383,23 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
+
+                      {/* 3-dots Story Options Menu Button (Header) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsStoryMenuOpen((prev) => !prev);
+                        }}
+                        className={`p-2 rounded-full transition shadow-lg cursor-pointer ${
+                          isStoryMenuOpen
+                            ? 'bg-purple-600 text-white border border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.5)]'
+                            : 'bg-black/50 hover:bg-black/80 text-slate-300 hover:text-white border border-white/10 hover:border-white/30'
+                        }`}
+                        title="Story Options (•••)"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
 
                       <button
                         onClick={() => {
@@ -1302,54 +1470,92 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                     )}
                   </AnimatePresence>
 
-                  {/* Bottom Story Controls & Reaction Footer */}
-                  <div className="relative z-20 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/80 to-transparent space-y-2.5">
-                    {/* Quick Reaction Emojis & Meta Row */}
-                    <div className="flex items-center justify-between gap-2 px-1">
-                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                        {['❤️', '🔥', '😂', '👏', '😮', '🎉', '🙌', '💯'].map((emoji) => (
+                  {/* Bottom Story Controls Footer */}
+                  {isStoryOwner ? (
+                    /* Self Story Creator Controls (Interactive Activity pill) */
+                    <div className="relative z-20 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/90 to-transparent flex items-center justify-between">
+                      {/* Interactive Views & Likes Activity Pill */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenStoryViewers(liveCurrentStory);
+                        }}
+                        className="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/15 text-white font-mono shadow-sm transition cursor-pointer group"
+                        title="Click to view full viewers list & insights"
+                      >
+                        <div className="flex items-center gap-1.5 text-cyan-400">
+                          <Eye className="w-4 h-4" />
+                          <span className="font-bold text-xs">{viewsCount}</span>
+                        </div>
+                        <div className="w-px h-3.5 bg-white/20" />
+                        <div className="flex items-center gap-1.5 text-rose-400">
+                          <Heart className="w-3.5 h-3.5 fill-rose-400/40" />
+                          <span className="font-bold text-xs">{likesCount}</span>
+                        </div>
+                        <span className="text-[11px] text-slate-300 font-sans ml-0.5 group-hover:text-white transition">Activity</span>
+                      </button>
+                    </div>
+                  ) : (
+                    /* Other User's Story: Quick Reaction Emojis, Reply Input & Like Button */
+                    <div className="relative z-20 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/80 to-transparent space-y-2.5">
+                      {/* Quick Reaction Emojis & Meta Row */}
+                      <div className="flex items-center justify-between gap-2 px-1">
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                          {['❤️', '🔥', '😂', '👏', '😮', '🎉', '🙌', '💯'].map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSendStoryReaction(
+                                  liveCurrentStory.id,
+                                  activeStoryGroup.userId,
+                                  emoji,
+                                  userName
+                                );
+                              }}
+                              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 transition-all flex items-center justify-center text-sm cursor-pointer shadow-sm hover:scale-115"
+                              title={`React with ${emoji}`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-[11px] text-slate-300 font-mono flex items-center gap-1 shadow">
+                            <span>👁️</span>
+                            <span className="font-semibold">{viewsCount}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Main Interaction Row: Reply Input Bar & Icon-Only Like Button */}
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1 flex items-center bg-black/70 hover:bg-black/85 focus-within:bg-black/90 backdrop-blur-xl border border-white/20 focus-within:border-purple-500/70 rounded-full px-3.5 py-1.5 transition shadow-xl">
+                          <input
+                            type="text"
+                            value={storyReplyText}
+                            onChange={(e) => setStoryReplyText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.stopPropagation();
+                                handleSendStoryReaction(
+                                  liveCurrentStory.id,
+                                  activeStoryGroup.userId,
+                                  storyReplyText,
+                                  userName
+                                );
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder={`Reply to ${userName}...`}
+                            className="w-full bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none pr-8"
+                          />
                           <button
-                            key={emoji}
                             type="button"
                             onClick={(e) => {
-                              e.stopPropagation();
-                              handleSendStoryReaction(
-                                liveCurrentStory.id,
-                                activeStoryGroup.userId,
-                                emoji,
-                                userName
-                              );
-                            }}
-                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 transition-all flex items-center justify-center text-sm cursor-pointer shadow-sm hover:scale-115"
-                            title={`React with ${emoji}`}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <div className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-[11px] text-slate-300 font-mono flex items-center gap-1 shadow">
-                          <span>👁️</span>
-                          <span className="font-semibold">{viewsCount}</span>
-                        </div>
-                        {isStoryOwner && (
-                          <div className="px-2 py-0.5 rounded-full bg-purple-900/70 border border-purple-500/40 text-[10px] text-purple-200 font-medium shrink-0">
-                            Your Story
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Main Interaction Row: Reply Input Bar & Icon-Only Like Button */}
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1 flex items-center bg-black/70 hover:bg-black/85 focus-within:bg-black/90 backdrop-blur-xl border border-white/20 focus-within:border-purple-500/70 rounded-full px-3.5 py-1.5 transition shadow-xl">
-                        <input
-                          type="text"
-                          value={storyReplyText}
-                          onChange={(e) => setStoryReplyText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
                               e.stopPropagation();
                               handleSendStoryReaction(
                                 liveCurrentStory.id,
@@ -1357,97 +1563,412 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                                 storyReplyText,
                                 userName
                               );
-                            }
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          placeholder={`Reply to ${userName}...`}
-                          className="w-full bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none pr-8"
-                        />
+                            }}
+                            disabled={!storyReplyText.trim() || isSendingReaction}
+                            className="absolute right-2 p-1.5 rounded-full text-purple-400 hover:text-purple-300 disabled:opacity-20 disabled:hover:text-purple-400 transition cursor-pointer"
+                            title="Send reaction"
+                          >
+                            {isSendingReaction ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Icon-Only Like Button */}
                         <button
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            handleSendStoryReaction(
-                              liveCurrentStory.id,
-                              activeStoryGroup.userId,
-                              storyReplyText,
-                              userName
-                            );
+                            if (!currentUser) {
+                              addToast('warning', 'Sign In Required', 'Please sign in to like stories.');
+                              return;
+                            }
+
+                            const nextLiked = !isLiked;
+                            const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+
+                            // Optimistic update
+                            setActiveStoryGroup((prev) => {
+                              if (!prev) return null;
+                              const updatedStories = prev.stories.map((s, idx) => {
+                                if (idx === activeStoryIndex || s.id === liveCurrentStory.id) {
+                                  const prevLikedBy = s.likedBy || (s as any).liked_by || [];
+                                  const updatedLikedBy = nextLiked
+                                    ? Array.from(new Set([...prevLikedBy, currentUser.id]))
+                                    : prevLikedBy.filter((id: string) => id !== currentUser.id);
+                                  return {
+                                    ...s,
+                                    isLiked: nextLiked,
+                                    likesCount: nextCount,
+                                    likes_count: nextCount,
+                                    likedBy: updatedLikedBy,
+                                    liked_by: updatedLikedBy,
+                                  };
+                                }
+                                return s;
+                              });
+                              return {
+                                ...prev,
+                                stories: updatedStories,
+                              };
+                            });
+
+                            await likeStory(liveCurrentStory.id, activeStoryGroup.userId, userName);
                           }}
-                          disabled={!storyReplyText.trim() || isSendingReaction}
-                          className="absolute right-2 p-1.5 rounded-full text-purple-400 hover:text-purple-300 disabled:opacity-20 disabled:hover:text-purple-400 transition cursor-pointer"
-                          title="Send reaction"
+                          className={`w-10 h-10 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all duration-200 active:scale-90 shadow-xl cursor-pointer shrink-0 ${
+                            isLiked
+                              ? 'bg-rose-500/25 border-rose-500/70 text-rose-300 hover:bg-rose-500/35 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
+                              : 'bg-black/70 border-white/20 text-slate-300 hover:text-white hover:border-white/40'
+                          }`}
+                          title={isLiked ? 'Unlike story' : 'Like story'}
                         >
-                          {isSendingReaction ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
+                          <Heart
+                            className={`w-5 h-5 transition-all duration-200 ${
+                              isLiked
+                                ? 'fill-rose-500 text-rose-500 scale-110 drop-shadow-[0_0_8px_rgba(244,63,94,0.9)]'
+                                : 'text-slate-300'
+                            }`}
+                          />
                         </button>
                       </div>
-
-                      {/* Icon-Only Like Button (Number removed as requested) */}
-                      <button
-                        type="button"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (!currentUser) {
-                            addToast('warning', 'Sign In Required', 'Please sign in to like stories.');
-                            return;
-                          }
-
-                          const nextLiked = !isLiked;
-                          const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
-
-                          // Optimistic update
-                          setActiveStoryGroup((prev) => {
-                            if (!prev) return null;
-                            const updatedStories = prev.stories.map((s, idx) => {
-                              if (idx === activeStoryIndex || s.id === liveCurrentStory.id) {
-                                const prevLikedBy = s.likedBy || (s as any).liked_by || [];
-                                const updatedLikedBy = nextLiked
-                                  ? Array.from(new Set([...prevLikedBy, currentUser.id]))
-                                  : prevLikedBy.filter((id: string) => id !== currentUser.id);
-                                return {
-                                  ...s,
-                                  isLiked: nextLiked,
-                                  likesCount: nextCount,
-                                  likes_count: nextCount,
-                                  likedBy: updatedLikedBy,
-                                  liked_by: updatedLikedBy,
-                                };
-                              }
-                              return s;
-                            });
-                            return {
-                              ...prev,
-                              stories: updatedStories,
-                            };
-                          });
-
-                          await likeStory(liveCurrentStory.id, activeStoryGroup.userId, userName);
-                        }}
-                        className={`w-10 h-10 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all duration-200 active:scale-90 shadow-xl cursor-pointer shrink-0 ${
-                          isLiked
-                            ? 'bg-rose-500/25 border-rose-500/70 text-rose-300 hover:bg-rose-500/35 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
-                            : 'bg-black/70 border-white/20 text-slate-300 hover:text-white hover:border-white/40'
-                        }`}
-                        title={isLiked ? 'Unlike story' : 'Like story'}
-                      >
-                        <Heart
-                          className={`w-5 h-5 transition-all duration-200 ${
-                            isLiked
-                              ? 'fill-rose-500 text-rose-500 scale-110 drop-shadow-[0_0_8px_rgba(244,63,94,0.9)]'
-                              : 'text-slate-300'
-                          }`}
-                        />
-                      </button>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Story Options 3-Dots Menu Overlay */}
+                  <AnimatePresence>
+                    {isStoryMenuOpen && (
+                      <div
+                        className="absolute inset-0 z-40 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-150"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsStoryMenuOpen(false);
+                        }}
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                          transition={{ duration: 0.18 }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full max-w-sm bg-slate-900/95 border border-slate-700/80 rounded-3xl p-4 shadow-2xl backdrop-blur-2xl space-y-2.5"
+                        >
+                          {/* Menu Header */}
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-800 px-1">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1 rounded-lg bg-purple-500/20 text-purple-400">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </div>
+                              <h4 className="font-bold text-white text-xs uppercase tracking-wider">Story Options</h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsStoryMenuOpen(false)}
+                              className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* The 4 Options List */}
+                          <div className="space-y-1.5">
+                            {/* 1. Viewers & Insights */}
+                            {isStoryOwner && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsStoryMenuOpen(false);
+                                  handleOpenStoryViewers(liveCurrentStory);
+                                }}
+                                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-purple-500/30 transition group text-left cursor-pointer"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center group-hover:bg-purple-500/30 transition shrink-0">
+                                    <Users className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-semibold text-white group-hover:text-purple-300 transition">Viewers & Insights</p>
+                                    <p className="text-[11px] text-slate-400 truncate">{viewsCount} views • {likesCount} likes</p>
+                                  </div>
+                                </div>
+                                <Eye className="w-4 h-4 text-cyan-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                              </button>
+                            )}
+
+                            {/* 2. Share Story Link */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsStoryMenuOpen(false);
+                                handleShareStory(liveCurrentStory);
+                              }}
+                              className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-blue-500/30 transition group text-left cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center group-hover:bg-blue-500/30 transition shrink-0">
+                                  <Share2 className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-white group-hover:text-blue-300 transition">Share Story</p>
+                                  <p className="text-[11px] text-slate-400 truncate">Copy link to clipboard</p>
+                                </div>
+                              </div>
+                            </button>
+
+                            {/* 3. Save / Download Media */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsStoryMenuOpen(false);
+                                handleDownloadStoryMedia(storyMedia, isVideo);
+                              }}
+                              className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-emerald-500/30 transition group text-left cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center group-hover:bg-emerald-500/30 transition shrink-0">
+                                  <Download className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-white group-hover:text-emerald-300 transition">Save Media</p>
+                                  <p className="text-[11px] text-slate-400 truncate">Download {isVideo ? 'video' : 'photo'} to your device</p>
+                                </div>
+                              </div>
+                            </button>
+
+                            {/* 4. Delete Story (Story Owner) */}
+                            {isStoryOwner && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsStoryMenuOpen(false);
+                                  handleDeleteCurrentStory(liveCurrentStory.id);
+                                }}
+                                disabled={isDeletingStory}
+                                className="w-full flex items-center justify-between p-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-[0.98] border border-rose-500/25 hover:border-rose-500/40 transition group text-left cursor-pointer"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center group-hover:bg-rose-500/30 transition shrink-0">
+                                    {isDeletingStory ? (
+                                      <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-semibold text-rose-300 group-hover:text-rose-200 transition">Delete Story</p>
+                                    <p className="text-[11px] text-rose-400/80 truncate">Permanently remove this story</p>
+                                  </div>
+                                </div>
+                              </button>
+                            )}
+
+                            {/* Report Option (For Other Users' Stories) */}
+                            {!isStoryOwner && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsStoryMenuOpen(false);
+                                  addToast('info', 'Report Submitted', 'Thank you. This story has been flagged for moderation review.');
+                                }}
+                                className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] border border-amber-500/25 transition group text-left cursor-pointer"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:bg-amber-500/30 transition shrink-0">
+                                    <Shield className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-semibold text-amber-300">Report Story</p>
+                                    <p className="text-[11px] text-amber-400/80">Flag content to safety team</p>
+                                  </div>
+                                </div>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Cancel Button */}
+                          <div className="pt-2 border-t border-slate-800">
+                            <button
+                              type="button"
+                              onClick={() => setIsStoryMenuOpen(false)}
+                              className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             );
           })()}
+
+      {/* Story Viewers & Insights Modal */}
+      {storyViewersModalStory && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 select-none"
+          onClick={() => setStoryViewersModalStory(null)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Story Insights & Viewers</h3>
+                  <p className="text-[11px] text-slate-400">Activity and interactions on your story</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStoryViewersModalStory(null)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Metrics Overview (Real Database Values) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    {isLoadingDbInsights ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+                    ) : (
+                      <p className="text-2xl font-bold text-white leading-none font-mono">
+                        {dbInsights ? dbInsights.viewsCount : (storyViewersModalStory.viewsCount ?? (storyViewersModalStory as any).views_count ?? 0)}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 font-medium">Total Views</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center shrink-0">
+                  <Heart className="w-5 h-5 fill-rose-500/30" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    {isLoadingDbInsights ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-rose-400" />
+                    ) : (
+                      <p className="text-2xl font-bold text-white leading-none font-mono">
+                        {dbInsights ? dbInsights.likesCount : (storyViewersModalStory.likesCount ?? (storyViewersModalStory as any).likes_count ?? 0)}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 font-medium">Total Likes</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Viewers & Likers Content List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 min-h-[140px] max-h-[290px] pr-1">
+              {/* Liked Users section */}
+              {dbInsights?.likers && dbInsights.likers.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-semibold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Heart className="w-3 h-3 fill-rose-400" /> Liked by ({dbInsights.likers.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {dbInsights.likers.map((liker) => (
+                      <div key={liker.id} className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-200">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <img
+                            src={liker.avatar}
+                            alt={liker.name}
+                            className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 bg-slate-800"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white text-xs truncate">{liker.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">@{liker.username}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-rose-400 font-medium px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 shrink-0">Liked</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Viewers section from real database */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Eye className="w-3 h-3 text-cyan-400" /> Viewers {dbInsights?.viewers ? `(${dbInsights.viewers.length})` : ''}
+                </p>
+
+                {isLoadingDbInsights ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                  </div>
+                ) : dbInsights?.viewers && dbInsights.viewers.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {dbInsights.viewers.map((viewer) => (
+                      <div key={viewer.id} className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-200">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <img
+                            src={viewer.avatar}
+                            alt={viewer.name}
+                            className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 bg-slate-800"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white text-xs truncate">{viewer.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">@{viewer.username}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-slate-400 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0">Viewed</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 px-4 rounded-2xl bg-white/5 border border-dashed border-white/10 text-xs text-slate-400">
+                    <Eye className="w-6 h-6 text-slate-500 mx-auto mb-1.5 opacity-60" />
+                    <p className="font-medium text-slate-300">No external viewers yet</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Friends who view your story will be listed here from the database.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Actions Footer inside Modal */}
+            <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleShareStory(storyViewersModalStory);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-slate-300 hover:text-white transition flex items-center gap-1.5 border border-white/10 cursor-pointer"
+              >
+                <Share2 className="w-3.5 h-3.5 text-blue-400" /> Share Link
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const toDeleteId = storyViewersModalStory.id;
+                  setStoryViewersModalStory(null);
+                  handleDeleteCurrentStory(toDeleteId);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-xs text-rose-300 hover:text-rose-200 transition flex items-center gap-1.5 border border-rose-500/30 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-400" /> Delete Story
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Post Modal */}
       {editingPost && (

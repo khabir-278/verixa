@@ -335,24 +335,24 @@ async function runMediaSafetyTests() {
     assert(activeStories.some((s) => s.id === story.id), 'Fresh story visible in active stories list');
 
     // 4.4 Idempotent view tracking
-    const view1 = storyService.recordView(story.id, 'viewer_bob');
+    const view1 = await storyService.recordView(story.id, 'viewer_bob');
     assert(view1.success === true && view1.viewsCount === 1, 'First view increments story viewsCount to 1');
 
-    const view2 = storyService.recordView(story.id, 'viewer_bob'); // Repeat view by same user
+    const view2 = await storyService.recordView(story.id, 'viewer_bob'); // Repeat view by same user
     assert(view2.viewsCount === 1, 'Idempotent: Duplicate view by same user does not increment viewsCount again');
 
-    const view3 = storyService.recordView(story.id, 'viewer_charlie'); // Different user
+    const view3 = await storyService.recordView(story.id, 'viewer_charlie'); // Different user
     assert(view3.viewsCount === 2, 'New user view increments viewsCount to 2');
 
     // 4.5 Story like toggling
-    const like1 = storyService.toggleLike(story.id, 'viewer_bob');
+    const like1 = await storyService.toggleLike(story.id, 'viewer_bob');
     assert(like1.success === true && like1.isLiked === true && like1.likesCount === 1, 'Liking story increments likesCount to 1');
 
-    const like2 = storyService.toggleLike(story.id, 'viewer_bob');
+    const like2 = await storyService.toggleLike(story.id, 'viewer_bob');
     assert(like2.success === true && like2.isLiked === false && like2.likesCount === 0, 'Unliking story decrements likesCount to 0');
 
-    const like3 = storyService.toggleLike(story.id, 'viewer_bob');
-    const like4 = storyService.toggleLike(story.id, 'viewer_charlie');
+    const like3 = await storyService.toggleLike(story.id, 'viewer_bob');
+    const like4 = await storyService.toggleLike(story.id, 'viewer_charlie');
     assert(like4.likesCount === 2, 'Multiple users liking story increments likesCount to 2');
 
     // 4.6 Clean up test story so it never bleeds into live feed

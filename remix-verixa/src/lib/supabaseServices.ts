@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { User, Post, Comment, Notification, ChatMessage, RecommendationExplainability } from '../types';
+import { User, Post, Comment, Notification, ChatMessage, RecommendationExplainability, Reel } from '../types';
 
 // ================= STORAGE HELPERS & SIGNED URL RESOLVER ================= //
 
@@ -140,7 +140,7 @@ export async function saveUserProfile(userData: {
     role: userData.role || 'Verified Member',
     verified: true,
     safety_score: 100,
-    ai_trust_badge: 'Verified Human • 100% Trust',
+    ai_trust_badge: 'Verified Member',
     updated_at: new Date().toISOString(),
   };
 
@@ -165,7 +165,7 @@ export async function saveUserProfile(userData: {
       avatar: finalAvatar,
       bio: row.bio,
       verified: row.verified ?? true,
-      aiTrustBadge: row.ai_trust_badge || 'Verified Human • 100% Trust',
+      aiTrustBadge: row.ai_trust_badge || 'Verified Member',
       safetyScore: row.safety_score ?? 100,
       followersCount: row.followers_count ?? 0,
       followingCount: row.following_count ?? 0,
@@ -187,7 +187,7 @@ export async function saveUserProfile(userData: {
       avatar: safeAvatar,
       bio: userData.bio || 'Safe social media explorer 🛡️',
       verified: true,
-      aiTrustBadge: 'Verified Human • 100% Trust',
+      aiTrustBadge: 'Verified Member',
       safetyScore: 100,
       followersCount: 0,
       followingCount: 0,
@@ -423,7 +423,7 @@ export async function fetchFeedPosts(
           avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
           bio: 'Safe social media explorer 🛡️',
           verified: true,
-          aiTrustBadge: 'Verified Human • 100% Trust',
+          aiTrustBadge: 'Verified Member',
           safetyScore: 100,
           followersCount: 0,
           followingCount: 0,
@@ -541,7 +541,7 @@ export async function fetchFeedPosts(
           avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
           bio: author.bio || 'Safe social media explorer 🛡️',
           verified: author.verified ?? true,
-          aiTrustBadge: author.ai_trust_badge || 'Verified Human • 100% Trust',
+          aiTrustBadge: author.ai_trust_badge || 'Verified Member',
           safetyScore: author.safety_score ?? 100,
           followersCount: 0,
           followingCount: 0,
@@ -568,6 +568,219 @@ export async function fetchFeedPosts(
   } catch (err: any) {
     console.warn('Error fetching feed posts from Supabase:', err.message);
     return [];
+  }
+}
+
+export async function fetchPostById(
+  postId: string,
+  currentUserId?: string
+): Promise<Post | null> {
+  try {
+    const { data: row, error } = await supabase
+      .from('posts')
+      .select(`
+        id,
+        user_id,
+        caption,
+        media_url,
+        media_type,
+        hashtags,
+        likes_count,
+        comments_count,
+        visibility,
+        moderation_status,
+        ai_safety_score,
+        ai_scan_details,
+        created_at,
+        profiles:user_id (
+          id,
+          username,
+          name,
+          avatar,
+          bio,
+          verified,
+          ai_trust_badge,
+          safety_score,
+          role
+        )
+      `)
+      .eq('id', postId)
+      .maybeSingle();
+
+    if (error || !row) return null;
+
+    let isLiked = false;
+    if (currentUserId) {
+      const { data: likeData } = await supabase
+        .from('post_likes')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+      isLiked = Boolean(likeData);
+    }
+
+    const { data: commentsData } = await supabase
+      .from('comments')
+      .select(`
+        id,
+        post_id,
+        text,
+        toxicity_score,
+        moderation_status,
+        created_at,
+        profiles:user_id (
+          id,
+          username,
+          name,
+          avatar,
+          bio,
+          verified,
+          ai_trust_badge,
+          safety_score
+        )
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    const comments: Comment[] = (commentsData || []).map((c: any) => {
+      const author = c.profiles || {};
+      return {
+        id: c.id,
+        postId: c.post_id,
+        user: {
+          id: author.id || c.user_id || 'unknown',
+          username: author.username || 'user',
+          name: author.name || author.username || 'Member',
+          avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+          bio: author.bio || '',
+          verified: author.verified ?? true,
+          aiTrustBadge: author.ai_trust_badge || 'Verified Member',
+          safetyScore: author.safety_score ?? 100,
+          followersCount: 0,
+          followingCount: 0,
+          postsCount: 0,
+          role: 'Member',
+          joinedDate: '',
+        },
+        content: c.text,
+        timestamp: c.created_at ? new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+        toxicityScore: c.toxicity_score || 0,
+        categories: ['Verified Safe'],
+        aiStatus: 'safe',
+        likes: 0,
+      };
+    });
+
+    const author = (row as any).profiles || {};
+    const post: Post = {
+      id: row.id,
+      user: {
+        id: author.id || row.user_id,
+        username: author.username || 'user',
+        name: author.name || author.username || 'VERIXA Member',
+        avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+        bio: author.bio || '',
+        verified: author.verified ?? true,
+        aiTrustBadge: author.ai_trust_badge || 'Verified Member',
+        safetyScore: author.safety_score ?? 100,
+        followersCount: 0,
+        followingCount: 0,
+        postsCount: 0,
+        role: author.role || 'Member',
+        joinedDate: '',
+      },
+      caption: row.caption || '',
+      mediaUrl: row.media_url || undefined,
+      mediaType: row.media_type || 'image',
+      likes: row.likes_count || 0,
+      comments,
+      shares: 0,
+      isLiked,
+      isBookmarked: false,
+      timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+      tags: row.hashtags || ['VERIXA', 'SafeMedia'],
+      aiSafetyScore: row.ai_safety_score || 99,
+      aiScanDetails: row.ai_scan_details || { nsfwScore: 0, violenceScore: 0, fakeConfidence: 0, labels: [], summary: 'Verified safe', safe: true },
+    };
+
+    return await resolvePostSignedUrls(post);
+  } catch (err: any) {
+    console.warn('Error fetching post by id from Supabase:', err.message);
+    return null;
+  }
+}
+
+export async function fetchReelById(
+  reelId: string,
+  currentUserId?: string
+): Promise<Reel | null> {
+  try {
+    const { data: row, error } = await supabase
+      .from('reels')
+      .select(`
+        id,
+        user_id,
+        caption,
+        video_url,
+        audio_title,
+        deepfake_risk,
+        moderation_status,
+        likes_count,
+        comments_count,
+        shares_count,
+        tags,
+        created_at,
+        profiles:user_id (
+          id,
+          username,
+          name,
+          avatar,
+          bio,
+          verified,
+          ai_trust_badge,
+          safety_score
+        )
+      `)
+      .eq('id', reelId)
+      .maybeSingle();
+
+    if (error || !row) return null;
+
+    const author = (row as any).profiles || {};
+    const signedVideo = row.video_url ? await getSignedMediaUrl(row.video_url) : row.video_url;
+    const signedAvatar = author.avatar ? await getSignedMediaUrl(author.avatar) : author.avatar;
+
+    const reel: Reel = {
+      id: row.id,
+      user: {
+        id: author.id || row.user_id,
+        username: author.username || 'user',
+        name: author.name || author.username || 'Creator',
+        avatar: signedAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        bio: author.bio || '',
+        verified: author.verified ?? true,
+        aiTrustBadge: author.ai_trust_badge || 'Verified Creator',
+        safetyScore: author.safety_score ?? 100,
+        followersCount: 0,
+        followingCount: 0,
+        postsCount: 0,
+      },
+      caption: row.caption || '',
+      videoUrl: signedVideo,
+      audioTitle: row.audio_title || 'Original Audio • Verified Clean',
+      likes: row.likes_count || 0,
+      isLiked: false,
+      commentsCount: row.comments_count || 0,
+      sharesCount: row.shares_count || 0,
+      aiTrustBadge: author.ai_trust_badge || 'Verified Reel',
+      deepfakeRisk: row.deepfake_risk || 0,
+      tags: row.tags || ['Reels', 'VERIXA'],
+    };
+    return reel;
+  } catch (err: any) {
+    console.warn('Error fetching reel by id from Supabase:', err.message);
+    return null;
   }
 }
 
@@ -700,7 +913,7 @@ export async function fetchPostLikedUsers(postId: string): Promise<User[]> {
           avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
           bio: u.bio || '',
           verified: Boolean(u.verified),
-          aiTrustBadge: u.aiTrustBadge || 'Verified Human • 100% Trust',
+          aiTrustBadge: u.aiTrustBadge || 'Verified Member',
           safetyScore: u.safetyScore || 98,
           followersCount: u.followersCount || 0,
           followingCount: u.followingCount || 0,
@@ -749,7 +962,7 @@ export async function fetchPostLikedUsers(postId: string): Promise<User[]> {
           `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=6366F1&color=fff&size=256&bold=true`,
         bio: p.bio || '',
         verified: Boolean(p.verified),
-        aiTrustBadge: p.ai_trust_badge || 'Verified Human • 100% Trust',
+        aiTrustBadge: p.ai_trust_badge || 'Verified Member',
         safetyScore: p.safety_score || 98,
         followersCount: p.followers_count || 0,
         followingCount: p.following_count || 0,
@@ -956,6 +1169,189 @@ export async function deleteComment(commentId: string, _userId?: string): Promis
     console.error('Supabase deleteComment error:', error.message);
     throw new Error(`Failed to delete comment: ${error.message}`);
   }
+}
+
+export async function fetchReelComments(reelId: string): Promise<Comment[]> {
+  try {
+    let query = supabase
+      .from('comments')
+      .select(`
+        id,
+        post_id,
+        text,
+        toxicity_score,
+        moderation_status,
+        created_at,
+        profiles:user_id (
+          id,
+          username,
+          name,
+          avatar,
+          bio,
+          verified,
+          ai_trust_badge,
+          safety_score
+        )
+      `);
+
+    // Try query matching either post_id = reelId or reel_id = reelId
+    try {
+      const { data, error } = await query.or(`post_id.eq.${reelId},reel_id.eq.${reelId}`).order('created_at', { ascending: true });
+      if (!error && data) {
+        return data.map((row: any) => {
+          const author = row.profiles || {};
+          return {
+            id: row.id,
+            postId: reelId,
+            user: {
+              id: author.id || row.user_id,
+              username: author.username || 'user',
+              name: author.name || author.username || 'Member',
+              avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+              bio: author.bio || '',
+              verified: author.verified ?? true,
+              aiTrustBadge: author.ai_trust_badge || 'Verified Member',
+              safetyScore: author.safety_score ?? 100,
+              followersCount: 0,
+              followingCount: 0,
+              postsCount: 0,
+              role: 'Member',
+              joinedDate: '',
+            },
+            content: row.text,
+            timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+            toxicityScore: row.toxicity_score || 0,
+            categories: ['SAFE_CONTENT'],
+            aiStatus: 'safe',
+            likes: 0,
+          };
+        });
+      }
+    } catch {}
+
+    // Fallback simple query
+    const { data: fallbackData } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('post_id', reelId)
+      .order('created_at', { ascending: true });
+
+    if (fallbackData) {
+      return fallbackData.map((row: any) => ({
+        id: row.id,
+        postId: reelId,
+        user: {
+          id: row.user_id,
+          username: 'user',
+          name: 'Member',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+          bio: '',
+          verified: true,
+          aiTrustBadge: 'Verified Member',
+          safetyScore: 100,
+          followersCount: 0,
+          followingCount: 0,
+          postsCount: 0,
+          role: 'Member',
+          joinedDate: '',
+        },
+        content: row.text,
+        timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+        toxicityScore: row.toxicity_score || 0,
+        categories: ['SAFE_CONTENT'],
+        aiStatus: 'safe',
+        likes: 0,
+      }));
+    }
+    return [];
+  } catch (err: any) {
+    console.warn('Error fetching reel comments:', err.message);
+    return [];
+  }
+}
+
+export async function addReelComment(
+  reelId: string,
+  userId: string,
+  username: string,
+  userPhotoURL: string,
+  text: string,
+  toxicityScore: number = 0
+): Promise<string> {
+  const commentId = crypto.randomUUID();
+  try {
+    // Attempt insert into comments
+    const { error: insertErr } = await supabase.from('comments').insert({
+      id: commentId,
+      post_id: reelId,
+      user_id: userId,
+      text,
+      toxicity_score: toxicityScore,
+      moderation_status: 'approved',
+      created_at: new Date().toISOString(),
+    });
+
+    if (insertErr) {
+      // If post_id FK failed, attempt with reel_id
+      const { error: reelErr } = await supabase.from('comments').insert({
+        id: commentId,
+        user_id: userId,
+        text,
+        toxicity_score: toxicityScore,
+        moderation_status: 'approved',
+        created_at: new Date().toISOString(),
+        reel_id: reelId,
+      });
+      if (reelErr) {
+        console.warn('Notice inserting reel comment to Supabase:', reelErr.message);
+      }
+    }
+
+    // Atomically increment reel comments_count in Supabase reels table if available
+    try {
+      const { data: curReel } = await supabase.from('reels').select('comments_count').eq('id', reelId).maybeSingle();
+      if (curReel) {
+        await supabase.from('reels').update({
+          comments_count: (curReel.comments_count || 0) + 1,
+        }).eq('id', reelId);
+      }
+    } catch {}
+
+    return commentId;
+  } catch (err: any) {
+    console.error('Error inserting reel comment:', err);
+    throw err;
+  }
+}
+
+export function subscribeReelComments(
+  reelId: string,
+  callback: (comments: Comment[]) => void
+): () => void {
+  let isSubscribed = true;
+
+  const load = async () => {
+    const comments = await fetchReelComments(reelId);
+    if (isSubscribed) callback(comments);
+  };
+
+  load();
+
+  const channel = supabase
+    .channel(`reel_comments_${reelId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'comments' },
+      () => {
+        load();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    isSubscribed = false;
+    supabase.removeChannel(channel);
+  };
 }
 
 // ================= FOLLOWS ================= //
@@ -1498,27 +1894,108 @@ export async function sendMessage(
   senderId: string,
   receiverId: string,
   text: string,
-  mediaUrl?: string
+  mediaUrl?: string,
+  isVoice?: boolean,
+  voiceDuration?: number | string
 ): Promise<string> {
   const convId = [senderId, receiverId].sort().join('_');
   const messageId = crypto.randomUUID();
 
-  const { error } = await supabase.from('messages').insert({
+  // Try with modern columns first
+  const fullPayload: any = {
     id: messageId,
     conversation_id: convId,
     sender_id: senderId,
     receiver_id: receiverId,
-    text,
+    text: text || (isVoice ? '🎙️ Voice message' : ''),
     media_url: mediaUrl || null,
     is_ai_verified: true,
+    is_voice: !!isVoice,
+    voice_duration: voiceDuration ? (typeof voiceDuration === 'string' ? parseFloat(voiceDuration) : voiceDuration) : null,
+    status: 'sent',
     created_at: new Date().toISOString(),
-  });
+  };
+
+  const { error } = await supabase.from('messages').insert(fullPayload);
 
   if (error) {
+    // If optional columns do not exist yet in DB schema, fallback to basic insert
+    if (error.message && (error.message.includes('column') || error.message.includes('schema') || error.message.includes('status'))) {
+      const basicPayload: any = {
+        id: messageId,
+        conversation_id: convId,
+        sender_id: senderId,
+        receiver_id: receiverId,
+        text: text || (isVoice ? '🎙️ Voice message' : ''),
+        media_url: mediaUrl || null,
+        is_ai_verified: true,
+        created_at: new Date().toISOString(),
+      };
+      const { error: fallbackError } = await supabase.from('messages').insert(basicPayload);
+      if (fallbackError) {
+        console.error('Supabase sendMessage fallback error:', fallbackError.message);
+        throw new Error(`Failed to send message: ${fallbackError.message}`);
+      }
+      return messageId;
+    }
     console.error('Supabase sendMessage error:', error.message);
     throw new Error(`Failed to send message: ${error.message}`);
   }
   return messageId;
+}
+
+export async function markMessagesAsDelivered(recipientId: string): Promise<void> {
+  try {
+    await supabase
+      .from('messages')
+      .update({
+        status: 'delivered',
+        delivered_at: new Date().toISOString(),
+      })
+      .eq('receiver_id', recipientId)
+      .eq('status', 'sent');
+  } catch (err) {
+    // Graceful ignore if column does not exist
+  }
+}
+
+export async function markConversationAsRead(currentUserId: string, partnerId: string): Promise<void> {
+  try {
+    const convId = [currentUserId, partnerId].sort().join('_');
+    await supabase
+      .from('messages')
+      .update({
+        status: 'read',
+        read_at: new Date().toISOString(),
+      })
+      .eq('conversation_id', convId)
+      .eq('receiver_id', currentUserId)
+      .neq('status', 'read');
+  } catch (err) {
+    // Graceful ignore if column does not exist
+  }
+}
+
+export async function uploadVoiceNote(
+  userId: string,
+  audioBlob: Blob
+): Promise<{ path: string; signedUrl: string }> {
+  const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
+  const filePath = `${userId}/audio/voice_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('app-files')
+    .upload(filePath, audioBlob, {
+      contentType: audioBlob.type || 'audio/webm',
+      upsert: true,
+    });
+
+  if (error) {
+    console.error('Supabase uploadVoiceNote error:', error.message);
+    throw new Error(`Failed to upload voice note: ${error.message}`);
+  }
+
+  const signedUrl = await getSignedMediaUrl(data.path);
+  return { path: data.path, signedUrl: signedUrl || data.path };
 }
 
 export function subscribeMessages(
@@ -1538,16 +2015,36 @@ export function subscribeMessages(
         .order('created_at', { ascending: true });
 
       if (data && isSubscribed) {
-        const msgs: ChatMessage[] = data.map((row) => ({
-          id: row.id,
-          senderId: row.sender_id,
-          receiverId: row.receiver_id,
-          text: row.text,
-          timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-          isAIVerified: row.is_ai_verified ?? true,
-          mediaUrl: row.media_url || undefined,
-        }));
-        callback(msgs);
+        // Asynchronously resolve any signed media URLs
+        const mappedPromises = data.map(async (row) => {
+          let resolvedMedia = row.media_url || undefined;
+          if (resolvedMedia && !resolvedMedia.startsWith('http') && !resolvedMedia.startsWith('blob:') && !resolvedMedia.startsWith('data:')) {
+            resolvedMedia = await getSignedMediaUrl(resolvedMedia);
+          }
+          const msg: ChatMessage = {
+            id: row.id,
+            senderId: row.sender_id,
+            receiverId: row.receiver_id,
+            text: row.text,
+            timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+            isAIVerified: row.is_ai_verified ?? true,
+            mediaUrl: resolvedMedia,
+            isVoice: row.is_voice ?? (row.media_url?.includes('/audio/') || false),
+            voiceDuration: row.voice_duration || undefined,
+            status: (row.status as any) || 'sent',
+            delivered_at: row.delivered_at || undefined,
+            read_at: row.read_at || undefined,
+            created_at: row.created_at || undefined,
+          };
+          return msg;
+        });
+
+        const msgs = await Promise.all(mappedPromises);
+        if (isSubscribed) {
+          callback(msgs);
+          // Mark conversation as read since user is viewing it
+          markConversationAsRead(userId, otherUserId);
+        }
       }
     } catch (err: any) {
       console.warn('Realtime messages fetch warning:', err.message);
@@ -1589,9 +2086,13 @@ export function subscribeIncomingMessages(
         table: 'messages',
         filter: `receiver_id=eq.${userId}`,
       },
-      (payload: any) => {
+      async (payload: any) => {
         if (!isSubscribed || !payload?.new) return;
         const row = payload.new;
+        let resolvedMedia = row.media_url || undefined;
+        if (resolvedMedia && !resolvedMedia.startsWith('http') && !resolvedMedia.startsWith('blob:') && !resolvedMedia.startsWith('data:')) {
+          resolvedMedia = await getSignedMediaUrl(resolvedMedia);
+        }
         const msg: ChatMessage = {
           id: row.id,
           senderId: row.sender_id,
@@ -1601,9 +2102,17 @@ export function subscribeIncomingMessages(
             ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : 'Just now',
           isAIVerified: row.is_ai_verified ?? true,
-          mediaUrl: row.media_url || undefined,
+          mediaUrl: resolvedMedia,
+          isVoice: row.is_voice ?? (row.media_url?.includes('/audio/') || false),
+          voiceDuration: row.voice_duration || undefined,
+          status: (row.status as any) || 'sent',
+          delivered_at: row.delivered_at || undefined,
+          read_at: row.read_at || undefined,
+          created_at: row.created_at || undefined,
         };
         onNewMessage(msg);
+        // Mark message as delivered
+        markMessagesAsDelivered(userId);
       }
     )
     .subscribe();
@@ -1642,22 +2151,31 @@ export async function getUserConversationPartners(userId: string): Promise<User[
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('sender_id, receiver_id')
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+      .select('sender_id, receiver_id, created_at')
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
 
     if (error || !data) return [];
-    const partnerIds = new Set<string>();
+
+    // Track most recent interaction timestamp per partner
+    const partnerLastMessageTime = new Map<string, number>();
     data.forEach((row: any) => {
-      if (row.sender_id && row.sender_id !== userId) partnerIds.add(row.sender_id);
-      if (row.receiver_id && row.receiver_id !== userId) partnerIds.add(row.receiver_id);
+      const partnerId = row.sender_id === userId ? row.receiver_id : row.sender_id;
+      if (partnerId) {
+        const time = row.created_at ? new Date(row.created_at).getTime() : 0;
+        if (!partnerLastMessageTime.has(partnerId) || time > partnerLastMessageTime.get(partnerId)!) {
+          partnerLastMessageTime.set(partnerId, time);
+        }
+      }
     });
 
-    if (partnerIds.size === 0) return [];
+    const partnerIds = Array.from(partnerLastMessageTime.keys());
+    if (partnerIds.length === 0) return [];
 
     const { data: profiles, error: profError } = await supabase
       .from('profiles')
       .select('*')
-      .in('id', Array.from(partnerIds));
+      .in('id', partnerIds);
 
     if (profError || !profiles) return [];
     const mapped: User[] = profiles.map((row: any) => ({
@@ -1667,20 +2185,29 @@ export async function getUserConversationPartners(userId: string): Promise<User[
       avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
       bio: row.bio || '',
       verified: row.verified ?? true,
-      aiTrustBadge: row.ai_trust_badge || 'Verified Human',
+      aiTrustBadge: row.ai_trust_badge || 'Verified Member',
       safetyScore: row.safety_score ?? 100,
       followersCount: row.followers_count ?? 0,
       followingCount: row.following_count ?? 0,
       postsCount: row.posts_count ?? 0,
       role: row.role || 'Member',
-      joinedDate: '',
+      joinedDate: row.created_at || '',
     }));
+
+    // Sort partners by latest message descending
+    mapped.sort((a, b) => {
+      const timeA = partnerLastMessageTime.get(a.id) || 0;
+      const timeB = partnerLastMessageTime.get(b.id) || 0;
+      return timeB - timeA;
+    });
+
     return await Promise.all(mapped.map((u) => resolveUserProfileSignedUrls(u)));
   } catch (err) {
-    console.warn('Error fetching conversation partners:', err);
+    console.warn('Notice loading conversation partners:', err);
     return [];
   }
 }
+
 
 export async function getAllProfiles(excludeUserId?: string): Promise<User[]> {
   try {
@@ -2238,7 +2765,7 @@ export async function fetchPersonalizedFeed(
               avatar: p.author_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
               bio: 'Verified Member',
               verified: true,
-              aiTrustBadge: 'Verified Human • 100% Trust',
+              aiTrustBadge: 'Verified Member',
               safetyScore: p.author_safety_score ?? 100,
               followersCount: 0,
               followingCount: 0,
@@ -2433,7 +2960,7 @@ export async function toggleStoryLike(
     }
 
     if (shouldLike) {
-      await supabase.from('story_likes').upsert(
+      const { error } = await supabase.from('story_likes').upsert(
         {
           story_id: storyId,
           user_id: userId,
@@ -2441,17 +2968,234 @@ export async function toggleStoryLike(
         },
         { onConflict: 'story_id,user_id' }
       );
+      if (error) {
+        await fetch(`/api/stories/${storyId}/like`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        });
+      }
     } else {
-      await supabase
+      const { error } = await supabase
         .from('story_likes')
         .delete()
         .eq('story_id', storyId)
         .eq('user_id', userId);
+      if (error) {
+        await fetch(`/api/stories/${storyId}/like`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        });
+      }
     }
 
     return { success: true, isLiked: shouldLike };
   } catch (err: any) {
     console.warn('Notice syncing story like with Supabase:', err?.message || err);
+    try {
+      await fetch(`/api/stories/${storyId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+    } catch {}
     return { success: true, isLiked: targetLiked ?? true };
   }
 }
+
+/**
+ * Records a story view in Supabase database idempotently
+ */
+export async function recordStoryViewInDatabase(
+  storyId: string,
+  viewerUserId: string
+): Promise<number> {
+  if (!storyId || !viewerUserId) return 0;
+  try {
+    const { data } = await supabase
+      .from('stories')
+      .select('views_count, viewed_by')
+      .eq('id', storyId)
+      .maybeSingle();
+
+    if (data) {
+      const list: string[] = Array.isArray(data.viewed_by) ? data.viewed_by : [];
+      if (!list.includes(viewerUserId)) {
+        const nextList = [...list, viewerUserId];
+        const nextCount = (data.views_count || 0) + 1;
+        await supabase
+          .from('stories')
+          .update({
+            views_count: nextCount,
+            viewed_by: nextList,
+          })
+          .eq('id', storyId);
+        return nextCount;
+      }
+      return data.views_count || list.length;
+    }
+  } catch (err) {
+    console.warn('Notice recording story view in Supabase:', err);
+  }
+  return 0;
+}
+
+/**
+ * Fetches real-time story insights (views_count, likes_count, viewed_by, liked_by) from database
+ */
+export async function fetchStoryInsightsFromDatabase(storyId: string): Promise<{
+  viewsCount: number;
+  likesCount: number;
+  viewedBy: string[];
+  likedBy: string[];
+  viewers: Array<{ id: string; name: string; username: string; avatar: string }>;
+  likers: Array<{ id: string; name: string; username: string; avatar: string }>;
+}> {
+  // 1. Try querying Supabase directly for live database values
+  try {
+    const { data: storyData } = await supabase
+      .from('stories')
+      .select('views_count, viewed_by')
+      .eq('id', storyId)
+      .maybeSingle();
+
+    const { data: likesRows, count: likesCountFromTable } = await supabase
+      .from('story_likes')
+      .select('user_id', { count: 'exact' })
+      .eq('story_id', storyId);
+
+    if (storyData || likesRows) {
+      const viewedBy: string[] = Array.isArray(storyData?.viewed_by) ? storyData.viewed_by : [];
+      const likedBy: string[] = likesRows ? likesRows.map((r: any) => r.user_id) : [];
+      const likesCount = likesCountFromTable ?? likedBy.length;
+      const viewsCount = storyData?.views_count ?? viewedBy.length;
+
+      // Fetch profiles for users who viewed or liked
+      const userIdsToFetch = Array.from(new Set([...viewedBy, ...likedBy].filter(Boolean)));
+      let profilesMap: Record<string, any> = {};
+      if (userIdsToFetch.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, name, username, avatar_url')
+          .in('id', userIdsToFetch);
+        if (profiles) {
+          profiles.forEach((p: any) => {
+            profilesMap[p.id] = {
+              id: p.id,
+              name: p.name || p.username || 'User',
+              username: p.username || 'user',
+              avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
+            };
+          });
+        }
+      }
+
+      const viewers = viewedBy.map((uid) => profilesMap[uid] || {
+        id: uid,
+        name: `User ${uid.slice(0, 6)}`,
+        username: `user_${uid.slice(0, 6)}`,
+        avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true`,
+      });
+
+      const likers = likedBy.map((uid) => profilesMap[uid] || {
+        id: uid,
+        name: `User ${uid.slice(0, 6)}`,
+        username: `user_${uid.slice(0, 6)}`,
+        avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true`,
+      });
+
+      return {
+        viewsCount,
+        likesCount,
+        viewedBy,
+        likedBy,
+        viewers,
+        likers,
+      };
+    }
+  } catch (err) {
+    console.warn('Notice querying Supabase stories table:', err);
+  }
+
+  // 2. Query server endpoint as authoritative database fallback
+  try {
+    const res = await fetch(`/api/stories/${storyId}/insights`);
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        viewsCount: data.viewsCount || 0,
+        likesCount: data.likesCount || 0,
+        viewedBy: data.viewedBy || [],
+        likedBy: data.likedBy || [],
+        viewers: data.viewers || [],
+        likers: data.likers || [],
+      };
+    }
+  } catch (err) {
+    console.warn('Notice querying story insights API:', err);
+  }
+
+  return {
+    viewsCount: 0,
+    likesCount: 0,
+    viewedBy: [],
+    likedBy: [],
+    viewers: [],
+    likers: [],
+  };
+}
+
+/**
+ * Subscribes to real-time changes on a story's views and likes
+ * Listens on both 'stories' table and 'story_likes' table.
+ */
+export function subscribeStoryInsightsRealtime(
+  storyId: string,
+  onUpdate: (data: {
+    viewsCount: number;
+    likesCount: number;
+    viewedBy: string[];
+    likedBy: string[];
+    viewers: Array<{ id: string; name: string; username: string; avatar: string }>;
+    likers: Array<{ id: string; name: string; username: string; avatar: string }>;
+  }) => void
+): () => void {
+  // Fetch initial live insights immediately
+  fetchStoryInsightsFromDatabase(storyId).then(onUpdate).catch(() => {});
+
+  const channel = supabase
+    .channel(`story_realtime_${storyId}_${Math.random().toString(36).substring(2, 9)}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'stories',
+        filter: `id=eq.${storyId}`,
+      },
+      async () => {
+        const fresh = await fetchStoryInsightsFromDatabase(storyId);
+        onUpdate(fresh);
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'story_likes',
+        filter: `story_id=eq.${storyId}`,
+      },
+      async () => {
+        const fresh = await fetchStoryInsightsFromDatabase(storyId);
+        onUpdate(fresh);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+

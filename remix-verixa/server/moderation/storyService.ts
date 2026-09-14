@@ -375,100 +375,145 @@ export class StoryService {
   }
 
   /**
-   * Records a user view on a story idempotently.
+   * Gets a story by ID.
    */
-  recordView(storyId: string, viewerUserId: string): { success: boolean; viewsCount: number } {
-    const story = storiesMemoryBuffer.find((s) => s.id === storyId);
-    if (!story) {
-      return { success: false, viewsCount: 0 };
-    }
-
-    if (!Array.isArray(story.viewed_by)) {
-      story.viewed_by = [];
-    }
-
-    if (!story.viewed_by.includes(viewerUserId)) {
-      story.viewed_by.push(viewerUserId);
-      story.views_count = story.viewed_by.length;
-      story.viewsCount = story.views_count;
-      saveStoriesToFile();
-
-      // Sync with Supabase asynchronously
-      const sb = getServerSupabase();
-      if (sb) {
-        Promise.resolve(sb.rpc('record_story_view', { p_story_id: storyId })).catch(() => {});
-      }
-    }
-
-    return { success: true, viewsCount: story.views_count };
+  getStoryById(storyId: string): StoryRecord | undefined {
+    return storiesMemoryBuffer.find((s) => s.id === storyId);
   }
 
   /**
-   * Toggles a like on a story by a user.
+   * Records a user view on a story idempotently.
    */
-  toggleLike(storyId: string, userId: string): { success: boolean; isLiked: boolean; likesCount: number; likedBy: string[] } {
-    const story = storiesMemoryBuffer.find((s) => s.id === storyId);
-    if (!story) {
-      return { success: false, isLiked: false, likesCount: 0, likedBy: [] };
-    }
-
-    if (!Array.isArray(story.liked_by)) {
-      story.liked_by = [];
-    }
-    if (!Array.isArray(story.likedBy)) {
-      story.likedBy = story.liked_by;
-    }
-
-    const idx = story.liked_by.indexOf(userId);
-    let isLiked = false;
-    if (idx >= 0) {
-      story.liked_by.splice(idx, 1);
-      isLiked = false;
-    } else {
-      story.liked_by.push(userId);
-      isLiked = true;
-    }
-
-    story.likedBy = story.liked_by;
-    story.likes_count = story.liked_by.length;
-    story.likesCount = story.likes_count;
-    saveStoriesToFile();
-
-    // Async sync with Supabase
+  async recordView(storyId: string, viewerUserId: string): Promise<{ success: boolean; viewsCount: number }> {
+    let viewsCount = 0;
     const sb = getServerSupabase();
+
     if (sb) {
-      (async () => {
-        try {
-          if (isLiked) {
-            await sb.from('story_likes').upsert(
-              {
-                story_id: storyId,
-                user_id: userId,
-                created_at: new Date().toISOString(),
-              },
-              { onConflict: 'story_id,user_id' }
-            );
+      try {
+        const { data: dbStory } = await sb
+          .from('stories')
+          .select('views_count, viewed_by')
+          .eq('id', storyId)
+          .maybeSingle();
+
+        if (dbStory) {
+          const viewedBy: string[] = Array.isArray(dbStory.viewed_by) ? dbStory.viewed_by : [];
+          if (!viewedBy.includes(viewerUserId)) {
+            viewedBy.push(viewerUserId);
+            viewsCount = (dbStory.views_count || 0) + 1;
+            await sb.from('stories').update({
+              views_count: viewsCount,
+              viewed_by: viewedBy,
+            }).eq('id', storyId);
           } else {
-            await sb.from('story_likes').delete().match({
+            viewsCount = dbStory.views_count ?? viewedBy.length;
+          }
+        }
+      } catch (err) {
+        console.warn('Notice recording view in Supabase:', err);
+      }
+    }
+
+    const story = storiesMemoryBuffer.find((s) => s.id === storyId);
+    if (story) {
+      if (!Array.isArray(story.viewed_by)) {
+        story.viewed_by = [];
+      }
+      if (!story.viewed_by.includes(viewerUserId)) {
+        story.viewed_by.push(viewerUserId);
+      }
+      story.views_count = Math.max(viewsCount, story.viewed_by.length);
+      story.viewsCount = story.views_count;
+      saveStoriesToFile();
+      viewsCount = story.views_count;
+    }
+
+    return { success: true, viewsCount: viewsCount || 1 };
+  }
+
+  /**
+   * Toggles a like on a story by a user with database sync.
+   */
+  async toggleLike(storyId: string, userId: string): Promise<{ success: boolean; isLiked: boolean; likesCount: number; likedBy: string[] }> {
+    const story = storiesMemoryBuffer.find((s) => s.id === storyId);
+    let isLiked = false;
+    let likesCount = 0;
+    let likedBy: string[] = [];
+
+    // 1. Maintain memory buffer state first
+    if (story) {
+      if (!Array.isArray(story.liked_by)) {
+        story.liked_by = [];
+      }
+      const idx = story.liked_by.indexOf(userId);
+      if (idx >= 0) {
+        story.liked_by.splice(idx, 1);
+        isLiked = false;
+      } else {
+        story.liked_by.push(userId);
+        isLiked = true;
+      }
+      story.likes_count = story.liked_by.length;
+      story.likesCount = story.likes_count;
+      story.likedBy = story.liked_by;
+      likesCount = story.likes_count;
+      likedBy = [...story.liked_by];
+      saveStoriesToFile();
+    }
+
+    // 2. Sync with Supabase if user_id is a valid UUID
+    const sb = getServerSupabase();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
+    if (sb && isUuid) {
+      try {
+        const { data: existingLike } = await sb
+          .from('story_likes')
+          .select('id')
+          .eq('story_id', storyId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (existingLike) {
+          await sb.from('story_likes').delete().eq('story_id', storyId).eq('user_id', userId);
+          isLiked = false;
+        } else {
+          await sb.from('story_likes').upsert(
+            {
               story_id: storyId,
               user_id: userId,
-            });
-          }
-          await sb.from('stories').update({
-            likes_count: story.likes_count,
-            liked_by: story.liked_by,
-          }).eq('id', storyId);
-        } catch {
-          // Non-blocking sync fallback
+              created_at: new Date().toISOString(),
+            },
+            { onConflict: 'story_id,user_id' }
+          );
+          isLiked = true;
         }
-      })();
+
+        const { data: allLikes, count } = await sb
+          .from('story_likes')
+          .select('user_id', { count: 'exact' })
+          .eq('story_id', storyId);
+
+        likesCount = count ?? (allLikes?.length || 0);
+        likedBy = allLikes ? allLikes.map((l: any) => l.user_id) : [];
+
+        if (story) {
+          story.likes_count = likesCount;
+          story.likesCount = likesCount;
+          story.liked_by = likedBy;
+          story.likedBy = likedBy;
+          saveStoriesToFile();
+        }
+      } catch (err) {
+        console.warn('Notice syncing like with Supabase story_likes:', err);
+      }
     }
 
     return {
       success: true,
       isLiked,
-      likesCount: story.likes_count,
-      likedBy: story.liked_by,
+      likesCount,
+      likedBy,
     };
   }
 }

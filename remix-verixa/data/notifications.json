@@ -1,5 +1,45 @@
 [
   {
+    "id": "notif_1789403224416_eb4bb119",
+    "recipient_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your reel: \"😂😂\"",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-14T16:27:04.416Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1789146884577_5de1fa42",
+    "recipient_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "sender_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "type": "like",
+    "message": "liked your story",
+    "post_id": "a8e20931-a19f-4c70-a788-7ac7a9df2372",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-11T17:14:44.580Z",
+    "sender": {
+      "id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+      "username": "jashu_2426",
+      "name": "jashu",
+      "avatar": "https://ui-avatars.com/api/?name=jashu&background=4285F4&color=fff&size=256&bold=true",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
     "id": "notif_1788979921493_8fecf39c",
     "recipient_id": "0faefab3-4c20-4222-afec-6a7cd96ca9a3",
     "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",

@@ -2,24 +2,125 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Send,
-  Image as ImageIcon,
   Mic,
-  Smile,
   ShieldCheck,
-  ShieldAlert,
+  Check,
   CheckCheck,
-  Circle,
   PhoneCall,
   Video,
   MessageSquare,
   Users,
   ArrowLeft,
+  Play,
+  Pause,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
-import { User } from '../types';
+import { User, ChatMessage } from '../types';
 import {
   getUserConversationPartners,
   getAllProfiles,
+  uploadVoiceNote,
 } from '../lib/supabaseServices';
+
+interface ChatVoicePlayerProps {
+  url: string;
+  duration?: number | string;
+  isMe?: boolean;
+}
+
+const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }) => {
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [totalDuration, setTotalDuration] = useState<number>(() => {
+    if (!duration) return 0;
+    return typeof duration === 'string' ? parseFloat(duration) || 0 : duration;
+  });
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch((e) => console.warn('Audio play error:', e));
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current && (!totalDuration || isNaN(totalDuration))) {
+      setTotalDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || secs < 0) return '0:00';
+    const mins = Math.floor(secs / 60);
+    const remainingSecs = Math.floor(secs % 60);
+    return `${mins}:${remainingSecs.toString().padStart(2, '0')}`;
+  };
+
+  const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-3 py-1 px-1 min-w-[200px] sm:min-w-[240px]">
+      <audio
+        ref={audioRef}
+        src={url}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+      />
+      <button
+        type="button"
+        onClick={togglePlay}
+        className={`w-8 h-8 rounded-full flex items-center justify-center transition shadow shrink-0 cursor-pointer ${
+          isMe
+            ? 'bg-white text-indigo-700 hover:bg-slate-100'
+            : 'bg-purple-600 text-white hover:bg-purple-500'
+        }`}
+        title={isPlaying ? 'Pause' : 'Play voice note'}
+      >
+        {isPlaying ? (
+          <Pause className="w-3.5 h-3.5 fill-current" />
+        ) : (
+          <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+        )}
+      </button>
+
+      <div className="flex-1 space-y-1">
+        {/* Waveform / Progress bar */}
+        <div className="w-full bg-black/30 h-2 rounded-full overflow-hidden relative">
+          <div
+            className={`h-full rounded-full transition-all duration-150 ${
+              isMe ? 'bg-white' : 'bg-purple-400'
+            }`}
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-[10px] opacity-85 font-mono">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(totalDuration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const MessagesPage: React.FC = () => {
   const {
@@ -32,11 +133,23 @@ export const MessagesPage: React.FC = () => {
     unreadChatSenderIds,
     unreadChatSenders,
     markChatAsRead,
+    openUserProfile,
+    startCall,
+    isUserOnline,
+    addToast,
   } = useApp();
 
   const [chatInput, setChatInput] = useState('');
   const [supabaseUsers, setSupabaseUsers] = useState<User[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState<boolean>(true);
+
+  // Voice Recording state
+  const [isRecordingVoice, setIsRecordingVoice] = useState<boolean>(false);
+  const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
+  const [isUploadingVoice, setIsUploadingVoice] = useState<boolean>(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -44,7 +157,7 @@ export const MessagesPage: React.FC = () => {
       setIsLoadingContacts(true);
       try {
         if (currentUser?.id) {
-          // First try to load conversation partners
+          // Load conversation partners sorted by latest message
           const partners = await getUserConversationPartners(currentUser.id);
           // Also load all other community profiles
           const allProfiles = await getAllProfiles(currentUser.id);
@@ -68,13 +181,11 @@ export const MessagesPage: React.FC = () => {
 
           if (isMounted) {
             setSupabaseUsers(combined);
-            // Do NOT auto-open: chat only opens when user explicitly clicks/opens it
           }
         } else {
           const allProfiles = await getAllProfiles();
           if (isMounted) {
             setSupabaseUsers(allProfiles);
-            // Do NOT auto-open: chat only opens when user explicitly clicks/opens it
           }
         }
       } catch (err) {
@@ -104,8 +215,96 @@ export const MessagesPage: React.FC = () => {
     setChatInput('');
   };
 
-  const handleVoiceMessage = () => {
-    sendMessage('🎙️ Voice message (0:14) - Verified clean audio frequency.');
+  // --- VOICE RECORDING HANDLERS ---
+
+  const startVoiceRecording = async () => {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        addToast('error', 'Unsupported', 'Voice recording is not supported on this browser.');
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.start(100);
+      setIsRecordingVoice(true);
+      setRecordingSeconds(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err: any) {
+      addToast(
+        'error',
+        'Microphone Permission Denied',
+        'Please allow microphone access in your browser settings to record voice messages.'
+      );
+    }
+  };
+
+  const cancelVoiceRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    if (mediaRecorderRef.current) {
+      try {
+        mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        // ignore
+      }
+      mediaRecorderRef.current = null;
+    }
+    audioChunksRef.current = [];
+    setIsRecordingVoice(false);
+    setRecordingSeconds(0);
+  };
+
+  const sendVoiceRecording = async () => {
+    if (!mediaRecorderRef.current || !currentUser?.id) return;
+
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+
+    const duration = recordingSeconds;
+    setIsUploadingVoice(true);
+
+    mediaRecorderRef.current.onstop = async () => {
+      try {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mediaRecorderRef.current?.mimeType || 'audio/webm',
+        });
+        audioChunksRef.current = [];
+
+        // Upload to Supabase Storage bucket
+        const { signedUrl, path } = await uploadVoiceNote(currentUser.id, audioBlob);
+        await sendMessage('', signedUrl || path, true, duration);
+      } catch (err: any) {
+        addToast('error', 'Voice Upload Failed', err.message || 'Could not send voice message.');
+      } finally {
+        setIsRecordingVoice(false);
+        setRecordingSeconds(0);
+        setIsUploadingVoice(false);
+      }
+    };
+
+    try {
+      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+      mediaRecorderRef.current.stop();
+    } catch (e) {
+      // ignore
+    }
   };
 
   return (
@@ -148,6 +347,7 @@ export const MessagesPage: React.FC = () => {
                 const isActive = activeChatUser?.id === user.id;
                 const isUnread = unreadChatSenderIds.has(user.id);
                 const unreadData = unreadChatSenders[user.id];
+                const online = isUserOnline(user.id);
 
                 return (
                   <button
@@ -172,11 +372,19 @@ export const MessagesPage: React.FC = () => {
                           isUnread ? 'border-blue-400 ring-2 ring-blue-500/60' : 'border-purple-500/30'
                         }`}
                       />
-                      {/* Unread indicator dot badge on avatar if unread, or live dot */}
+                      {/* Presence / Unread Status Badge */}
                       {isUnread ? (
                         <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-500 border-2 border-slate-950 rounded-full shadow-[0_0_8px_rgba(59,130,246,1)] animate-pulse" />
+                      ) : online ? (
+                        <span
+                          className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-950 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                          title="Online"
+                        />
                       ) : (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-950" />
+                        <span
+                          className="absolute bottom-0 right-0 w-3 h-3 bg-slate-600 rounded-full border-2 border-slate-950"
+                          title="Offline"
+                        />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -186,7 +394,6 @@ export const MessagesPage: React.FC = () => {
                         </h4>
                         {isUnread ? (
                           <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                            {/* Dot symbol on user chat */}
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,1)] animate-pulse" />
                             {unreadData && unreadData.count > 1 ? (
                               <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white font-bold text-[10px]">
@@ -198,13 +405,15 @@ export const MessagesPage: React.FC = () => {
                               </span>
                             )}
                           </div>
+                        ) : online ? (
+                          <span className="text-[10px] text-emerald-400 font-semibold">Online</span>
                         ) : (
-                          <span className="text-[10px] text-slate-500">Live</span>
+                          <span className="text-[10px] text-slate-500">Offline</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between mt-0.5">
                         <p className={`text-xs truncate ${isUnread ? 'text-blue-300 font-semibold' : 'text-purple-300/70'}`}>
-                          {isUnread && unreadData?.lastText ? unreadData.lastText : user.aiTrustBadge}
+                          {isUnread && unreadData?.lastText ? unreadData.lastText : user.aiTrustBadge || 'Verified Member'}
                         </p>
                         {isUnread && unreadData?.lastTime && (
                           <span className="text-[9px] text-blue-400 shrink-0 ml-1 font-mono">
@@ -228,10 +437,10 @@ export const MessagesPage: React.FC = () => {
         >
           {activeChatUser ? (
             <>
-              {/* Chat Header */}
+              {/* Chat Header with Profile Navigation & Calling */}
               <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 backdrop-blur-md shrink-0">
                 <div className="flex items-center gap-3">
-                  {/* Mobile Back to Contacts button */}
+                  {/* Mobile Back to Contacts */}
                   <button
                     type="button"
                     onClick={() => setActiveChatUser(null)}
@@ -240,27 +449,54 @@ export const MessagesPage: React.FC = () => {
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <img
-                    src={activeChatUser.avatar}
-                    alt={activeChatUser.name}
-                    className="w-10 h-10 rounded-full object-cover border border-purple-500/30"
-                  />
-                  <div>
-                    <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
-                      {activeChatUser.name}
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    </h3>
-                    <p className="text-[11px] text-emerald-400 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" /> Online • Encrypted & AI Moderated
-                    </p>
+
+                  {/* Clickable Avatar & Name -> Navigate to Profile */}
+                  <div
+                    onClick={() => openUserProfile(activeChatUser)}
+                    className="flex items-center gap-3 cursor-pointer group"
+                    title={`View ${activeChatUser.name}'s Profile`}
+                  >
+                    <img
+                      src={activeChatUser.avatar}
+                      alt={activeChatUser.name}
+                      className="w-10 h-10 rounded-full object-cover border border-purple-500/30 group-hover:border-purple-400 group-hover:ring-2 group-hover:ring-purple-500/40 transition"
+                    />
+                    <div>
+                      <h3 className="font-bold text-sm text-white flex items-center gap-1.5 group-hover:text-purple-300 transition">
+                        {activeChatUser.name}
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      </h3>
+                      {isUserOnline(activeChatUser.id) ? (
+                        <p className="text-[11px] text-emerald-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                          Online • Encrypted & AI Moderated
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-slate-500 rounded-full" />
+                          Offline • Encrypted & AI Moderated
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
+                {/* Call Action Buttons */}
                 <div className="flex items-center gap-2 text-slate-400">
-                  <button className="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition">
+                  <button
+                    type="button"
+                    onClick={() => startCall(activeChatUser, 'audio')}
+                    title="Start Audio Call"
+                    className="p-2.5 rounded-xl hover:bg-slate-800 hover:text-emerald-400 transition cursor-pointer"
+                  >
                     <PhoneCall className="w-4 h-4" />
                   </button>
-                  <button className="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition">
+                  <button
+                    type="button"
+                    onClick={() => startCall(activeChatUser, 'video')}
+                    title="Start Video Call"
+                    className="p-2.5 rounded-xl hover:bg-slate-800 hover:text-purple-400 transition cursor-pointer"
+                  >
                     <Video className="w-4 h-4" />
                   </button>
                 </div>
@@ -284,8 +520,10 @@ export const MessagesPage: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  messages.map((msg) => {
+                  messages.map((msg: ChatMessage) => {
                     const isMe = msg.senderId === currentUser?.id;
+                    const isVoice = msg.isVoice || (msg.mediaUrl && (msg.mediaUrl.includes('/audio/') || msg.mediaUrl.endsWith('.webm') || msg.mediaUrl.endsWith('.mp3')));
+
                     return (
                       <div
                         key={msg.id}
@@ -298,10 +536,31 @@ export const MessagesPage: React.FC = () => {
                               : 'bg-slate-800/90 border border-slate-700 text-slate-200 rounded-bl-none'
                           }`}
                         >
-                          <p>{msg.text}</p>
-                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-300 opacity-80">
+                          {/* Voice Note Player */}
+                          {isVoice && msg.mediaUrl ? (
+                            <ChatVoicePlayer
+                              url={msg.mediaUrl}
+                              duration={msg.voiceDuration}
+                              isMe={isMe}
+                            />
+                          ) : (
+                            <p className="break-words">{msg.text}</p>
+                          )}
+
+                          {/* Message Footer: Timestamp and Delivery/Read Ticks */}
+                          <div className="mt-1.5 flex items-center justify-end gap-1.5 text-[10px] text-slate-300 opacity-80">
                             <span>{msg.timestamp}</span>
-                            <CheckCheck className="w-3.5 h-3.5 text-emerald-300" />
+                            {isMe && (
+                              <span title={msg.status ? `Status: ${msg.status}` : 'Sent'}>
+                                {msg.status === 'read' ? (
+                                  <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                                ) : msg.status === 'delivered' ? (
+                                  <CheckCheck className="w-3.5 h-3.5 text-slate-400" />
+                                ) : (
+                                  <Check className="w-3.5 h-3.5 text-slate-400" />
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -311,33 +570,79 @@ export const MessagesPage: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input Box (Pinned to bottom, always visible) */}
-              <form onSubmit={handleSend} className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleVoiceMessage}
-                  title="Send Voice Message"
-                  className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-purple-400 hover:text-purple-300 hover:bg-slate-800 transition"
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
+              {/* Message Input Bar & Voice Recorder */}
+              {isRecordingVoice ? (
+                /* Glowing Voice Recording Bar with live timer and controls */
+                <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                    <span className="text-xs font-mono font-bold text-rose-400">
+                      Recording: {Math.floor(recordingSeconds / 60)}:
+                      {(recordingSeconds % 60).toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-xs text-slate-400 hidden sm:inline">
+                      Encrypted audio note
+                    </span>
+                  </div>
 
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Send an encrypted message..."
-                  className="flex-1 bg-slate-900 border border-purple-500/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
-                />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={cancelVoiceRecording}
+                      disabled={isUploadingVoice}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Cancel
+                    </button>
 
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white disabled:opacity-50 transition shadow-md shadow-purple-900/30 cursor-pointer"
+                    <button
+                      type="button"
+                      onClick={sendVoiceRecording}
+                      disabled={isUploadingVoice || recordingSeconds < 1}
+                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 transition cursor-pointer disabled:opacity-50"
+                    >
+                      {isUploadingVoice ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5" />
+                      )}
+                      Send Note
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Standard Message Input Form */
+                <form
+                  onSubmit={handleSend}
+                  className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2 shrink-0"
                 >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
+                  <button
+                    type="button"
+                    onClick={startVoiceRecording}
+                    title="Record Voice Note"
+                    className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-purple-400 hover:text-purple-300 hover:bg-slate-800 transition cursor-pointer"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Send an encrypted message..."
+                    className="flex-1 bg-slate-900 border border-purple-500/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim()}
+                    className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white disabled:opacity-50 transition shadow-md shadow-purple-900/30 cursor-pointer"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-3">

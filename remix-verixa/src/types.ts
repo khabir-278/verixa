@@ -132,7 +132,27 @@ export interface ChatMessage {
   isAIVerified: boolean;
   mediaUrl?: string;
   isVoice?: boolean;
-  voiceDuration?: string;
+  voiceDuration?: number | string;
+  status?: 'sent' | 'delivered' | 'read';
+  delivered_at?: string;
+  read_at?: string;
+  created_at?: string;
+}
+
+export type CallType = 'audio' | 'video';
+export type CallState = 'idle' | 'calling' | 'incoming' | 'connected' | 'ended';
+
+export interface ActiveCallInfo {
+  callId: string;
+  type: CallType;
+  peerId: string;
+  peerName: string;
+  peerAvatar: string;
+  isInitiator: boolean;
+  state: CallState;
+  startedAt?: number;
+  isMuted?: boolean;
+  isVideoOff?: boolean;
 }
 
 export interface ModerationAuditLog {
@@ -165,6 +185,8 @@ export type PageView =
   | 'privacy'
   | 'terms'
   | 'help'
+  | 'post'
+  | 'reel'
   | '404';
 
 export interface UserSettings {

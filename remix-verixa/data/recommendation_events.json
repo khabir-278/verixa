@@ -1,5 +1,2638 @@
 [
   {
+    "id": "rece_1789148933841_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:48:53.834Z"
+  },
+  {
+    "id": "rece_1789148933841_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:48:53.834Z"
+  },
+  {
+    "id": "rece_1789148933842_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:48:53.834Z"
+  },
+  {
+    "id": "rece_1789148933842_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:48:53.834Z"
+  },
+  {
+    "id": "rece_1789148933842_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:48:53.834Z"
+  },
+  {
+    "id": "rece_1789148933842_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:48:53.834Z"
+  },
+  {
+    "id": "rece_1789148206875_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:36:46.875Z"
+  },
+  {
+    "id": "rece_1789148206875_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:36:46.875Z"
+  },
+  {
+    "id": "rece_1789148206875_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:36:46.875Z"
+  },
+  {
+    "id": "rece_1789148206875_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:36:46.875Z"
+  },
+  {
+    "id": "rece_1789148206875_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:36:46.875Z"
+  },
+  {
+    "id": "rece_1789148206875_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:36:46.875Z"
+  },
+  {
+    "id": "rece_1789148206875_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:36:46.875Z"
+  },
+  {
+    "id": "rece_1789148003675_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:23.674Z"
+  },
+  {
+    "id": "rece_1789148003675_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:23.674Z"
+  },
+  {
+    "id": "rece_1789148003675_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:23.674Z"
+  },
+  {
+    "id": "rece_1789148003675_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:23.674Z"
+  },
+  {
+    "id": "rece_1789148003675_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:23.674Z"
+  },
+  {
+    "id": "rece_1789148003675_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:23.674Z"
+  },
+  {
+    "id": "rece_1789148003675_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:23.674Z"
+  },
+  {
+    "id": "rece_1789147988017_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:08.016Z"
+  },
+  {
+    "id": "rece_1789147988017_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:08.016Z"
+  },
+  {
+    "id": "rece_1789147988017_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:08.016Z"
+  },
+  {
+    "id": "rece_1789147988017_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:08.016Z"
+  },
+  {
+    "id": "rece_1789147988017_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:08.016Z"
+  },
+  {
+    "id": "rece_1789147988017_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:08.016Z"
+  },
+  {
+    "id": "rece_1789147988017_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:33:08.016Z"
+  },
+  {
+    "id": "rece_1789147974051_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:54.051Z"
+  },
+  {
+    "id": "rece_1789147974051_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:54.051Z"
+  },
+  {
+    "id": "rece_1789147974051_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:54.051Z"
+  },
+  {
+    "id": "rece_1789147974051_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:54.051Z"
+  },
+  {
+    "id": "rece_1789147974051_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:54.051Z"
+  },
+  {
+    "id": "rece_1789147974051_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:54.051Z"
+  },
+  {
+    "id": "rece_1789147974051_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:54.051Z"
+  },
+  {
+    "id": "rece_1789147962896_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:42.895Z"
+  },
+  {
+    "id": "rece_1789147962896_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:42.895Z"
+  },
+  {
+    "id": "rece_1789147962896_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:42.895Z"
+  },
+  {
+    "id": "rece_1789147962896_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:42.895Z"
+  },
+  {
+    "id": "rece_1789147962897_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:42.895Z"
+  },
+  {
+    "id": "rece_1789147962897_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:42.895Z"
+  },
+  {
+    "id": "rece_1789147962897_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:42.895Z"
+  },
+  {
+    "id": "rece_1789147936433_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:16.431Z"
+  },
+  {
+    "id": "rece_1789147936433_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:16.431Z"
+  },
+  {
+    "id": "rece_1789147936433_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:16.431Z"
+  },
+  {
+    "id": "rece_1789147936433_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:16.431Z"
+  },
+  {
+    "id": "rece_1789147936433_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:16.431Z"
+  },
+  {
+    "id": "rece_1789147936433_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:16.431Z"
+  },
+  {
+    "id": "rece_1789147936433_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:16.431Z"
+  },
+  {
+    "id": "rece_1789147927757_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:07.755Z"
+  },
+  {
+    "id": "rece_1789147927757_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:07.755Z"
+  },
+  {
+    "id": "rece_1789147927757_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:07.755Z"
+  },
+  {
+    "id": "rece_1789147927757_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:07.755Z"
+  },
+  {
+    "id": "rece_1789147927757_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:07.755Z"
+  },
+  {
+    "id": "rece_1789147927757_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:07.755Z"
+  },
+  {
+    "id": "rece_1789147927757_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:32:07.755Z"
+  },
+  {
+    "id": "rece_1789146938097_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:38.096Z"
+  },
+  {
+    "id": "rece_1789146938097_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:38.096Z"
+  },
+  {
+    "id": "rece_1789146938097_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:38.096Z"
+  },
+  {
+    "id": "rece_1789146938097_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:38.096Z"
+  },
+  {
+    "id": "rece_1789146938097_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:38.096Z"
+  },
+  {
+    "id": "rece_1789146938097_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:38.096Z"
+  },
+  {
+    "id": "rece_1789146938097_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:38.096Z"
+  },
+  {
+    "id": "rece_1789146937620_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:37.620Z"
+  },
+  {
+    "id": "rece_1789146937620_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:37.620Z"
+  },
+  {
+    "id": "rece_1789146937620_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:37.620Z"
+  },
+  {
+    "id": "rece_1789146937620_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:37.620Z"
+  },
+  {
+    "id": "rece_1789146937620_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:37.620Z"
+  },
+  {
+    "id": "rece_1789146937620_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:37.620Z"
+  },
+  {
+    "id": "rece_1789146937620_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:15:37.620Z"
+  },
+  {
+    "id": "rece_1789146870717_0",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 1,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.717Z"
+  },
+  {
+    "id": "rece_1789146870717_1",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 2,
+    "total_score": 39.5,
+    "scoring_factors": {
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.717Z"
+  },
+  {
+    "id": "rece_1789146870717_2",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.717Z"
+  },
+  {
+    "id": "rece_1789146870717_3",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.717Z"
+  },
+  {
+    "id": "rece_1789146870717_4",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.717Z"
+  },
+  {
+    "id": "rece_1789146870717_5",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.717Z"
+  },
+  {
+    "id": "rece_1789146870717_6",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.717Z"
+  },
+  {
+    "id": "rece_1789146870303_0",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 1,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.302Z"
+  },
+  {
+    "id": "rece_1789146870303_1",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 2,
+    "total_score": 39.5,
+    "scoring_factors": {
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.302Z"
+  },
+  {
+    "id": "rece_1789146870303_2",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.302Z"
+  },
+  {
+    "id": "rece_1789146870303_3",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.302Z"
+  },
+  {
+    "id": "rece_1789146870303_4",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.302Z"
+  },
+  {
+    "id": "rece_1789146870303_5",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.302Z"
+  },
+  {
+    "id": "rece_1789146870303_6",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:14:30.302Z"
+  },
+  {
+    "id": "rece_1789146834652_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:13:54.651Z"
+  },
+  {
+    "id": "rece_1789146834652_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:13:54.651Z"
+  },
+  {
+    "id": "rece_1789146834652_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:13:54.651Z"
+  },
+  {
+    "id": "rece_1789146834652_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:13:54.651Z"
+  },
+  {
+    "id": "rece_1789146834652_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:13:54.651Z"
+  },
+  {
+    "id": "rece_1789146834652_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:13:54.651Z"
+  },
+  {
+    "id": "rece_1789146834652_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:13:54.651Z"
+  },
+  {
+    "id": "rece_1789146297066_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:04:57.066Z"
+  },
+  {
+    "id": "rece_1789146297066_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:04:57.066Z"
+  },
+  {
+    "id": "rece_1789146297066_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:04:57.066Z"
+  },
+  {
+    "id": "rece_1789146297066_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:04:57.066Z"
+  },
+  {
+    "id": "rece_1789146297066_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:04:57.066Z"
+  },
+  {
+    "id": "rece_1789146297066_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:04:57.066Z"
+  },
+  {
+    "id": "rece_1789146297066_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:04:57.066Z"
+  },
+  {
+    "id": "rece_1789146179130_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:02:59.128Z"
+  },
+  {
+    "id": "rece_1789146179130_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:02:59.128Z"
+  },
+  {
+    "id": "rece_1789146179130_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:02:59.128Z"
+  },
+  {
+    "id": "rece_1789146179130_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:02:59.128Z"
+  },
+  {
+    "id": "rece_1789146179130_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:02:59.128Z"
+  },
+  {
+    "id": "rece_1789146179130_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:02:59.128Z"
+  },
+  {
+    "id": "rece_1789146179130_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:02:59.128Z"
+  },
+  {
+    "id": "rece_1789146057214_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:57.213Z"
+  },
+  {
+    "id": "rece_1789146057214_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:57.213Z"
+  },
+  {
+    "id": "rece_1789146057214_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:57.213Z"
+  },
+  {
+    "id": "rece_1789146057214_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:57.213Z"
+  },
+  {
+    "id": "rece_1789146057214_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:57.213Z"
+  },
+  {
+    "id": "rece_1789146057214_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:57.213Z"
+  },
+  {
+    "id": "rece_1789146057214_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:57.213Z"
+  },
+  {
+    "id": "rece_1789146044978_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:44.977Z"
+  },
+  {
+    "id": "rece_1789146044978_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:44.977Z"
+  },
+  {
+    "id": "rece_1789146044978_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:44.977Z"
+  },
+  {
+    "id": "rece_1789146044978_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:44.977Z"
+  },
+  {
+    "id": "rece_1789146044978_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:44.977Z"
+  },
+  {
+    "id": "rece_1789146044978_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:44.977Z"
+  },
+  {
+    "id": "rece_1789146044978_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:44.977Z"
+  },
+  {
+    "id": "rece_1789146030845_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:30.845Z"
+  },
+  {
+    "id": "rece_1789146030845_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:30.845Z"
+  },
+  {
+    "id": "rece_1789146030845_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:30.845Z"
+  },
+  {
+    "id": "rece_1789146030845_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:30.845Z"
+  },
+  {
+    "id": "rece_1789146030845_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:30.845Z"
+  },
+  {
+    "id": "rece_1789146030845_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:30.845Z"
+  },
+  {
+    "id": "rece_1789146030845_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T17:00:30.845Z"
+  },
+  {
+    "id": "rece_1789145487817_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:51:27.816Z"
+  },
+  {
+    "id": "rece_1789145487817_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:51:27.816Z"
+  },
+  {
+    "id": "rece_1789145487817_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:51:27.816Z"
+  },
+  {
+    "id": "rece_1789145487817_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:51:27.816Z"
+  },
+  {
+    "id": "rece_1789145487817_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:51:27.816Z"
+  },
+  {
+    "id": "rece_1789145487817_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:51:27.816Z"
+  },
+  {
+    "id": "rece_1789145487817_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:51:27.816Z"
+  },
+  {
+    "id": "rece_1789145080157_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:40.157Z"
+  },
+  {
+    "id": "rece_1789145080157_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:40.157Z"
+  },
+  {
+    "id": "rece_1789145080157_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:40.157Z"
+  },
+  {
+    "id": "rece_1789145080157_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:40.157Z"
+  },
+  {
+    "id": "rece_1789145080157_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:40.157Z"
+  },
+  {
+    "id": "rece_1789145080157_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:40.157Z"
+  },
+  {
+    "id": "rece_1789145080157_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:40.157Z"
+  },
+  {
+    "id": "rece_1789145072038_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:32.037Z"
+  },
+  {
+    "id": "rece_1789145072038_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:32.037Z"
+  },
+  {
+    "id": "rece_1789145072038_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:32.037Z"
+  },
+  {
+    "id": "rece_1789145072038_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:32.037Z"
+  },
+  {
+    "id": "rece_1789145072038_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:32.037Z"
+  },
+  {
+    "id": "rece_1789145072038_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:32.037Z"
+  },
+  {
+    "id": "rece_1789145072038_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:32.037Z"
+  },
+  {
+    "id": "rece_1789145066080_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:26.079Z"
+  },
+  {
+    "id": "rece_1789145066080_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:26.079Z"
+  },
+  {
+    "id": "rece_1789145066080_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:26.079Z"
+  },
+  {
+    "id": "rece_1789145066080_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:26.079Z"
+  },
+  {
+    "id": "rece_1789145066080_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:26.079Z"
+  },
+  {
+    "id": "rece_1789145066080_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:26.079Z"
+  },
+  {
+    "id": "rece_1789145066080_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:44:26.079Z"
+  },
+  {
+    "id": "rece_1789144983184_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:43:03.183Z"
+  },
+  {
+    "id": "rece_1789144983184_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:43:03.183Z"
+  },
+  {
+    "id": "rece_1789144983184_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:43:03.183Z"
+  },
+  {
+    "id": "rece_1789144983184_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:43:03.183Z"
+  },
+  {
+    "id": "rece_1789144983184_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:43:03.183Z"
+  },
+  {
+    "id": "rece_1789144983184_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:43:03.183Z"
+  },
+  {
+    "id": "rece_1789144983184_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:43:03.183Z"
+  },
+  {
+    "id": "rece_1789144874034_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:41:14.032Z"
+  },
+  {
+    "id": "rece_1789144874034_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:41:14.032Z"
+  },
+  {
+    "id": "rece_1789144874034_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:41:14.032Z"
+  },
+  {
+    "id": "rece_1789144874034_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:41:14.032Z"
+  },
+  {
+    "id": "rece_1789144874034_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:41:14.032Z"
+  },
+  {
+    "id": "rece_1789144874034_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:41:14.032Z"
+  },
+  {
+    "id": "rece_1789144874034_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:41:14.032Z"
+  },
+  {
+    "id": "rece_1789144411833_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:33:31.832Z"
+  },
+  {
+    "id": "rece_1789144411833_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:33:31.832Z"
+  },
+  {
+    "id": "rece_1789144411833_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:33:31.832Z"
+  },
+  {
+    "id": "rece_1789144411833_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:33:31.832Z"
+  },
+  {
+    "id": "rece_1789144411833_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:33:31.832Z"
+  },
+  {
+    "id": "rece_1789144411833_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:33:31.832Z"
+  },
+  {
+    "id": "rece_1789144411833_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:33:31.832Z"
+  },
+  {
+    "id": "rece_1789142970777_0",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "rank_position": 1,
+    "total_score": 74.5,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "User Preference": 15,
+      "Category Affinity": 10,
+      "Content Safety": 10,
+      "Community Engagement": 2.5,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:09:30.775Z"
+  },
+  {
+    "id": "rece_1789142970778_1",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9e65e06a-a2d0-4278-8bb2-45b30caf7c08",
+    "rank_position": 2,
+    "total_score": 49,
+    "scoring_factors": {
+      "Followed Creator": 35,
+      "Content Safety": 10,
+      "Community Engagement": 2,
+      "Recency": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:09:30.775Z"
+  },
+  {
+    "id": "rece_1789142970778_2",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "rank_position": 3,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:09:30.775Z"
+  },
+  {
+    "id": "rece_1789142970778_3",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "0dbaccc5-7c86-48be-9c14-bbfffff598f6",
+    "rank_position": 4,
+    "total_score": 17,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 2
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:09:30.775Z"
+  },
+  {
+    "id": "rece_1789142970778_4",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "rank_position": 5,
+    "total_score": 16.5,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1.5
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:09:30.775Z"
+  },
+  {
+    "id": "rece_1789142970778_5",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "f54c4ec1-c982-47fe-85e8-8c80289da685",
+    "rank_position": 6,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:09:30.775Z"
+  },
+  {
+    "id": "rece_1789142970778_6",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "1379a992-6a31-46dc-bd95-f7d5320d8f72",
+    "rank_position": 7,
+    "total_score": 16,
+    "scoring_factors": {
+      "Content Safety": 10,
+      "Recency": 5,
+      "Community Engagement": 1
+    },
+    "model_version": "v1-transparent-heuristic",
+    "served_at": "2026-09-11T16:09:30.775Z"
+  },
+  {
     "id": "rece_1788981426901_0",
     "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
     "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",

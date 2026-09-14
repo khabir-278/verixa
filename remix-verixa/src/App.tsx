@@ -31,29 +31,91 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { HelpCenterPage } from './pages/HelpCenterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { PostDetailModal } from './components/PostDetailModal';
+import { CallModal } from './components/CallModal';
 import { ShieldCheck, Heart } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { currentPage, setCurrentPage, isAuthenticated } = useApp();
+  const {
+    currentPage,
+    setCurrentPage,
+    isAuthenticated,
+    openUserProfile,
+    activeCall,
+    localStream,
+    remoteStream,
+    acceptCall,
+    rejectCall,
+    endCall,
+  } = useApp();
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [directPostId, setDirectPostId] = useState<string | null>(null);
+  const [directReelId, setDirectReelId] = useState<string | null>(null);
 
-  // Keep URL clean without trailing '#'
+  // Deep linking and URL synchronization
   useEffect(() => {
-    const stripHash = () => {
-      if (typeof window !== 'undefined' && window.location.hash) {
+    const parseDeepLink = () => {
+      if (typeof window === 'undefined') return;
+      // Strip trailing '#'
+      if (window.location.hash) {
         window.history.replaceState(
           null,
           '',
           window.location.pathname + window.location.search
         );
       }
+
+      const path = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+
+      const postParam = params.get('post');
+      const reelParam = params.get('reel');
+      const uidParam = params.get('uid');
+
+      if (postParam) {
+        setDirectPostId(postParam);
+      } else if (path.startsWith('/post/')) {
+        const id = path.split('/post/')[1]?.replace(/\/$/, '');
+        if (id) setDirectPostId(id);
+      }
+
+      if (reelParam) {
+        setDirectReelId(reelParam);
+        setCurrentPage('reels');
+      } else if (path.startsWith('/reel/')) {
+        const id = path.split('/reel/')[1]?.replace(/\/$/, '');
+        if (id) {
+          setDirectReelId(id);
+          setCurrentPage('reels');
+        }
+      }
+
+      if (uidParam) {
+        openUserProfile(uidParam);
+      } else if (path.startsWith('/profile/')) {
+        const id = path.split('/profile/')[1]?.replace(/\/$/, '');
+        if (id) openUserProfile(id);
+      }
     };
 
-    stripHash();
-    window.addEventListener('hashchange', stripHash);
-    return () => window.removeEventListener('hashchange', stripHash);
+    parseDeepLink();
+    window.addEventListener('popstate', parseDeepLink);
+    return () => window.removeEventListener('popstate', parseDeepLink);
   }, []);
+
+  const handleCloseDirectPost = () => {
+    setDirectPostId(null);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('post');
+      if (url.pathname.startsWith('/post/')) {
+        window.history.pushState(null, '', '/' + (url.search || ''));
+      } else {
+        window.history.pushState(null, '', url.pathname + (url.search || ''));
+      }
+    }
+  };
 
   const hideSidebarPages = [
     'landing',
@@ -85,7 +147,12 @@ const MainLayout: React.FC = () => {
       case 'explore':
         return <ExplorePage />;
       case 'reels':
-        return <ReelsPage />;
+        return (
+          <ReelsPage
+            directReelId={directReelId}
+            onClearDirectReel={() => setDirectReelId(null)}
+          />
+        );
       case 'messages':
         return <MessagesPage />;
       case 'notifications':
@@ -192,7 +259,16 @@ const MainLayout: React.FC = () => {
       )}
 
       {/* Global Modals & Overlay Widgets */}
+      {directPostId && <PostDetailModal postId={directPostId} onClose={handleCloseDirectPost} />}
       <CreatePostModal isOpen={isCreatePostOpen} onClose={() => setIsCreatePostOpen(false)} />
+      <CallModal
+        activeCall={activeCall}
+        localStream={localStream}
+        remoteStream={remoteStream}
+        onAccept={acceptCall}
+        onReject={rejectCall}
+        onEnd={endCall}
+      />
       <AIScannerModal />
       <BlockedCommentModal />
       <AIFloatingSentinel />

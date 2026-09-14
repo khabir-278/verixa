@@ -1,5 +1,61 @@
 [
   {
+    "id": "292c0a29-d7a5-43e8-a243-6b43c7bafe82",
+    "user_id": "user_reel_test",
+    "user": {
+      "id": "user_reel_test",
+      "username": "bob_creator",
+      "name": "Bob",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"
+    },
+    "caption": "My first AI-verified reel! #safety #verixa",
+    "video_url": "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4",
+    "audio_title": "Original Forest Sound",
+    "likes": 1,
+    "is_liked": true,
+    "comments_count": 0,
+    "shares_count": 0,
+    "ai_trust_badge": "Verified Authentic Reel",
+    "deepfake_risk": 0,
+    "moderation_status": "ALLOWED",
+    "moderation_state": "APPROVED",
+    "analysis_id": "mod_vid_1789148220993_5mnyxeo",
+    "tags": [
+      "safety",
+      "verixa"
+    ],
+    "created_at": "2026-09-11T17:37:06.618Z",
+    "updated_at": "2026-09-11T17:37:06.618Z"
+  },
+  {
+    "id": "01636781-1e8a-4c02-892e-28459c8959d8",
+    "user_id": "user_reel_test",
+    "user": {
+      "id": "user_reel_test",
+      "username": "bob_creator",
+      "name": "Bob",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"
+    },
+    "caption": "My first AI-verified reel! #safety #verixa",
+    "video_url": "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4",
+    "audio_title": "Original Forest Sound",
+    "likes": 1,
+    "is_liked": true,
+    "comments_count": 0,
+    "shares_count": 0,
+    "ai_trust_badge": "Verified Authentic Reel",
+    "deepfake_risk": 0,
+    "moderation_status": "ALLOWED",
+    "moderation_state": "APPROVED",
+    "analysis_id": "mod_vid_1789148186564_j19bz2g",
+    "tags": [
+      "safety",
+      "verixa"
+    ],
+    "created_at": "2026-09-11T17:36:29.646Z",
+    "updated_at": "2026-09-11T17:36:29.646Z"
+  },
+  {
     "id": "reel_1788722249310_16rmf",
     "user_id": "user_reel_test",
     "user": {

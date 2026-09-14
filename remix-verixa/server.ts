@@ -29,7 +29,7 @@ dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
 app.use(express.json({ limit: "25mb" }));
 
@@ -1144,7 +1144,97 @@ app.get("/api/stories/sync", async (req, res) => {
 app.get("/api/stories", async (req, res) => {
   try {
     const userId = req.query.userId as string | undefined;
-    const activeStories = storyService.getActiveStories(userId);
+    const sb = getServerSupabase();
+    let dbStoriesList: any[] = [];
+
+    if (sb) {
+      try {
+        const nowIso = new Date().toISOString();
+        const { data: dbStories, error } = await sb
+          .from('stories')
+          .select('id, user_id, media_url, media_type, moderation_status, analysis_id, views_count, viewed_by, created_at, expires_at')
+          .gt('expires_at', nowIso)
+          .order('created_at', { ascending: false });
+
+        if (!error && dbStories && dbStories.length > 0) {
+          const userIds = Array.from(new Set(dbStories.map((s: any) => s.user_id).filter(Boolean)));
+          let profileMap: Record<string, any> = {};
+          if (userIds.length > 0) {
+            const { data: profiles } = await sb.from('profiles').select('id, name, username, avatar_url').in('id', userIds);
+            if (profiles) {
+              profiles.forEach((p: any) => { profileMap[p.id] = p; });
+            }
+          }
+
+          const storyIds = dbStories.map((s: any) => s.id);
+          const { data: allLikes } = await sb
+            .from('story_likes')
+            .select('story_id, user_id')
+            .in('story_id', storyIds);
+
+          const likesMap: Record<string, string[]> = {};
+          if (allLikes) {
+            allLikes.forEach((l: any) => {
+              if (!likesMap[l.story_id]) likesMap[l.story_id] = [];
+              likesMap[l.story_id].push(l.user_id);
+            });
+          }
+
+          dbStoriesList = dbStories.map((s: any) => {
+            const p = profileMap[s.user_id];
+            const likedBy = likesMap[s.id] || [];
+            const viewedBy = Array.isArray(s.viewed_by) ? s.viewed_by : [];
+            const isVideo = s.media_type === 'video' || (s.media_url && s.media_url.includes('.mp4'));
+            const safeAvatar = p?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p?.name || p?.username || 'User')}&background=4285F4&color=fff&size=256&bold=true`;
+
+            return {
+              id: s.id,
+              user_id: s.user_id,
+              user: {
+                id: s.user_id,
+                name: p?.name || p?.username || 'User',
+                username: p?.username || 'user',
+                avatar: safeAvatar,
+              },
+              media_url: s.media_url,
+              mediaUrl: s.media_url,
+              media_type: isVideo ? 'video' : 'image',
+              mediaType: isVideo ? 'video' : 'image',
+              type: isVideo ? 'video' : 'image',
+              moderation_status: s.moderation_status || 'allowed',
+              moderation_state: 'APPROVED',
+              views_count: s.views_count ?? viewedBy.length,
+              viewsCount: s.views_count ?? viewedBy.length,
+              viewed_by: viewedBy,
+              viewedBy: viewedBy,
+              likes_count: likedBy.length,
+              likesCount: likedBy.length,
+              liked_by: likedBy,
+              likedBy: likedBy,
+              created_at: s.created_at,
+              createdAt: s.created_at,
+              expires_at: s.expires_at,
+              expiresAt: s.expires_at,
+              is_ai_moderated: true,
+              isAIModerated: true,
+            };
+          });
+        }
+      } catch (err) {
+        console.warn("Notice loading stories from Supabase:", err);
+      }
+    }
+
+    const memStories = storyService.getActiveStories(userId);
+    const combinedMap = new Map<string, any>();
+    dbStoriesList.forEach((s) => combinedMap.set(s.id, s));
+    memStories.forEach((s) => {
+      if (!combinedMap.has(s.id)) {
+        combinedMap.set(s.id, s);
+      }
+    });
+
+    const activeStories = Array.from(combinedMap.values());
     return res.json({ stories: activeStories, count: activeStories.length });
   } catch (err: any) {
     console.error("Error retrieving active stories:", err);
@@ -1247,7 +1337,7 @@ app.post("/api/stories/:id/view", async (req, res) => {
   try {
     const storyId = req.params.id;
     const userId = req.body.userId || "anonymous";
-    const result = storyService.recordView(storyId, userId);
+    const result = await storyService.recordView(storyId, userId);
     return res.json(result);
   } catch (err: any) {
     console.error("Story view recording error:", err);
@@ -1259,13 +1349,147 @@ app.post("/api/stories/:id/like", async (req, res) => {
   try {
     const storyId = req.params.id;
     const userId = req.body.userId || "user_guest";
-    const result = storyService.toggleLike(storyId, userId);
+    const result = await storyService.toggleLike(storyId, userId);
     return res.json(result);
   } catch (err: any) {
     console.error("Story like error:", err);
     return res.status(500).json({ error: "Failed to update story like." });
   }
 });
+
+app.delete("/api/stories/:id", async (req, res) => {
+  try {
+    const storyId = req.params.id;
+    const deleted = storyService.deleteStory(storyId);
+
+    // Also delete from Supabase if table exists
+    const sb = getServerSupabase();
+    if (sb) {
+      try {
+        await sb.from('stories').delete().eq('id', storyId);
+        await sb.from('story_likes').delete().eq('story_id', storyId);
+      } catch (sbErr) {
+        console.warn('Notice deleting story from Supabase:', sbErr);
+      }
+    }
+
+    return res.json({ success: true, deleted });
+  } catch (err: any) {
+    console.error("Story deletion error:", err);
+    return res.status(500).json({ error: "Failed to delete story." });
+  }
+});
+
+// 24-Hour Story Expiry Automatic Background Cleanup Job
+setInterval(async () => {
+  try {
+    const sb = getServerSupabase();
+    if (sb) {
+      const nowIso = new Date().toISOString();
+      const { error } = await sb
+        .from('stories')
+        .delete()
+        .lte('expires_at', nowIso);
+      if (error) {
+        console.warn('Automatic story expiry cleanup notice:', error.message);
+      }
+    }
+  } catch (err: any) {
+    console.warn('Story cleanup job warning:', err?.message || err);
+  }
+}, 15 * 60 * 1000);
+
+app.get("/api/stories/:id/insights", async (req, res) => {
+  try {
+    const storyId = req.params.id;
+    const sb = getServerSupabase();
+    let viewsCount = 0;
+    let likesCount = 0;
+    let viewedBy: string[] = [];
+    let likedBy: string[] = [];
+
+    // 1. Check Supabase database
+    if (sb) {
+      try {
+        const { data: dbStory } = await sb
+          .from('stories')
+          .select('views_count, viewed_by')
+          .eq('id', storyId)
+          .maybeSingle();
+
+        const { data: dbLikes, count: dbLikesCount } = await sb
+          .from('story_likes')
+          .select('user_id', { count: 'exact' })
+          .eq('story_id', storyId);
+
+        if (dbStory) {
+          viewedBy = Array.isArray(dbStory.viewed_by) ? dbStory.viewed_by : [];
+          viewsCount = dbStory.views_count ?? viewedBy.length;
+        }
+
+        if (dbLikes) {
+          likedBy = dbLikes.map((r: any) => r.user_id);
+          likesCount = dbLikesCount ?? likedBy.length;
+        }
+      } catch (sbErr) {
+        console.warn('Notice reading story insights from Supabase:', sbErr);
+      }
+    }
+
+    // 2. Fallback to memory / stories.json buffer if Supabase has 0
+    const memStory = storyService.getStoryById(storyId);
+    if (memStory) {
+      if (viewsCount === 0 && memStory.views_count) viewsCount = memStory.views_count;
+      if (viewedBy.length === 0 && memStory.viewed_by) viewedBy = memStory.viewed_by;
+      if (likesCount === 0 && memStory.likes_count) likesCount = memStory.likes_count;
+      if (likedBy.length === 0 && memStory.liked_by) likedBy = memStory.liked_by;
+    }
+
+    // 3. Resolve user profiles for viewers and likers
+    let viewers: any[] = [];
+    let likers: any[] = [];
+    const allUserIds = Array.from(new Set([...viewedBy, ...likedBy].filter(Boolean)));
+    if (sb && allUserIds.length > 0) {
+      try {
+        const { data: profiles } = await sb
+          .from('profiles')
+          .select('id, name, username, avatar_url')
+          .in('id', allUserIds);
+        const map: Record<string, any> = {};
+        if (profiles) {
+          profiles.forEach((p: any) => {
+            map[p.id] = {
+              id: p.id,
+              name: p.name || p.username || 'User',
+              username: p.username || 'user',
+              avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
+            };
+          });
+        }
+        viewers = viewedBy.map((uid) => map[uid] || { id: uid, name: `User ${uid.slice(0, 6)}`, username: `user_${uid.slice(0, 6)}`, avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true` });
+        likers = likedBy.map((uid) => map[uid] || { id: uid, name: `User ${uid.slice(0, 6)}`, username: `user_${uid.slice(0, 6)}`, avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true` });
+      } catch {
+        // non-blocking fallback
+      }
+    }
+
+    return res.json({
+      success: true,
+      storyId,
+      viewsCount,
+      likesCount,
+      viewedBy,
+      likedBy,
+      viewers,
+      likers,
+    });
+  } catch (err: any) {
+    console.error("Error retrieving story insights:", err);
+    return res.status(500).json({ error: "Failed to retrieve story insights." });
+  }
+});
+
+
 
 /**
  * 9b. Reels Endpoints
