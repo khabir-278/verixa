@@ -2884,9 +2884,25 @@ Format your response clearly with:
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const cwd = process.cwd();
+    let realCwd = cwd;
+    try {
+      realCwd = fs.realpathSync(cwd);
+    } catch {}
+
     const vite = await createViteServer({
+      root: cwd,
       server: {
         middlewareMode: true,
+        fs: {
+          strict: false,
+          allow: [
+            cwd,
+            realCwd,
+            "C:/remix-verixa",
+            "C:/verixa/remix-verixa",
+          ],
+        },
         watch: {
           ignored: [
             "**/data/**",

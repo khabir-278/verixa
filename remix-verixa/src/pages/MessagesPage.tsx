@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Send,
@@ -21,6 +21,8 @@ import {
   getUserConversationPartners,
   getAllProfiles,
   uploadVoiceNote,
+  getUserConversationsOverview,
+  ConversationSnippet,
 } from '../lib/supabaseServices';
 
 interface ChatVoicePlayerProps {
@@ -142,6 +144,7 @@ export const MessagesPage: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [supabaseUsers, setSupabaseUsers] = useState<User[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState<boolean>(true);
+  const [conversationsMap, setConversationsMap] = useState<Record<string, ConversationSnippet>>({});
 
   // Voice Recording state
   const [isRecordingVoice, setIsRecordingVoice] = useState<boolean>(false);
@@ -157,10 +160,12 @@ export const MessagesPage: React.FC = () => {
       setIsLoadingContacts(true);
       try {
         if (currentUser?.id) {
-          // Load conversation partners sorted by latest message
-          const partners = await getUserConversationPartners(currentUser.id);
-          // Also load all other community profiles
-          const allProfiles = await getAllProfiles(currentUser.id);
+          // Load conversation partners, all other community profiles, and conversation snippets
+          const [partners, allProfiles, overview] = await Promise.all([
+            getUserConversationPartners(currentUser.id),
+            getAllProfiles(currentUser.id),
+            getUserConversationsOverview(currentUser.id),
+          ]);
 
           const seen = new Set<string>();
           const combined: User[] = [];
@@ -181,6 +186,7 @@ export const MessagesPage: React.FC = () => {
 
           if (isMounted) {
             setSupabaseUsers(combined);
+            setConversationsMap(overview);
           }
         } else {
           const allProfiles = await getAllProfiles();
@@ -200,19 +206,92 @@ export const MessagesPage: React.FC = () => {
     };
   }, [currentUser?.id]);
 
+  // Keep conversationsMap in sync with the active chat's message feed
+  useEffect(() => {
+    if (activeChatUser?.id && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      let snippet = lastMsg.text || '';
+      if (lastMsg.isVoice) {
+        snippet = '🎙️ Voice note';
+      } else if (lastMsg.mediaUrl && !lastMsg.text) {
+        snippet = '📷 Photo';
+      }
+      setConversationsMap((prev) => ({
+        ...prev,
+        [activeChatUser.id]: {
+          partnerId: activeChatUser.id,
+          lastText: snippet,
+          lastSenderId: lastMsg.senderId,
+          lastTime: lastMsg.timestamp || 'Just now',
+          createdAt: (lastMsg as any).created_at || new Date().toISOString(),
+        },
+      }));
+    }
+  }, [messages, activeChatUser?.id]);
+
+  // Keep conversationsMap in sync with any incoming unread messages
+  useEffect(() => {
+    if (Object.keys(unreadChatSenders).length > 0) {
+      setConversationsMap((prev) => {
+        let changed = false;
+        const updated = { ...prev };
+        for (const [senderId, data] of Object.entries(unreadChatSenders)) {
+          if (data?.lastText && (!updated[senderId] || updated[senderId].lastText !== data.lastText)) {
+            updated[senderId] = {
+              partnerId: senderId,
+              lastText: data.lastText,
+              lastSenderId: senderId,
+              lastTime: data.lastTime,
+              createdAt: new Date().toISOString(),
+            };
+            changed = true;
+          }
+        }
+        return changed ? updated : prev;
+      });
+    }
+  }, [unreadChatSenders]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeChatUser]);
 
-  const contactsToDisplay = supabaseUsers;
+  // Sort contacts: unread chats first, then recent conversations by timestamp, then remainder
+  const contactsToDisplay = useMemo(() => {
+    if (supabaseUsers.length <= 1) return supabaseUsers;
+    return [...supabaseUsers].sort((a, b) => {
+      const unreadA = (unreadChatSenders[a.id]?.count || 0) > 0 ? 1 : 0;
+      const unreadB = (unreadChatSenders[b.id]?.count || 0) > 0 ? 1 : 0;
+      if (unreadA !== unreadB) return unreadB - unreadA;
+
+      const timeA = conversationsMap[a.id]?.createdAt ? new Date(conversationsMap[a.id].createdAt).getTime() : 0;
+      const timeB = conversationsMap[b.id]?.createdAt ? new Date(conversationsMap[b.id].createdAt).getTime() : 0;
+      if (timeA !== timeB) return timeB - timeA;
+
+      return 0;
+    });
+  }, [supabaseUsers, conversationsMap, unreadChatSenders]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-    sendMessage(chatInput);
+    const textToSend = chatInput.trim();
+    sendMessage(textToSend);
     setChatInput('');
+    if (activeChatUser?.id && currentUser?.id) {
+      setConversationsMap((prev) => ({
+        ...prev,
+        [activeChatUser.id]: {
+          partnerId: activeChatUser.id,
+          lastText: textToSend,
+          lastSenderId: currentUser.id,
+          lastTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          createdAt: new Date().toISOString(),
+        },
+      }));
+    }
   };
 
   // --- VOICE RECORDING HANDLERS ---
@@ -290,6 +369,18 @@ export const MessagesPage: React.FC = () => {
         // Upload to Supabase Storage bucket
         const { signedUrl, path } = await uploadVoiceNote(currentUser.id, audioBlob);
         await sendMessage('', signedUrl || path, true, duration);
+        if (activeChatUser?.id && currentUser?.id) {
+          setConversationsMap((prev) => ({
+            ...prev,
+            [activeChatUser.id]: {
+              partnerId: activeChatUser.id,
+              lastText: '🎙️ Voice note',
+              lastSenderId: currentUser.id,
+              lastTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              createdAt: new Date().toISOString(),
+            },
+          }));
+        }
       } catch (err: any) {
         addToast('error', 'Voice Upload Failed', err.message || 'Could not send voice message.');
       } finally {
@@ -345,9 +436,26 @@ export const MessagesPage: React.FC = () => {
             ) : (
               contactsToDisplay.map((user) => {
                 const isActive = activeChatUser?.id === user.id;
-                const isUnread = unreadChatSenderIds.has(user.id);
                 const unreadData = unreadChatSenders[user.id];
+                const unreadCount = unreadData?.count || 0;
+                const isUnread = unreadCount > 0;
                 const online = isUserOnline(user.id);
+                const conversation = conversationsMap[user.id];
+
+                // Determine message preview snippet and timestamp
+                let snippetText = 'No messages yet';
+                let snippetTime = '';
+
+                if (conversation) {
+                  const isMine = conversation.lastSenderId === currentUser?.id;
+                  snippetText = isMine
+                    ? `You: ${conversation.lastText || 'Sent a message'}`
+                    : (conversation.lastText || 'Sent a message');
+                  snippetTime = conversation.lastTime;
+                } else if (unreadData?.lastText) {
+                  snippetText = unreadData.lastText;
+                  snippetTime = unreadData.lastTime;
+                }
 
                 return (
                   <button
@@ -392,32 +500,23 @@ export const MessagesPage: React.FC = () => {
                         <h4 className={`text-sm truncate ${isUnread ? 'font-black text-white' : 'font-bold text-slate-200'}`}>
                           {user.name}
                         </h4>
-                        {isUnread ? (
-                          <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,1)] animate-pulse" />
-                            {unreadData && unreadData.count > 1 ? (
-                              <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white font-bold text-[10px]">
-                                {unreadData.count}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wide">
-                                New
-                              </span>
-                            )}
-                          </div>
+                        {snippetTime ? (
+                          <span className={`text-[10px] shrink-0 ml-1 font-mono ${isUnread ? 'text-blue-400 font-bold' : 'text-slate-500'}`}>
+                            {snippetTime}
+                          </span>
                         ) : online ? (
-                          <span className="text-[10px] text-emerald-400 font-semibold">Online</span>
+                          <span className="text-[10px] text-emerald-400 font-semibold shrink-0 ml-1">Online</span>
                         ) : (
-                          <span className="text-[10px] text-slate-500">Offline</span>
+                          <span className="text-[10px] text-slate-500 shrink-0 ml-1">Offline</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between mt-0.5">
-                        <p className={`text-xs truncate ${isUnread ? 'text-blue-300 font-semibold' : 'text-purple-300/70'}`}>
-                          {isUnread && unreadData?.lastText ? unreadData.lastText : user.aiTrustBadge || 'Verified Member'}
+                        <p className={`text-xs truncate ${isUnread ? 'text-blue-200 font-semibold' : 'text-slate-400'}`}>
+                          {snippetText}
                         </p>
-                        {isUnread && unreadData?.lastTime && (
-                          <span className="text-[9px] text-blue-400 shrink-0 ml-1 font-mono">
-                            {unreadData.lastTime}
+                        {isUnread && (
+                          <span className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center rounded-full bg-blue-600 text-white font-bold text-[10px] shadow-sm shrink-0 ml-1.5">
+                            {unreadCount > 99 ? '99+' : unreadCount}
                           </span>
                         )}
                       </div>

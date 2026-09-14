@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Share2,
   CheckCircle2,
+  ShieldCheck,
   AlertCircle,
   Loader2,
   Send,
@@ -233,8 +234,11 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
                         {post.user.name}
                       </span>
                       {post.user.verified && (
-                        <CheckCircle2 className="w-4 h-4 text-blue-400 fill-blue-400/20" />
+                        <CheckCircle2 className="w-4 h-4 text-blue-400 fill-blue-400/20 shrink-0" />
                       )}
+                      <span title="Verified Human" className="inline-flex items-center shrink-0">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      </span>
                     </div>
                     <span className="text-xs text-slate-400">
                       @{post.user.username} • {post.timestamp}
@@ -252,7 +256,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
 
               {/* Media */}
               {post.mediaUrl && (
-                <div className="rounded-2xl overflow-hidden border border-white/10 bg-black max-h-[450px] flex items-center justify-center">
+                <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black max-h-[450px] flex items-center justify-center">
                   {post.mediaType === 'video' || post.mediaUrl.includes('.mp4') ? (
                     <video
                       src={post.mediaUrl}
@@ -267,6 +271,10 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
                       className="w-full max-h-[450px] object-contain"
                     />
                   )}
+                  {/* AI Verified Safe Symbol */}
+                  <div className="absolute top-3 right-3 p-1.5 rounded-full bg-black/70 border border-emerald-500/30 backdrop-blur-md shadow-lg flex items-center justify-center" title="AI Verified Safe">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
                 </div>
               )}
 

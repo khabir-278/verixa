@@ -967,9 +967,18 @@ function formatStoryRelativeTime(dateString?: string): string {
         const isUnread = !lastRead || new Date(item.createdAt) > new Date(lastRead);
         if (isUnread) {
           if (!unreadMap[senderId]) {
+            let lastSnippet = item.text || '';
+            if (item.isVoice) {
+              lastSnippet = '🎙️ Voice note';
+            } else if (item.mediaUrl && !item.text) {
+              lastSnippet = '📷 Photo';
+            } else if (!lastSnippet) {
+              lastSnippet = 'Media attachment';
+            }
+
             unreadMap[senderId] = {
               count: 1,
-              lastText: item.text || 'Media attachment',
+              lastText: lastSnippet,
               lastTime: item.createdAt
                 ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 : 'Just now',
@@ -1001,11 +1010,20 @@ function formatStoryRelativeTime(dateString?: string): string {
         // User is NOT currently viewing this chat!
         // DO NOT auto-open the chat!
         // Show unread indicator dot on this sender's chat
+        let incomingSnippet = newMsg.text || '';
+        if (newMsg.isVoice) {
+          incomingSnippet = '🎙️ Voice note';
+        } else if (newMsg.mediaUrl && !newMsg.text) {
+          incomingSnippet = '📷 Photo';
+        } else if (!incomingSnippet) {
+          incomingSnippet = 'Media attachment';
+        }
+
         setUnreadChatSenders((prev) => ({
           ...prev,
           [newMsg.senderId]: {
             count: (prev[newMsg.senderId]?.count || 0) + 1,
-            lastText: newMsg.text || 'Media attachment',
+            lastText: incomingSnippet,
             lastTime: newMsg.timestamp,
           },
         }));

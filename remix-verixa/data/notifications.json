@@ -1,5 +1,65 @@
 [
   {
+    "id": "notif_1789417554776_97e422e4",
+    "recipient_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your post: \"😂😂\"",
+    "post_id": "642f88c8-70a2-47d8-8c74-0be1d3e0707b",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-14T20:25:54.776Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1789416282736_9c57e9a6",
+    "recipient_id": "8100e6d9-c75b-424a-98b3-f019d74eb9f2",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your post: \"GEETHANJALI INSTITUTE OF SCIENCE AN...\"",
+    "post_id": "d2edcc8d-2b42-47fc-aaa4-7f7a8e1b4316",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-14T20:04:42.737Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1789410579492_23b13cbf",
+    "recipient_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "like",
+    "message": "liked your reel: \"same blood❤️‍🔥same attitude💀⚡\"",
+    "post_id": "7dfecc64-f906-42e2-bf23-b9fc69ff9608",
+    "detail": null,
+    "read": false,
+    "created_at": "2026-09-14T18:29:39.492Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
     "id": "notif_1789403224416_eb4bb119",
     "recipient_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
     "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
@@ -27,7 +87,7 @@
     "message": "liked your story",
     "post_id": "a8e20931-a19f-4c70-a788-7ac7a9df2372",
     "detail": null,
-    "read": false,
+    "read": true,
     "created_at": "2026-09-11T17:14:44.580Z",
     "sender": {
       "id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",

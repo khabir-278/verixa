@@ -343,9 +343,8 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
 
           {/* Top Overlay Badge */}
           <div className="relative z-10 p-4 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-purple-500/40 backdrop-blur-md text-xs font-semibold text-purple-300">
+            <div className="inline-flex items-center p-2 rounded-full bg-slate-950/80 border border-emerald-500/30 backdrop-blur-md shadow-lg" title="AI Verified Safe">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>{activeReel.aiTrustBadge}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -415,8 +414,11 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
                 alt={activeReel.user.name}
                 className="w-9 h-9 rounded-full object-cover border-2 border-purple-500/40 group-hover:border-purple-400 transition"
               />
-              <span className="font-bold text-sm text-white group-hover:text-blue-400 transition">
+              <span className="font-bold text-sm text-white group-hover:text-blue-400 transition flex items-center gap-1.5">
                 {activeReel.user.name}
+                <span title="Verified Human" className="inline-flex items-center shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                </span>
               </span>
             </div>
 

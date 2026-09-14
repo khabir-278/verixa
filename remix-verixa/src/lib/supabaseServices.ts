@@ -2125,11 +2125,11 @@ export function subscribeIncomingMessages(
 
 export async function getRecentIncomingMessages(
   userId: string
-): Promise<Array<{ id: string; senderId: string; text: string; createdAt: string }>> {
+): Promise<Array<{ id: string; senderId: string; text: string; mediaUrl?: string; isVoice?: boolean; createdAt: string }>> {
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('id, sender_id, text, created_at')
+      .select('id, sender_id, text, media_url, is_voice, created_at')
       .eq('receiver_id', userId)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -2139,11 +2139,88 @@ export async function getRecentIncomingMessages(
       id: r.id,
       senderId: r.sender_id,
       text: r.text || '',
+      mediaUrl: r.media_url || undefined,
+      isVoice: r.is_voice || r.media_url?.includes('/audio/') || false,
       createdAt: r.created_at || '',
     }));
   } catch (err) {
     console.warn('Notice loading recent incoming messages:', err);
     return [];
+  }
+}
+
+export interface ConversationSnippet {
+  partnerId: string;
+  lastText: string;
+  lastSenderId: string;
+  lastTime: string;
+  createdAt: string;
+}
+
+export function formatConversationTime(isoString?: string): string {
+  if (!isoString) return '';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '';
+    const now = new Date();
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+    if (isToday) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday =
+      d.getDate() === yesterday.getDate() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getFullYear() === yesterday.getFullYear();
+    if (isYesterday) {
+      return 'Yesterday';
+    }
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  } catch {
+    return '';
+  }
+}
+
+export async function getUserConversationsOverview(
+  userId: string
+): Promise<Record<string, ConversationSnippet>> {
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, sender_id, receiver_id, text, media_url, is_voice, created_at')
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return {};
+
+    const overview: Record<string, ConversationSnippet> = {};
+    for (const row of data) {
+      const partnerId = row.sender_id === userId ? row.receiver_id : row.sender_id;
+      if (!partnerId || overview[partnerId]) continue;
+
+      let snippetText = row.text || '';
+      if (row.is_voice || row.media_url?.includes('/audio/')) {
+        snippetText = '🎙️ Voice note';
+      } else if (row.media_url && !row.text) {
+        snippetText = '📷 Photo';
+      }
+
+      overview[partnerId] = {
+        partnerId,
+        lastText: snippetText,
+        lastSenderId: row.sender_id,
+        lastTime: row.created_at ? formatConversationTime(row.created_at) : '',
+        createdAt: row.created_at || '',
+      };
+    }
+    return overview;
+  } catch (err) {
+    console.warn('Notice loading conversation overview:', err);
+    return {};
   }
 }
 

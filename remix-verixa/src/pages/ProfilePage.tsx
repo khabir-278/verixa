@@ -802,8 +802,9 @@ export const ProfilePage: React.FC = () => {
                     {displayedUser.displayName || displayedUser.name}
                   </h1>
                   {displayedUser.verified && (
-                    <span title="Verified VERIXA Human User">
+                    <span title="Verified VERIXA Human User" className="flex items-center gap-1">
                       <CheckCircle2 className="w-5 h-5 text-blue-400 fill-blue-500/20" />
+                      <ShieldCheck className="w-5 h-5 text-emerald-400" />
                     </span>
                   )}
                 </div>
@@ -811,9 +812,9 @@ export const ProfilePage: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs">
                   <span className="text-purple-300 font-semibold">@{displayedUser.username}</span>
                   <span className="text-slate-600">•</span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium text-[11px]">
-                    <Shield className="w-3 h-3 text-emerald-400" />
-                    {displayedUser.aiTrustBadge || 'Verified Member'}
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium text-[11px]" title="Verified Human">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Verified</span>
                   </span>
                 </div>
 
@@ -1171,8 +1172,8 @@ export const ProfilePage: React.FC = () => {
                 )}
 
                 {/* AI Safety Badge */}
-                <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-500/40 text-[10px] font-mono text-emerald-300">
-                  ✓ AI Verified
+                <div className="absolute top-2.5 left-2.5 p-1 rounded-full bg-black/70 border border-emerald-500/30 backdrop-blur-md shadow-lg flex items-center justify-center" title="AI Verified Safe">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
                 </div>
 
                 {/* Hover Overlay */}
@@ -1578,9 +1579,8 @@ export const ProfilePage: React.FC = () => {
                 )}
 
                 {/* AI Safety Watermark */}
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 border border-emerald-500/40 text-[11px] font-mono text-emerald-300 backdrop-blur-md flex items-center gap-1.5">
+                <div className="absolute top-3 left-3 p-1.5 rounded-full bg-black/70 border border-emerald-500/30 backdrop-blur-md shadow-lg flex items-center justify-center" title="AI Verified Safe">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>VERIXA Guard • Safe Content</span>
                 </div>
               </div>
 

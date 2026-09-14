@@ -944,6 +944,9 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                               <CheckCircle2 className="w-4 h-4 text-blue-400 fill-blue-400/20" />
                             </span>
                           )}
+                          <span title="Verified Human" className="inline-flex items-center shrink-0">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          </span>
                         </div>
                         <div className="text-gray-500 text-xs truncate mt-0.5">
                           @{post.user.username} • {post.timestamp}
@@ -1055,9 +1058,8 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                       )}
 
                       {/* AI Vision Scan Badge Overlay */}
-                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/80 border border-white/10 backdrop-blur-md text-[10px] text-gray-300 font-mono flex items-center gap-1.5 shadow-lg">
-                        <Scan className="w-3.5 h-3.5 text-green-400" />
-                        <span>AI Verified • NSFW {post.aiScanDetails.nsfwScore}%</span>
+                      <div className="absolute top-3 right-3 p-1.5 rounded-full bg-black/70 border border-emerald-500/30 backdrop-blur-md shadow-lg flex items-center justify-center" title="AI Verified Safe">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                       </div>
                     </div>
                   )}
@@ -2209,11 +2211,9 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium">
-                        <Shield className="w-3 h-3 text-emerald-400" />
-                        <span className="hidden sm:inline">{u.aiTrustBadge || 'Verified Human'}</span>
-                        <span className="sm:hidden">Verified</span>
+                    <div className="shrink-0 flex items-center gap-2" title="Verified Human">
+                      <span className="p-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                       </span>
                     </div>
                   </div>
