@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Here is your VERIXA verification code</title>
+  <style>
+    /* Client-specific resets */
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f5f8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+    }
+
+    /* Staggered Digit Reveal Animation */
+    @keyframes typeOtpDigits {
+      0% {
+        max-width: 0ch;
+        opacity: 0.1;
+      }
+      16.66% {
+        max-width: 1ch;
+      }
+      33.33% {
+        max-width: 2ch;
+      }
+      50% {
+        max-width: 3ch;
+      }
+      66.66% {
+        max-width: 4ch;
+      }
+      83.33% {
+        max-width: 5ch;
+      }
+      100% {
+        max-width: 6ch;
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15), 0 0 0 1px rgba(124, 58, 237, 0.2);
+      }
+      50% {
+        box-shadow: 0 6px 28px rgba(124, 58, 237, 0.28), 0 0 0 2px rgba(168, 85, 247, 0.4);
+      }
+    }
+
+    @keyframes cursorBlink {
+      0%, 100% { border-color: transparent; }
+      50% { border-color: #7c3aed; }
+    }
+
+    .animated-otp {
+      display: inline-block;
+      font-family: 'SF Mono', 'Courier New', Courier, monospace;
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #1e1b4b;
+      letter-spacing: 12px;
+      padding-left: 12px; /* compensates for trailing letter-spacing */
+      white-space: nowrap;
+      overflow: hidden;
+      vertical-align: middle;
+      border-right: 3px solid #7c3aed;
+      /* Default width so even if animation fails/unsupported, code is completely visible */
+      max-width: 6ch;
+      /* Animation: immediate execution when opened */
+      animation: typeOtpDigits 1.2s steps(6, end) 0.15s 1 normal forwards, cursorBlink 0.8s step-end 3 normal forwards;
+    }
+
+    .otp-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 18px 28px;
+      display: inline-block;
+      margin: 16px auto;
+      text-align: center;
+      animation: pulseGlow 2.5s ease-in-out infinite;
+    }
+
+    @media only screen and (max-width: 600px) {
+      .email-card {
+        width: 100% !important;
+        border-radius: 12px !important;
+        padding: 32px 20px !important;
+      }
+      .animated-otp {
+        font-size: 28px !important;
+        letter-spacing: 8px !important;
+        padding-left: 8px !important;
+      }
+    }
+  </style>
+
+  <!-- Schema.org Microdata for Gmail Quick Action Card -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "EmailMessage",
+    "description": "VERIXA Verification Code",
+    "potentialAction": {
+      "@type": "ConfirmAction",
+      "name": "Copy code"
+    }
+  }
+  </script>
+</head>
+<body style="margin: 0; padding: 40px 16px; background-color: #f4f5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td align="center">
+        <!-- Main Card -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04); overflow: hidden;" class="email-card">
+          
+          <!-- Top Accent Bar -->
+          <tr>
+            <td style="height: 6px; background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);"></td>
+          </tr>
+
+          <!-- Card Content -->
+          <tr>
+            <td style="padding: 44px 36px 36px 36px; text-align: center;">
+
+              <!-- Brand Header -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 28px;">
+                <tr>
+                  <td align="center">
+                    <span style="font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: #0f172a; text-decoration: none; display: inline-block;">
+                      VERIXA
+                    </span>
+                    <div style="width: 24px; height: 3px; background: #8b5cf6; margin: 4px auto 0 auto; border-radius: 2px;"></div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Heading -->
+              <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; letter-spacing: -0.3px;">
+                Verify Your Account
+              </h1>
+
+              <!-- Subtitle -->
+              <p style="font-size: 14px; font-weight: 500; color: #64748b; margin: 0 0 18px 0;">
+                Your verification code:
+              </p>
+
+              <!-- Animated OTP Display Box -->
+              <div class="otp-container" style="background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 16px 28px; margin: 12px auto 20px auto; display: inline-block;">
+                <span class="animated-otp" style="display: inline-block; font-family: 'SF Mono', 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; color: #1e1b4b; letter-spacing: 12px; padding-left: 12px; white-space: nowrap; max-width: 6ch;">
+                  482915
+                </span>
+              </div>
+
+              <!-- Instructional Text -->
+              <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 16px 0 8px 0; font-weight: 400;">
+                Use the above verification code to validate your email and complete your sign in.
+              </p>
+
+              <p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 0 0 28px 0;">
+                This code will expire in <strong>10 minutes</strong>. If you did not request this verification, no action is needed and you can safely ignore this email.
+              </p>
+
+              <!-- Divider -->
+              <div style="height: 1px; background-color: #f1f5f9; margin: 0 0 24px 0;"></div>
+
+              <!-- Trust / Security Footer -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="font-size: 12px; color: #64748b;">
+                    <span style="display: inline-block; vertical-align: middle; margin-right: 6px;">🛡️</span>
+                    <span style="font-weight: 600; color: #475569;">VERIXA Identity Safeguard</span>
+                    <span style="color: #cbd5e1; margin: 0 6px;">•</span>
+                    <span>AI-Powered Safety</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="font-size: 11px; color: #94a3b8; padding-top: 8px;">
+                    © 2026 VERIXA Inc. 
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

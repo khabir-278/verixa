@@ -1,0 +1,181 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f5065f8b"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport1_react from "/node_modules/.vite/deps/react.js?v=f5065f8b"; const useState = __vite__cjsImport1_react["useState"];
+import { useApp } from "/@fs/C:/verixa/remix-verixa/src/context/AppContext.tsx";
+import { HelpCircle, Search, FileQuestion, ArrowLeft } from "/node_modules/.vite/deps/lucide-react.js?v=f5065f8b";
+export const HelpCenterPage = () => {
+  _s();
+  const { setCurrentPage, isAuthenticated } = useApp();
+  const [search, setSearch] = useState("");
+  const faqs = [
+    {
+      q: "How does VERIXA detect toxic comments in real time?",
+      a: "When you type a comment and press post, VERIXA sends the text payload to our server-side Gemini 2.5 Flash neural model. If toxicity score exceeds threshold, the comment is blocked instantly."
+    },
+    {
+      q: "What should I do if my comment was blocked by mistake?",
+      a: "You can submit an AI moderation appeal directly via the Blocked Comment modal or open a ticket in our Contact Support section."
+    },
+    {
+      q: "How do I earn a Verified Human AI Trust Badge?",
+      a: "Maintain a clean posting history for 7 consecutive days with zero moderation flags to achieve 98+ Safety Score."
+    },
+    {
+      q: "How does media scanning detect deepfakes?",
+      a: "VERIXA Vision AI evaluates facial symmetry, lighting inconsistencies, frame rate jitter, and synthetic pixel artifacts."
+    }
+  ];
+  const filtered = faqs.filter(
+    (f) => f.q.toLowerCase().includes(search.toLowerCase()) || f.a.toLowerCase().includes(search.toLowerCase())
+  );
+  return /* @__PURE__ */ jsxDEV("div", { className: "max-w-4xl mx-auto px-4 py-10 space-y-8", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between border-b border-slate-800/80 pb-4", children: /* @__PURE__ */ jsxDEV(
+      "button",
+      {
+        onClick: () => setCurrentPage(isAuthenticated ? "home" : "landing"),
+        className: "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white text-xs font-semibold transition cursor-pointer",
+        children: [
+          /* @__PURE__ */ jsxDEV(ArrowLeft, { className: "w-4 h-4 text-purple-400" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+            lineNumber: 42,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { children: isAuthenticated ? "Back to Feed" : "Back to Welcome" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+            lineNumber: 43,
+            columnNumber: 11
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+        lineNumber: 38,
+        columnNumber: 9
+      },
+      this
+    ) }, void 0, false, {
+      fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+      lineNumber: 37,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "text-center space-y-3", children: [
+      /* @__PURE__ */ jsxDEV("h1", { className: "text-3xl font-extrabold text-white flex items-center justify-center gap-2", children: [
+        "Help Center & FAQs ",
+        /* @__PURE__ */ jsxDEV(HelpCircle, { className: "w-7 h-7 text-purple-400" }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+          lineNumber: 49,
+          columnNumber: 30
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+        lineNumber: 48,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-400", children: "Everything you need to know about VERIXA safety features and AI guard systems." }, void 0, false, {
+        fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+        lineNumber: 51,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "relative max-w-md mx-auto pt-2", children: [
+        /* @__PURE__ */ jsxDEV(Search, { className: "w-4 h-4 absolute left-3.5 top-5 text-slate-500" }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+          lineNumber: 56,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "input",
+          {
+            type: "text",
+            value: search,
+            onChange: (e) => setSearch(e.target.value),
+            placeholder: "Search help articles...",
+            className: "w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-purple-500/20 rounded-full text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+            lineNumber: 57,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+        lineNumber: 55,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+      lineNumber: 47,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: filtered.map(
+      (faq, idx) => /* @__PURE__ */ jsxDEV("div", { className: "p-5 rounded-2xl bg-slate-900/80 border border-purple-500/20 space-y-2", children: [
+        /* @__PURE__ */ jsxDEV("h3", { className: "font-bold text-sm text-white flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxDEV(FileQuestion, { className: "w-4 h-4 text-purple-400 shrink-0" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+            lineNumber: 71,
+            columnNumber: 15
+          }, this),
+          " ",
+          faq.q
+        ] }, void 0, true, {
+          fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+          lineNumber: 70,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-300 leading-relaxed pl-6", children: faq.a }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+          lineNumber: 73,
+          columnNumber: 13
+        }, this)
+      ] }, idx, true, {
+        fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+        lineNumber: 69,
+        columnNumber: 9
+      }, this)
+    ) }, void 0, false, {
+      fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+      lineNumber: 67,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx",
+    lineNumber: 35,
+    columnNumber: 5
+  }, this);
+};
+_s(HelpCenterPage, "pWmmaLp7YSW6oCA9vyHuZCt+yCM=", false, function() {
+  return [useApp];
+});
+_c = HelpCenterPage;
+var _c;
+$RefreshReg$(_c, "HelpCenterPage");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/verixa/remix-verixa/src/pages/HelpCenterPage.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBeUNVOztBQXpDVixTQUFnQkEsZ0JBQWdCO0FBQ2hDLFNBQVNDLGNBQWM7QUFDdkIsU0FBU0MsWUFBWUMsUUFBNkNDLGNBQWNDLGlCQUFpQjtBQUUxRixhQUFNQyxpQkFBMkJBLE1BQU07QUFBQUMsS0FBQTtBQUM1QyxRQUFNLEVBQUVDLGdCQUFnQkMsZ0JBQWdCLElBQUlSLE9BQU87QUFDbkQsUUFBTSxDQUFDUyxRQUFRQyxTQUFTLElBQUlYLFNBQVMsRUFBRTtBQUV2QyxRQUFNWSxPQUFPO0FBQUEsSUFDWDtBQUFBLE1BQ0VDLEdBQUc7QUFBQSxNQUNIQyxHQUFHO0FBQUEsSUFDTDtBQUFBLElBQ0E7QUFBQSxNQUNFRCxHQUFHO0FBQUEsTUFDSEMsR0FBRztBQUFBLElBQ0w7QUFBQSxJQUNBO0FBQUEsTUFDRUQsR0FBRztBQUFBLE1BQ0hDLEdBQUc7QUFBQSxJQUNMO0FBQUEsSUFDQTtBQUFBLE1BQ0VELEdBQUc7QUFBQSxNQUNIQyxHQUFHO0FBQUEsSUFDTDtBQUFBLEVBQUM7QUFHSCxRQUFNQyxXQUFXSCxLQUFLSTtBQUFBQSxJQUNwQixDQUFDQyxNQUNDQSxFQUFFSixFQUFFSyxZQUFZLEVBQUVDLFNBQVNULE9BQU9RLFlBQVksQ0FBQyxLQUMvQ0QsRUFBRUgsRUFBRUksWUFBWSxFQUFFQyxTQUFTVCxPQUFPUSxZQUFZLENBQUM7QUFBQSxFQUNuRDtBQUVBLFNBQ0UsdUJBQUMsU0FBSSxXQUFVLDBDQUViO0FBQUEsMkJBQUMsU0FBSSxXQUFVLHVFQUNiO0FBQUEsTUFBQztBQUFBO0FBQUEsUUFDQyxTQUFTLE1BQU1WLGVBQWVDLGtCQUFrQixTQUFTLFNBQVM7QUFBQSxRQUNsRSxXQUFVO0FBQUEsUUFFVjtBQUFBLGlDQUFDLGFBQVUsV0FBVSw2QkFBckI7QUFBQTtBQUFBO0FBQUE7QUFBQSxpQkFBOEM7QUFBQSxVQUM5Qyx1QkFBQyxVQUFNQSw0QkFBa0IsaUJBQWlCLHFCQUExQztBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUE0RDtBQUFBO0FBQUE7QUFBQSxNQUw5RDtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsSUFNQSxLQVBGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FRQTtBQUFBLElBRUEsdUJBQUMsU0FBSSxXQUFVLHlCQUNiO0FBQUEsNkJBQUMsUUFBRyxXQUFVLDZFQUE0RTtBQUFBO0FBQUEsUUFDckUsdUJBQUMsY0FBVyxXQUFVLDZCQUF0QjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBQStDO0FBQUEsV0FEcEU7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUVBO0FBQUEsTUFDQSx1QkFBQyxPQUFFLFdBQVUsMEJBQXlCLDhGQUF0QztBQUFBO0FBQUE7QUFBQTtBQUFBLGFBRUE7QUFBQSxNQUVBLHVCQUFDLFNBQUksV0FBVSxrQ0FDYjtBQUFBLCtCQUFDLFVBQU8sV0FBVSxvREFBbEI7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQUFrRTtBQUFBLFFBQ2xFO0FBQUEsVUFBQztBQUFBO0FBQUEsWUFDQyxNQUFLO0FBQUEsWUFDTCxPQUFPQztBQUFBQSxZQUNQLFVBQVUsQ0FBQ1UsTUFBTVQsVUFBVVMsRUFBRUMsT0FBT0MsS0FBSztBQUFBLFlBQ3pDLGFBQVk7QUFBQSxZQUNaLFdBQVU7QUFBQTtBQUFBLFVBTFo7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFFBS29MO0FBQUEsV0FQdEw7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQVNBO0FBQUEsU0FqQkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQWtCQTtBQUFBLElBRUEsdUJBQUMsU0FBSSxXQUFVLGFBQ1pQLG1CQUFTUTtBQUFBQSxNQUFJLENBQUNDLEtBQUtDLFFBQ2xCLHVCQUFDLFNBQWMsV0FBVSx5RUFDdkI7QUFBQSwrQkFBQyxRQUFHLFdBQVUsd0RBQ1o7QUFBQSxpQ0FBQyxnQkFBYSxXQUFVLHNDQUF4QjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUEwRDtBQUFBLFVBQUc7QUFBQSxVQUFFRCxJQUFJWDtBQUFBQSxhQURyRTtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBRUE7QUFBQSxRQUNBLHVCQUFDLE9BQUUsV0FBVSwrQ0FBK0NXLGNBQUlWLEtBQWhFO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFBa0U7QUFBQSxXQUoxRFcsS0FBVjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBS0E7QUFBQSxJQUNELEtBUkg7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQVNBO0FBQUEsT0F6Q0Y7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQTBDQTtBQUVKO0FBQUVsQixHQTFFV0QsZ0JBQXdCO0FBQUEsVUFDU0wsTUFBTTtBQUFBO0FBQUEsS0FEdkNLO0FBQXdCLElBQUFvQjtBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsInVzZUFwcCIsIkhlbHBDaXJjbGUiLCJTZWFyY2giLCJGaWxlUXVlc3Rpb24iLCJBcnJvd0xlZnQiLCJIZWxwQ2VudGVyUGFnZSIsIl9zIiwic2V0Q3VycmVudFBhZ2UiLCJpc0F1dGhlbnRpY2F0ZWQiLCJzZWFyY2giLCJzZXRTZWFyY2giLCJmYXFzIiwicSIsImEiLCJmaWx0ZXJlZCIsImZpbHRlciIsImYiLCJ0b0xvd2VyQ2FzZSIsImluY2x1ZGVzIiwiZSIsInRhcmdldCIsInZhbHVlIiwibWFwIiwiZmFxIiwiaWR4IiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiSGVscENlbnRlclBhZ2UudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBSZWFjdCwgeyB1c2VTdGF0ZSB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgdXNlQXBwIH0gZnJvbSAnLi4vY29udGV4dC9BcHBDb250ZXh0JztcclxuaW1wb3J0IHsgSGVscENpcmNsZSwgU2VhcmNoLCBTcGFya2xlcywgU2hpZWxkQ2hlY2ssIENoZXZyb25SaWdodCwgRmlsZVF1ZXN0aW9uLCBBcnJvd0xlZnQgfSBmcm9tICdsdWNpZGUtcmVhY3QnO1xyXG5cclxuZXhwb3J0IGNvbnN0IEhlbHBDZW50ZXJQYWdlOiBSZWFjdC5GQyA9ICgpID0+IHtcclxuICBjb25zdCB7IHNldEN1cnJlbnRQYWdlLCBpc0F1dGhlbnRpY2F0ZWQgfSA9IHVzZUFwcCgpO1xyXG4gIGNvbnN0IFtzZWFyY2gsIHNldFNlYXJjaF0gPSB1c2VTdGF0ZSgnJyk7XHJcblxyXG4gIGNvbnN0IGZhcXMgPSBbXHJcbiAgICB7XHJcbiAgICAgIHE6ICdIb3cgZG9lcyBWRVJJWEEgZGV0ZWN0IHRveGljIGNvbW1lbnRzIGluIHJlYWwgdGltZT8nLFxyXG4gICAgICBhOiAnV2hlbiB5b3UgdHlwZSBhIGNvbW1lbnQgYW5kIHByZXNzIHBvc3QsIFZFUklYQSBzZW5kcyB0aGUgdGV4dCBwYXlsb2FkIHRvIG91ciBzZXJ2ZXItc2lkZSBHZW1pbmkgMi41IEZsYXNoIG5ldXJhbCBtb2RlbC4gSWYgdG94aWNpdHkgc2NvcmUgZXhjZWVkcyB0aHJlc2hvbGQsIHRoZSBjb21tZW50IGlzIGJsb2NrZWQgaW5zdGFudGx5LicsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBxOiAnV2hhdCBzaG91bGQgSSBkbyBpZiBteSBjb21tZW50IHdhcyBibG9ja2VkIGJ5IG1pc3Rha2U/JyxcclxuICAgICAgYTogJ1lvdSBjYW4gc3VibWl0IGFuIEFJIG1vZGVyYXRpb24gYXBwZWFsIGRpcmVjdGx5IHZpYSB0aGUgQmxvY2tlZCBDb21tZW50IG1vZGFsIG9yIG9wZW4gYSB0aWNrZXQgaW4gb3VyIENvbnRhY3QgU3VwcG9ydCBzZWN0aW9uLicsXHJcbiAgICB9LFxyXG4gICAge1xyXG4gICAgICBxOiAnSG93IGRvIEkgZWFybiBhIFZlcmlmaWVkIEh1bWFuIEFJIFRydXN0IEJhZGdlPycsXHJcbiAgICAgIGE6ICdNYWludGFpbiBhIGNsZWFuIHBvc3RpbmcgaGlzdG9yeSBmb3IgNyBjb25zZWN1dGl2ZSBkYXlzIHdpdGggemVybyBtb2RlcmF0aW9uIGZsYWdzIHRvIGFjaGlldmUgOTgrIFNhZmV0eSBTY29yZS4nLFxyXG4gICAgfSxcclxuICAgIHtcclxuICAgICAgcTogJ0hvdyBkb2VzIG1lZGlhIHNjYW5uaW5nIGRldGVjdCBkZWVwZmFrZXM/JyxcclxuICAgICAgYTogJ1ZFUklYQSBWaXNpb24gQUkgZXZhbHVhdGVzIGZhY2lhbCBzeW1tZXRyeSwgbGlnaHRpbmcgaW5jb25zaXN0ZW5jaWVzLCBmcmFtZSByYXRlIGppdHRlciwgYW5kIHN5bnRoZXRpYyBwaXhlbCBhcnRpZmFjdHMuJyxcclxuICAgIH0sXHJcbiAgXTtcclxuXHJcbiAgY29uc3QgZmlsdGVyZWQgPSBmYXFzLmZpbHRlcihcclxuICAgIChmKSA9PlxyXG4gICAgICBmLnEudG9Mb3dlckNhc2UoKS5pbmNsdWRlcyhzZWFyY2gudG9Mb3dlckNhc2UoKSkgfHxcclxuICAgICAgZi5hLnRvTG93ZXJDYXNlKCkuaW5jbHVkZXMoc2VhcmNoLnRvTG93ZXJDYXNlKCkpXHJcbiAgKTtcclxuXHJcbiAgcmV0dXJuIChcclxuICAgIDxkaXYgY2xhc3NOYW1lPVwibWF4LXctNHhsIG14LWF1dG8gcHgtNCBweS0xMCBzcGFjZS15LThcIj5cclxuICAgICAgey8qIFRvcCBMZWZ0IE5hdmlnYXRpb24gKi99XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGJvcmRlci1iIGJvcmRlci1zbGF0ZS04MDAvODAgcGItNFwiPlxyXG4gICAgICAgIDxidXR0b25cclxuICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldEN1cnJlbnRQYWdlKGlzQXV0aGVudGljYXRlZCA/ICdob21lJyA6ICdsYW5kaW5nJyl9XHJcbiAgICAgICAgICBjbGFzc05hbWU9XCJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgcHgtMy41IHB5LTEuNSByb3VuZGVkLXhsIGJnLXNsYXRlLTkwMC84MCBob3ZlcjpiZy1zbGF0ZS04MDAgYm9yZGVyIGJvcmRlci1zbGF0ZS04MDAgaG92ZXI6Ym9yZGVyLXB1cnBsZS01MDAvNDAgdGV4dC1zbGF0ZS0zMDAgaG92ZXI6dGV4dC13aGl0ZSB0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdHJhbnNpdGlvbiBjdXJzb3ItcG9pbnRlclwiXHJcbiAgICAgICAgPlxyXG4gICAgICAgICAgPEFycm93TGVmdCBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtcHVycGxlLTQwMFwiIC8+XHJcbiAgICAgICAgICA8c3Bhbj57aXNBdXRoZW50aWNhdGVkID8gJ0JhY2sgdG8gRmVlZCcgOiAnQmFjayB0byBXZWxjb21lJ308L3NwYW4+XHJcbiAgICAgICAgPC9idXR0b24+XHJcbiAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBzcGFjZS15LTNcIj5cclxuICAgICAgICA8aDEgY2xhc3NOYW1lPVwidGV4dC0zeGwgZm9udC1leHRyYWJvbGQgdGV4dC13aGl0ZSBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgSGVscCBDZW50ZXIgJiBGQVFzIDxIZWxwQ2lyY2xlIGNsYXNzTmFtZT1cInctNyBoLTcgdGV4dC1wdXJwbGUtNDAwXCIgLz5cclxuICAgICAgICA8L2gxPlxyXG4gICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1zbGF0ZS00MDBcIj5cclxuICAgICAgICAgIEV2ZXJ5dGhpbmcgeW91IG5lZWQgdG8ga25vdyBhYm91dCBWRVJJWEEgc2FmZXR5IGZlYXR1cmVzIGFuZCBBSSBndWFyZCBzeXN0ZW1zLlxyXG4gICAgICAgIDwvcD5cclxuXHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZSBtYXgtdy1tZCBteC1hdXRvIHB0LTJcIj5cclxuICAgICAgICAgIDxTZWFyY2ggY2xhc3NOYW1lPVwidy00IGgtNCBhYnNvbHV0ZSBsZWZ0LTMuNSB0b3AtNSB0ZXh0LXNsYXRlLTUwMFwiIC8+XHJcbiAgICAgICAgICA8aW5wdXRcclxuICAgICAgICAgICAgdHlwZT1cInRleHRcIlxyXG4gICAgICAgICAgICB2YWx1ZT17c2VhcmNofVxyXG4gICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFNlYXJjaChlLnRhcmdldC52YWx1ZSl9XHJcbiAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwiU2VhcmNoIGhlbHAgYXJ0aWNsZXMuLi5cIlxyXG4gICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgcGwtMTAgcHItNCBweS0yLjUgYmctc2xhdGUtOTAwIGJvcmRlciBib3JkZXItcHVycGxlLTUwMC8yMCByb3VuZGVkLWZ1bGwgdGV4dC14cyB0ZXh0LXNsYXRlLTEwMCBwbGFjZWhvbGRlci1zbGF0ZS01MDAgZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOmJvcmRlci1wdXJwbGUtNTAwXCJcclxuICAgICAgICAgIC8+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTRcIj5cclxuICAgICAgICB7ZmlsdGVyZWQubWFwKChmYXEsIGlkeCkgPT4gKFxyXG4gICAgICAgICAgPGRpdiBrZXk9e2lkeH0gY2xhc3NOYW1lPVwicC01IHJvdW5kZWQtMnhsIGJnLXNsYXRlLTkwMC84MCBib3JkZXIgYm9yZGVyLXB1cnBsZS01MDAvMjAgc3BhY2UteS0yXCI+XHJcbiAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJmb250LWJvbGQgdGV4dC1zbSB0ZXh0LXdoaXRlIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgPEZpbGVRdWVzdGlvbiBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtcHVycGxlLTQwMCBzaHJpbmstMFwiIC8+IHtmYXEucX1cclxuICAgICAgICAgICAgPC9oMz5cclxuICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LXNsYXRlLTMwMCBsZWFkaW5nLXJlbGF4ZWQgcGwtNlwiPntmYXEuYX08L3A+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICApKX1cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L2Rpdj5cclxuICApO1xyXG59O1xyXG4iXSwiZmlsZSI6IkM6L3Zlcml4YS9yZW1peC12ZXJpeGEvc3JjL3BhZ2VzL0hlbHBDZW50ZXJQYWdlLnRzeCJ9

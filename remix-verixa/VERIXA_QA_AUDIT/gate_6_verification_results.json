@@ -1,0 +1,776 @@
+[
+  {
+    "testId": "MOD-01",
+    "inputCategory": "Safe Text",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "post_text",
+    "expectedDecision": "ALLOW",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "analysisId": "mod_1790267296633_m6xq8w6",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": false,
+    "evidence": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T16:28:19.278Z",
+      "content_type": "post_text",
+      "language": "English",
+      "language_detected": "English",
+      "categories": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_1790267296633_m6xq8w6",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "AI_ANALYSIS_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-02",
+    "inputCategory": "Toxic/Offensive Text",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "comment",
+    "expectedDecision": "BLOCK",
+    "actualDecision": "BLOCK",
+    "moderationStatus": "BLOCKED",
+    "model": "secondary_safety_layer",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Threats"
+    ],
+    "analysisId": "mod_1790267300899_cl04xdg",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": {
+      "decision": "BLOCK",
+      "allowed": false,
+      "status": "BLOCKED",
+      "state": "REJECTED",
+      "timestamp": "2026-09-24T16:28:22.563Z",
+      "content_type": "comment",
+      "language": "Multilingual",
+      "language_detected": "Multilingual",
+      "categories": [
+        "Threats"
+      ],
+      "toxicity_score": 98,
+      "confidence": 90,
+      "risk_score": 98,
+      "reason": "Violates zero-tolerance policy against violent threats and harm.",
+      "safe_rewrite": "Please communicate respectfully.",
+      "model": "secondary_safety_layer",
+      "model_version": "2026.1",
+      "analysis_id": "mod_1790267300899_cl04xdg",
+      "scores": {
+        "toxicity": 98,
+        "risk": 98,
+        "nsfw": 0,
+        "violence": 0,
+        "weapons": 0,
+        "deepfake_risk": 0,
+        "overall_risk": 98
+      },
+      "labels": [
+        "Threats"
+      ],
+      "deepfake_risk": 0,
+      "toxicityScore": 98,
+      "category": "Threats",
+      "message": "Your comment couldn't be published because it violated safety rules (Threats).",
+      "under_review": false,
+      "safe": false,
+      "suggestion": "Please communicate respectfully.",
+      "detected_labels": [
+        "Threats"
+      ],
+      "classification": "BLOCK"
+    }
+  },
+  {
+    "testId": "MOD-03",
+    "inputCategory": "Borderline/Ambiguous Text",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "comment",
+    "expectedDecision": "WARNING / ALLOW",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "analysisId": "mod_1790267302784_iul5vhg",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": false,
+    "evidence": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T16:28:24.405Z",
+      "content_type": "comment",
+      "language": "English",
+      "language_detected": "English",
+      "categories": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_1790267302784_iul5vhg",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "AI_ANALYSIS_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-04",
+    "inputCategory": "Multilingual Moderation (Telugu, Hindi, Urdu, Tamil)",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "comment",
+    "expectedDecision": "BLOCK",
+    "actualDecision": "BLOCK",
+    "moderationStatus": "BLOCKED",
+    "model": "gemini-3.1-flash-lite / secondarySafetyRules",
+    "modelVersion": "2026.1",
+    "scores": {
+      "sampleCount": 4,
+      "blockedCount": 4
+    },
+    "labels": [
+      "Hate speech",
+      "Threats",
+      "Harassment"
+    ],
+    "analysisId": "multi_eval_1790267320498",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": [
+      {
+        "lang": "Telugu",
+        "decision": "BLOCK",
+        "detectedLang": "Multilingual",
+        "blocked": true
+      },
+      {
+        "lang": "Hindi",
+        "decision": "BLOCK",
+        "detectedLang": "Multilingual",
+        "blocked": true
+      },
+      {
+        "lang": "Urdu",
+        "decision": "BLOCK",
+        "detectedLang": "Multilingual",
+        "blocked": true
+      },
+      {
+        "lang": "Tamil",
+        "decision": "BLOCK",
+        "detectedLang": "Multilingual",
+        "blocked": true
+      }
+    ]
+  },
+  {
+    "testId": "MOD-05",
+    "inputCategory": "Homoglyph & Leetspeak Evasion",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "comment",
+    "expectedDecision": "BLOCK",
+    "actualDecision": "BLOCK",
+    "moderationStatus": "BLOCKED",
+    "model": "secondary_safety_layer",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Hate speech"
+    ],
+    "analysisId": "mod_1790267320508_igde0c4",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": {
+      "decision": "BLOCK",
+      "allowed": false,
+      "status": "BLOCKED",
+      "state": "REJECTED",
+      "timestamp": "2026-09-24T16:28:44.477Z",
+      "content_type": "comment",
+      "language": "English",
+      "language_detected": "English",
+      "categories": [
+        "Hate speech"
+      ],
+      "toxicity_score": 98,
+      "confidence": 90,
+      "risk_score": 98,
+      "reason": "Violates community safety rules. Detected hate speech (English).",
+      "safe_rewrite": "Please communicate respectfully.",
+      "model": "secondary_safety_layer",
+      "model_version": "2026.1",
+      "analysis_id": "mod_1790267320508_igde0c4",
+      "scores": {
+        "toxicity": 98,
+        "risk": 98,
+        "nsfw": 0,
+        "violence": 0,
+        "weapons": 0,
+        "deepfake_risk": 0,
+        "overall_risk": 98
+      },
+      "labels": [
+        "Hate speech"
+      ],
+      "deepfake_risk": 0,
+      "toxicityScore": 98,
+      "category": "Hate speech",
+      "message": "Your comment couldn't be published because it violated safety rules (Hate speech).",
+      "under_review": false,
+      "safe": false,
+      "suggestion": "Please communicate respectfully.",
+      "detected_labels": [
+        "Hate speech"
+      ],
+      "classification": "BLOCK"
+    }
+  },
+  {
+    "testId": "MOD-06",
+    "inputCategory": "Prompt-Injection Resistance",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "comment",
+    "expectedDecision": "BLOCK (Resistance Verified)",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "analysisId": "mod_1790267325160_aryp0zo",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T16:28:47.065Z",
+      "content_type": "comment",
+      "language": "English",
+      "language_detected": "English",
+      "categories": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_1790267325160_aryp0zo",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "AI_ANALYSIS_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-07",
+    "inputCategory": "Image Moderation",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "image",
+    "expectedDecision": "ALLOW",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "analysisId": "mod_img_1790267327628_b4ekavv",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": false,
+    "evidence": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T16:28:53.281Z",
+      "content_type": "image",
+      "language": "Visual",
+      "language_detected": "Visual",
+      "categories": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_img_1790267327628_b4ekavv",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "MEDIA_SCAN_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-08",
+    "inputCategory": "Video / Reel Moderation",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "reel",
+    "expectedDecision": "ALLOW / WARNING",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "VIDEO_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "analysisId": "mod_vid_1790267333903_c387hss",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": false,
+    "evidence": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T16:29:08.743Z",
+      "content_type": "reel",
+      "language": "Visual",
+      "language_detected": "Visual",
+      "categories": [
+        "VIDEO_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "Video safety audit encountered an error or timeout. Placed in quarantine pending human review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_vid_1790267333903_c387hss",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "VIDEO_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "VIDEO_SCAN_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "VIDEO_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-09",
+    "inputCategory": "Fail-Closed Behavior",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "image",
+    "expectedDecision": "QUARANTINE / BLOCK",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "analysisId": "mod_img_1790267349327_m5mes4e",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T16:29:11.304Z",
+      "content_type": "image",
+      "language": "Visual",
+      "language_detected": "Visual",
+      "categories": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_img_1790267349327_m5mes4e",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "MEDIA_SCAN_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-10",
+    "inputCategory": "Moderation Audit Records",
+    "actor": "Audit Infrastructure",
+    "contentType": "audit_event",
+    "expectedDecision": "AUDIT_LOG_VERIFIED",
+    "actualDecision": "AUDIT_LOG_VERIFIED",
+    "moderationStatus": "VERIFIED",
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "eventsCount": 10
+    },
+    "labels": [],
+    "analysisId": "mod_img_1790267349327_m5mes4e",
+    "contentPersisted": true,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": {
+      "analysis_id": "mod_img_1790267349327_m5mes4e",
+      "content_id": "mod_img_1790267349327_m5mes4e",
+      "content_type": "image",
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "decision": "QUARANTINE",
+      "state": "REVIEW_REQUIRED",
+      "timestamps": {
+        "created_at": "2026-09-24T16:29:11.304Z",
+        "analyzed_at": "2026-09-24T16:29:11.304Z"
+      },
+      "allowed": false,
+      "status": "QUARANTINED",
+      "confidence": 50,
+      "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+      "content_hash": "75e6a3043438d1c3b8816b43565bbdc8285c5be61f0911d25e5579e857dbbd36",
+      "content_length": 60,
+      "snippet_redacted": "[base64_media data:image/jpeg;base64,CORRUPT...]",
+      "language": "Visual",
+      "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+      "created_at": "2026-09-24T16:29:11.304Z"
+    }
+  },
+  {
+    "testId": "MOD-11",
+    "inputCategory": "Blocked-Content Persistence Prevention",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "comment",
+    "expectedDecision": "NOT_PERSISTED",
+    "actualDecision": "NOT_PERSISTED",
+    "moderationStatus": "BLOCKED",
+    "model": "persistence_gate",
+    "modelVersion": "1.0",
+    "scores": {},
+    "labels": [
+      "BLOCKED_CONTENT_NOT_SAVED"
+    ],
+    "analysisId": "gate_check_1790267352133",
+    "contentPersisted": false,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": {
+      "blockedWasSaved": false,
+      "checkedTable": "public.comments"
+    }
+  },
+  {
+    "testId": "MOD-12",
+    "inputCategory": "Positive-Content Persistence",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "comment",
+    "expectedDecision": "PERSISTED",
+    "actualDecision": "PERSISTED",
+    "moderationStatus": "APPROVED",
+    "model": "supabase_postgres",
+    "modelVersion": "1.0",
+    "scores": {
+      "toxicity": 5
+    },
+    "labels": [
+      "SAFE_CONTENT"
+    ],
+    "analysisId": "05efbe4f-eb4e-4978-876c-22b8c1415be3",
+    "contentPersisted": true,
+    "notificationGenerated": false,
+    "appealCreated": false,
+    "passed": true,
+    "evidence": {
+      "id": "05efbe4f-eb4e-4978-876c-22b8c1415be3",
+      "text": "[VERIXA-QA] Legitimate verified safe comment for Gate 6 audit",
+      "moderation_status": "approved"
+    }
+  },
+  {
+    "testId": "MOD-13",
+    "inputCategory": "Appeal Workflow",
+    "actor": "User A (@doc_auditor)",
+    "contentType": "appeal",
+    "expectedDecision": "SUBMITTED",
+    "actualDecision": "SUBMITTED",
+    "moderationStatus": "PENDING",
+    "model": "reviewService",
+    "modelVersion": "1.0",
+    "scores": {},
+    "labels": [
+      "APPEAL_PENDING"
+    ],
+    "analysisId": "mod_1790267300899_cl04xdg",
+    "contentPersisted": true,
+    "notificationGenerated": false,
+    "appealCreated": true,
+    "passed": true,
+    "evidence": {
+      "appeal": {
+        "id": "apl_1790267352995_fbpqe",
+        "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+        "analysis_id": "mod_1790267300899_cl04xdg",
+        "content_id": "comment_mod02_test",
+        "content_type": "comment",
+        "original_decision": "BLOCK",
+        "reason": "Testing false-positive appeal submission under Option A quarantine",
+        "appeal_text": "[VERIXA-QA] Please review this comment, it was intended as a test fixture.",
+        "evidence_urls": [],
+        "status": "PENDING",
+        "admin_decision": null,
+        "admin_id": null,
+        "admin_notes": null,
+        "created_at": "2026-09-24T16:29:12.995Z",
+        "resolved_at": null,
+        "guardian_impact": 0,
+        "reputation_impact": 0
+      },
+      "listVerified": true
+    }
+  }
+]

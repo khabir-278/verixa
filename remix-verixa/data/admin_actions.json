@@ -1,5 +1,55 @@
 [
   {
+    "id": "act_1790685200848_kl284",
+    "admin_id": "admin_usr_1790685200270",
+    "admin_username": "SafetyLeadAdmin",
+    "action_type": "REJECT_APPEAL",
+    "target_type": "appeal",
+    "target_id": "apl_1790685200273_6o8ka",
+    "analysis_id": "mod_img_1790685200273_xyz456",
+    "affected_user_id": "user_rev_b_1790685200270",
+    "reason": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "notes": "Prop weapons without safety orange tips violate weapon policy section 4.",
+    "prior_state": {
+      "status": "PENDING",
+      "original_decision": "QUARANTINE"
+    },
+    "new_state": {
+      "status": "REJECTED",
+      "admin_decision": "REJECT",
+      "admin_notes": "Prop weapons without safety orange tips violate weapon policy section 4."
+    },
+    "guardian_adjustment": 0,
+    "reputation_adjustment": 0,
+    "ip_address": null,
+    "created_at": "2026-09-29T12:33:20.845Z"
+  },
+  {
+    "id": "act_1790685200844_fad3d",
+    "admin_id": "admin_usr_1790685200270",
+    "admin_username": "SafetyLeadAdmin",
+    "action_type": "APPROVE_APPEAL",
+    "target_type": "appeal",
+    "target_id": "apl_1790685200270_t8jco",
+    "analysis_id": "mod_txt_1790685200270_abc123",
+    "affected_user_id": "user_rev_a_1790685200270",
+    "reason": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "notes": "False positive verified upon human moderator inspection. Citations legitimate.",
+    "prior_state": {
+      "status": "PENDING",
+      "original_decision": "BLOCK"
+    },
+    "new_state": {
+      "status": "APPROVED",
+      "admin_decision": "APPROVE",
+      "admin_notes": "False positive verified upon human moderator inspection. Citations legitimate."
+    },
+    "guardian_adjustment": 30,
+    "reputation_adjustment": 20,
+    "ip_address": null,
+    "created_at": "2026-09-29T12:33:20.840Z"
+  },
+  {
     "id": "act_1788677575321_0hlnv",
     "admin_id": "admin_usr_1788677567984",
     "admin_username": "SafetyLeadAdmin",

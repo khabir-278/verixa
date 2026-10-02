@@ -1,0 +1,423 @@
+[
+  {
+    "qaId": "QA-POST-01",
+    "category": "Post",
+    "tableOrStore": "public.posts",
+    "recordId": "338eab85-abc0-47d7-9ad6-f8a19b0c0c5f",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "caption": "[VERIXA-QA] Standard baseline post for feed layout, typography, and timestamp verification.",
+      "hashtags": [
+        "#verixaqa",
+        "#baseline"
+      ],
+      "score": 98,
+      "status": "approved"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:27:47.960Z"
+  },
+  {
+    "qaId": "QA-POST-02",
+    "category": "Post",
+    "tableOrStore": "public.posts",
+    "recordId": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "caption": "[VERIXA-QA] Discussion post: What are the best practices for online AI moderation? Let us test comment threading below.",
+      "media": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1080&q=80",
+      "hashtags": [
+        "#verixaqa",
+        "#discussion"
+      ],
+      "score": 99,
+      "status": "approved"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:27:47.962Z"
+  },
+  {
+    "qaId": "QA-POST-03",
+    "category": "Post",
+    "tableOrStore": "public.posts",
+    "recordId": "c05633a5-9301-4abd-8e9f-6ae3927287a0",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "caption": "[VERIXA-QA] Borderline sentiment test: I am utterly sick and tired of these terrible latency spikes on the network today!",
+      "hashtags": [
+        "#verixaqa",
+        "#sentiment"
+      ],
+      "score": 75,
+      "status": "approved"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:27:47.962Z"
+  },
+  {
+    "qaId": "QA-POST-04",
+    "category": "Post (Pre-Flight Moderation Intercept)",
+    "tableOrStore": "N/A (Pre-flight blocked; 0 rows inserted in posts)",
+    "recordId": "mod_1790256467973_7dtjchl",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "caption": "[VERIXA-QA] [TEST-BLOCK] You are completely worthless and should go kill yourself right now.",
+      "decision": "BLOCK",
+      "status": "BLOCKED",
+      "toxicityScore": 100,
+      "categories": [
+        "Bullying",
+        "Personal attacks",
+        "Threats"
+      ],
+      "reason": "The content explicitly encourages self-harm and uses dehumanizing, abusive language directed at an individual, which constitutes a severe violation of safety policies regarding bullying and threats of harm.",
+      "intercepted": true,
+      "rowsInserted": 0
+    },
+    "status": "BLOCKED_PRE_FLIGHT",
+    "createdAt": "2026-09-24T13:27:55.132Z"
+  },
+  {
+    "qaId": "QA-COMM-01",
+    "category": "Comment",
+    "tableOrStore": "public.comments",
+    "recordId": "f3c364e8-09e4-451b-abbe-df1e7a97b8e7",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "postId": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+      "text": "[VERIXA-QA] Verified clean response from secondary audit peer. Threading functions properly!",
+      "toxicity": 0,
+      "status": "approved"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:27:55.602Z"
+  },
+  {
+    "qaId": "QA-COMM-02",
+    "category": "Comment",
+    "tableOrStore": "public.comments",
+    "recordId": "13285b66-e396-4b6d-a449-989e3d41b9c2",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "postId": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+      "text": "[VERIXA-QA] Author reply confirming multi-turn comment interaction.",
+      "toxicity": 0,
+      "status": "approved"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:27:55.602Z"
+  },
+  {
+    "qaId": "QA-COMM-03",
+    "category": "Comment (Pre-Flight Moderation Intercept)",
+    "tableOrStore": "N/A (Pre-flight blocked; 0 rows inserted in comments)",
+    "recordId": "mod_1790256475619_e98c3cd",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "text": "[VERIXA-QA] [TEST-TOXIC] Shut up you pathetic idiot, nobody asked for your opinion.",
+      "decision": "BLOCK",
+      "status": "BLOCKED",
+      "toxicityScore": 78,
+      "categories": [
+        "Personal attacks",
+        "Bullying",
+        "Harassment"
+      ],
+      "reason": "The input contains direct insults ('pathetic idiot') and aggressive dismissal aimed at harassing and belittling another user.",
+      "intercepted": true,
+      "rowsInserted": 0
+    },
+    "status": "BLOCKED_PRE_FLIGHT",
+    "createdAt": "2026-09-24T13:28:02.504Z"
+  },
+  {
+    "qaId": "QA-LIKE-01",
+    "category": "Like (Toggle Cycle)",
+    "tableOrStore": "public.likes",
+    "recordId": "c7236f33-7712-4359-a5dd-c8fdbc4fddc9",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "postId": "338eab85-abc0-47d7-9ad6-f8a19b0c0c5f",
+      "cycle": "INSERT -> VERIFY -> DELETE",
+      "finalState": "Unliked (0 records remaining)"
+    },
+    "status": "TOGGLED_AND_REMOVED",
+    "createdAt": "2026-09-24T13:28:03.319Z"
+  },
+  {
+    "qaId": "QA-LIKE-02",
+    "category": "Like (Persistent)",
+    "tableOrStore": "public.likes",
+    "recordId": "e22b0b3a-f310-435f-b9f6-7d0d7400647e",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "postId": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+      "finalState": "Active Like",
+      "postLikesCount": 1
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:03.526Z"
+  },
+  {
+    "qaId": "QA-FOL-01",
+    "category": "Follow",
+    "tableOrStore": "public.follows",
+    "recordId": "782cefe0-b930-434a-9e19-aed2b1390547",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "follower": "User A",
+      "following": "User B"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:03.833Z"
+  },
+  {
+    "qaId": "QA-FOL-02",
+    "category": "Follow",
+    "tableOrStore": "public.follows",
+    "recordId": "f616819d-7dd6-4466-bfd3-670b3a79c970",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "follower": "User B",
+      "following": "User A"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:04.141Z"
+  },
+  {
+    "qaId": "QA-FOL-03",
+    "category": "Follow (Negative Security Test)",
+    "tableOrStore": "public.follows (Enforced by PostgreSQL constraint no_self_follow)",
+    "recordId": "N/A (Rejected)",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "attempt": "Self-follow (User A -> User A)",
+      "rejectionReason": "new row for relation \"follows\" violates check constraint \"no_self_follow\"",
+      "errorCode": "23514",
+      "rowsInserted": 0
+    },
+    "status": "REJECTED_BY_CONSTRAINT",
+    "createdAt": "2026-09-24T13:28:04.344Z"
+  },
+  {
+    "qaId": "QA-STORY-01",
+    "category": "Story",
+    "tableOrStore": "public.stories",
+    "recordId": "0a556b18-5123-4dab-8870-d000b33418e9",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "media": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80",
+      "expiresAt": "2026-09-25T13:28:04.551Z",
+      "viewsCount": 1,
+      "likesCount": 1
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:04.551Z"
+  },
+  {
+    "qaId": "QA-STORY-VIEW-01",
+    "category": "Story View Action",
+    "tableOrStore": "public.stories",
+    "recordId": "0a556b18-5123-4dab-8870-d000b33418e9",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "storyId": "0a556b18-5123-4dab-8870-d000b33418e9",
+      "viewer": "User B",
+      "viewsCountAfter": 1,
+      "viewedBy": [
+        "9cd3413e-94ae-4bc8-b64d-ba42c21599be"
+      ]
+    },
+    "status": "VERIFIED_UPDATED",
+    "createdAt": "2026-09-24T13:28:04.853Z"
+  },
+  {
+    "qaId": "QA-STORY-LIKE-01",
+    "category": "Story Like Action",
+    "tableOrStore": "public.stories",
+    "recordId": "0a556b18-5123-4dab-8870-d000b33418e9",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "storyId": "0a556b18-5123-4dab-8870-d000b33418e9",
+      "liker": "User B",
+      "likesCountAfter": 1,
+      "likedBy": [
+        "9cd3413e-94ae-4bc8-b64d-ba42c21599be"
+      ]
+    },
+    "status": "VERIFIED_UPDATED",
+    "createdAt": "2026-09-24T13:28:05.064Z"
+  },
+  {
+    "qaId": "QA-STORY-NAV-01",
+    "category": "Story Navigation Verification",
+    "tableOrStore": "Application Router (openUserProfile)",
+    "recordId": "N/A (Client Route)",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "targetRoute": "/profile/doc_auditor",
+      "resolvedTargetUserId": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+      "passed": true
+    },
+    "status": "VERIFIED_FUNCTIONAL",
+    "createdAt": "2026-09-24T13:28:05.064Z"
+  },
+  {
+    "qaId": "QA-MSG-01",
+    "category": "Message",
+    "tableOrStore": "public.messages",
+    "recordId": "76d580c3-d0cb-4a51-812c-1604c2ab3fa0",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "convId": "conv_doc_auditor_qa_user_b",
+      "sender": "User A",
+      "receiver": "User B",
+      "text": "[VERIXA-QA] Peer messaging check: WebSocket channel initialization."
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:05.265Z"
+  },
+  {
+    "qaId": "QA-MSG-02",
+    "category": "Message",
+    "tableOrStore": "public.messages",
+    "recordId": "abc8a666-f05d-4ca9-ab69-be10d763b639",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "convId": "conv_doc_auditor_qa_user_b",
+      "sender": "User B",
+      "receiver": "User A",
+      "text": "[VERIXA-QA] Peer acknowledgment received: Channel fully operational."
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:05.265Z"
+  },
+  {
+    "qaId": "QA-MSG-03",
+    "category": "Message",
+    "tableOrStore": "public.messages",
+    "recordId": "dc3a240a-2686-4f7e-9643-336fe05dd1ef",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "convId": "conv_doc_auditor_qa_user_b",
+      "sender": "User B",
+      "receiver": "User A",
+      "text": "[VERIXA-QA] Unread badge counter verification message."
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:05.265Z"
+  },
+  {
+    "qaId": "QA-NOTIF-01",
+    "category": "Notification",
+    "tableOrStore": "Server Notification Service & data/notifications.json",
+    "recordId": "notif_1790256485280_0ee84cd6",
+    "ownerActor": "User A (Recipient) / User B (Sender)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "type": "like",
+      "postId": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+      "message": "liked your post: \"[VERIXA-QA] Discussion post: What are the best practices for online AI moderation? Let us test comment threading below.\"",
+      "unread": true
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:05.278Z"
+  },
+  {
+    "qaId": "QA-NOTIF-02",
+    "category": "Notification",
+    "tableOrStore": "Server Notification Service & data/notifications.json",
+    "recordId": "notif_1790256485297_a311b7bf",
+    "ownerActor": "User A (Recipient) / User B (Sender)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "type": "comment",
+      "postId": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+      "message": "commented on your post: \"[VERIXA-QA] Verified clean response from secondary audit peer. Threading functions properly!\"",
+      "unread": true
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:05.295Z"
+  },
+  {
+    "qaId": "QA-NOTIF-03",
+    "category": "Notification",
+    "tableOrStore": "Server Notification Service & data/notifications.json",
+    "recordId": "notif_1790256485313_e110ebea",
+    "ownerActor": "User A (Recipient) / User B (Sender)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "type": "follow",
+      "message": "started following you",
+      "unread": true
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:05.311Z"
+  },
+  {
+    "qaId": "QA-REP-01",
+    "category": "Community Report",
+    "tableOrStore": "Server Review Service & data/reports.json",
+    "recordId": "rep_1790256485321_wcwxj",
+    "ownerActor": "User B (@qa_user_b)",
+    "ownerUuid": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "details": {
+      "targetId": "mod_1790256467973_7dtjchl",
+      "targetType": "post",
+      "reason": "HARASSMENT",
+      "status": "PENDING",
+      "severity": "MEDIUM"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:05.777Z"
+  },
+  {
+    "qaId": "QA-APP-01",
+    "category": "User Appeal",
+    "tableOrStore": "Server Review Service & data/appeals.json",
+    "recordId": "apl_1790256485802_9kjyg",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "analysisId": "mod_1790256467973_7dtjchl",
+      "contentId": "mod_1790256467973_7dtjchl",
+      "reason": "QA Safety Evaluation",
+      "status": "PENDING"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:06.190Z"
+  },
+  {
+    "qaId": "QA-SAVE-01",
+    "category": "Saved Post",
+    "tableOrStore": "public.saved_posts",
+    "recordId": "50805a28-516a-49f6-ac14-5cf70d230942",
+    "ownerActor": "User A (@doc_auditor)",
+    "ownerUuid": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "details": {
+      "postId": "338eab85-abc0-47d7-9ad6-f8a19b0c0c5f",
+      "savedBy": "User A"
+    },
+    "status": "CREATED",
+    "createdAt": "2026-09-24T13:28:06.492Z"
+  }
+]

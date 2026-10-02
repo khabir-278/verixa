@@ -82,6 +82,8 @@ interface AppContextType {
   isAuthenticated: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   signup: (name: string, username: string, email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  verifyEmailOtp: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
+  resendVerificationOtp: (email: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
   isUnauthorizedDomainModalOpen: boolean;
   openUnauthorizedDomainModal: () => void;
@@ -120,7 +122,7 @@ interface AppContextType {
   stories: Story[];
   addStory: (mediaUrl: string, mediaType?: 'image' | 'video', frames?: Array<{ timestamp: number; data: string }>) => Promise<boolean>;
   viewStory: (storyId: string) => Promise<void>;
-  likeStory: (storyId: string, explicitAuthorId?: string, explicitAuthorName?: string) => Promise<boolean>;
+  likeStory: (storyId: string, explicitAuthorId?: string, explicitAuthorName?: string, forcedTargetLiked?: boolean) => Promise<boolean>;
   sendStoryReaction: (storyId: string, authorId: string, reactionText: string, authorName?: string) => Promise<boolean>;
   deleteStory: (storyId: string) => Promise<boolean>;
   isStoryUploading: boolean;
@@ -134,6 +136,7 @@ interface AppContextType {
   // Moderation Popup
   blockedCommentModal: BlockedCommentInfo;
   closeBlockedCommentModal: () => void;
+  setBlockedCommentModal?: React.Dispatch<React.SetStateAction<BlockedCommentInfo>>;
   
   // Direct Messages & Unread Indicators
   activeChatUser: User | null;
@@ -210,7 +213,32 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentPage, _setCurrentPage] = useState<PageView>('landing');
   const [pageHistory, setPageHistory] = useState<PageView[]>(['landing']);
-  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string>('');
+  const [pendingVerificationEmail, _setPendingVerificationEmail] = useState<string>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        return sessionStorage.getItem('verixa_pending_email') || '';
+      }
+    } catch {
+      // ignore
+    }
+    return '';
+  });
+
+  const setPendingVerificationEmail = useCallback((email: string) => {
+    _setPendingVerificationEmail(email);
+    try {
+      if (typeof window !== 'undefined') {
+        if (email) {
+          sessionStorage.setItem('verixa_pending_email', email);
+        } else {
+          sessionStorage.removeItem('verixa_pending_email');
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Real Data states (clean initial values)
@@ -685,12 +713,28 @@ function formatStoryRelativeTime(dateString?: string): string {
 
     const mediaType = (item.type || item.mediaType || item.media_type || (rawMedia.includes('.mp4') ? 'video' : 'image')) as 'image' | 'video';
 
+    const rawUserUid = String(item.user?.id || item.user_id || '');
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let authorUsername = item.user?.username || item.username || '';
+    let authorName = item.user?.name || item.user_name || '';
+
+    if (!authorUsername || isUuid.test(authorUsername)) {
+      authorUsername = authorName && !isUuid.test(authorName)
+        ? authorName.toLowerCase().replace(/[^a-z0-9_]/g, '')
+        : (rawUserUid ? `user_${rawUserUid.slice(0, 6)}` : 'user');
+    }
+    if (!authorName || isUuid.test(authorName)) {
+      authorName = authorUsername.startsWith('user_') && rawUserUid
+        ? `User ${rawUserUid.slice(0, 6)}`
+        : authorUsername;
+    }
+
     return {
       id: item.id || `st_${Date.now()}`,
       user: {
-        id: item.user?.id || item.user_id || '',
-        name: item.user?.name || item.user_name || 'User',
-        username: item.user?.username || item.username || 'user',
+        id: rawUserUid,
+        name: authorName,
+        username: authorUsername,
         avatar: finalAvatar,
         bio: item.user?.bio || '',
         verified: Boolean(item.user?.verified),
@@ -1117,7 +1161,6 @@ function formatStoryRelativeTime(dateString?: string): string {
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
-      const redirectUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -1128,7 +1171,6 @@ function formatStoryRelativeTime(dateString?: string): string {
             full_name: name.trim(),
             username: cleanUsername,
           },
-          emailRedirectTo: redirectUrl,
         },
       });
 
@@ -1164,6 +1206,113 @@ function formatStoryRelativeTime(dateString?: string): string {
     } catch (err: any) {
       console.warn('Supabase signup error:', err.message);
       return { success: false, error: err.message || 'Failed to create account.' };
+    }
+  };
+
+  const verifyEmailOtp = async (
+    email: string,
+    token: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const cleanEmail = email.trim();
+      const cleanToken = token.trim();
+
+      if (!cleanEmail) {
+        return { success: false, error: 'Email address is required for verification.' };
+      }
+      if (!cleanToken || cleanToken.length !== 6) {
+        return { success: false, error: 'Please enter the complete 6-digit verification code.' };
+      }
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanToken,
+        type: 'signup',
+      });
+
+      if (error) {
+        const errorMsg = error.message.toLowerCase();
+        if (
+          errorMsg.includes('expired') ||
+          errorMsg.includes('token has expired') ||
+          errorMsg.includes('otp has expired')
+        ) {
+          return {
+            success: false,
+            error: 'This verification code has expired. Please request a new code.',
+          };
+        }
+        if (
+          errorMsg.includes('invalid') ||
+          errorMsg.includes('bad token') ||
+          errorMsg.includes('incorrect')
+        ) {
+          return {
+            success: false,
+            error: 'Invalid verification code. Please check the code and try again.',
+          };
+        }
+        if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
+          return {
+            success: false,
+            error: 'Too many attempts. Please wait and try again later.',
+          };
+        }
+        return { success: false, error: error.message || 'Verification failed. Please try again.' };
+      }
+
+      if (data.user) {
+        if (typeof window !== 'undefined' && window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+        await syncSupabaseAuthUser(data.user);
+        setPendingVerificationEmail('');
+        setPageHistory(['home']);
+        _setCurrentPage('home');
+        addToast('success', 'Email Verified', 'Welcome to VERIXA!');
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: 'Verification succeeded but session could not be established. Please sign in.',
+      };
+    } catch (err: any) {
+      console.warn('Supabase verifyOtp error:', err.message);
+      return { success: false, error: err.message || 'Verification failed.' };
+    }
+  };
+
+  const resendVerificationOtp = async (
+    email: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const cleanEmail = email.trim();
+      if (!cleanEmail) {
+        return { success: false, error: 'Email address is required to resend verification code.' };
+      }
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: cleanEmail,
+      });
+
+      if (error) {
+        const errorMsg = error.message.toLowerCase();
+        if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
+          return {
+            success: false,
+            error: 'Too many requests. Please wait a moment before requesting another code.',
+          };
+        }
+        return { success: false, error: error.message || 'Failed to resend verification code.' };
+      }
+
+      addToast('info', 'Code Resent', `A new 6-digit verification code was sent to ${cleanEmail}`);
+      return { success: true };
+    } catch (err: any) {
+      console.warn('Supabase resend OTP error:', err.message);
+      return { success: false, error: err.message || 'Failed to resend verification code.' };
     }
   };
 
@@ -2075,7 +2224,8 @@ function formatStoryRelativeTime(dateString?: string): string {
   const likeStory = async (
     storyId: string,
     explicitAuthorId?: string,
-    explicitAuthorName?: string
+    explicitAuthorName?: string,
+    forcedTargetLiked?: boolean
   ): Promise<boolean> => {
     if (!currentUser) {
       addToast('warning', 'Sign In Required', 'Please sign in to like stories.');
@@ -2083,20 +2233,22 @@ function formatStoryRelativeTime(dateString?: string): string {
     }
 
     const targetStory = stories.find((s) => s.id === storyId);
-    const wasLiked = Boolean(targetStory?.isLiked);
-    const targetLiked = !wasLiked;
-    const prevLikes = targetStory?.likesCount ?? targetStory?.likes_count ?? 0;
+    const prevLikedBy = targetStory?.likedBy || targetStory?.liked_by || [];
+    const wasLiked = Boolean(
+      targetStory?.isLiked ||
+      (currentUser?.id && prevLikedBy.includes(currentUser.id))
+    );
+    const targetLiked = forcedTargetLiked !== undefined ? forcedTargetLiked : !wasLiked;
+    const prevLikes = targetStory?.likesCount ?? targetStory?.likes_count ?? prevLikedBy.length ?? 0;
     const nextLikes = targetLiked ? prevLikes + 1 : Math.max(0, prevLikes - 1);
+    const updatedLikedBy = targetLiked
+      ? Array.from(new Set([...prevLikedBy, currentUser.id]))
+      : prevLikedBy.filter((uid: string) => uid !== currentUser.id);
 
-    // Optimistic state update
+    // Optimistic state update in context stories list
     setStories((prev) =>
       prev.map((s) => {
         if (s.id === storyId) {
-          const prevLikedBy = s.likedBy || s.liked_by || [];
-          const updatedLikedBy = targetLiked
-            ? Array.from(new Set([...prevLikedBy, currentUser.id]))
-            : prevLikedBy.filter((uid) => uid !== currentUser.id);
-
           return {
             ...s,
             isLiked: targetLiked,
@@ -2121,7 +2273,7 @@ function formatStoryRelativeTime(dateString?: string): string {
       const res = await fetch(`/api/stories/${storyId}/like`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id }),
+        body: JSON.stringify({ userId: currentUser.id, targetLiked }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -2134,8 +2286,8 @@ function formatStoryRelativeTime(dateString?: string): string {
                     isLiked: data.isLiked ?? targetLiked,
                     likesCount: data.likesCount,
                     likes_count: data.likesCount,
-                    likedBy: data.likedBy ?? s.likedBy,
-                    liked_by: data.likedBy ?? s.liked_by,
+                    likedBy: data.likedBy ?? updatedLikedBy,
+                    liked_by: data.likedBy ?? updatedLikedBy,
                   }
                 : s
             )
@@ -2558,6 +2710,8 @@ function formatStoryRelativeTime(dateString?: string): string {
         isAuthenticated,
         login,
         signup,
+        verifyEmailOtp,
+        resendVerificationOtp,
         loginWithGoogle,
         isUnauthorizedDomainModalOpen,
         openUnauthorizedDomainModal,
@@ -2593,6 +2747,7 @@ function formatStoryRelativeTime(dateString?: string): string {
         likeReel,
         blockedCommentModal,
         closeBlockedCommentModal,
+        setBlockedCommentModal,
         activeChatUser,
         setActiveChatUser,
         messages,

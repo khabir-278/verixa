@@ -1,0 +1,131 @@
+[
+  {
+    "targetId": "50805a28-516a-49f6-ac14-5cf70d230942",
+    "category": "Saved Post",
+    "tableOrStore": "public.saved_posts",
+    "status": "ALREADY_ABSENT"
+  },
+  {
+    "targetId": "76d580c3-d0cb-4a51-812c-1604c2ab3fa0",
+    "category": "Message",
+    "tableOrStore": "public.messages",
+    "status": "FAILED",
+    "details": "TypeError: fetch failed"
+  },
+  {
+    "targetId": "abc8a666-f05d-4ca9-ab69-be10d763b639",
+    "category": "Message",
+    "tableOrStore": "public.messages",
+    "status": "FAILED",
+    "details": "TypeError: fetch failed"
+  },
+  {
+    "targetId": "dc3a240a-2686-4f7e-9643-336fe05dd1ef",
+    "category": "Message",
+    "tableOrStore": "public.messages",
+    "status": "ALREADY_ABSENT"
+  },
+  {
+    "targetId": "0a556b18-5123-4dab-8870-d000b33418e9",
+    "category": "Story",
+    "tableOrStore": "public.stories",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "782cefe0-b930-434a-9e19-aed2b1390547",
+    "category": "Follow",
+    "tableOrStore": "public.follows",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "f616819d-7dd6-4466-bfd3-670b3a79c970",
+    "category": "Follow",
+    "tableOrStore": "public.follows",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "e22b0b3a-f310-435f-b9f6-7d0d7400647e",
+    "category": "Like",
+    "tableOrStore": "public.likes",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "f3c364e8-09e4-451b-abbe-df1e7a97b8e7",
+    "category": "Comment",
+    "tableOrStore": "public.comments",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "13285b66-e396-4b6d-a449-989e3d41b9c2",
+    "category": "Comment",
+    "tableOrStore": "public.comments",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "338eab85-abc0-47d7-9ad6-f8a19b0c0c5f",
+    "category": "Post",
+    "tableOrStore": "public.posts",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+    "category": "Post",
+    "tableOrStore": "public.posts",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "c05633a5-9301-4abd-8e9f-6ae3927287a0",
+    "category": "Post",
+    "tableOrStore": "public.posts",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "category": "Profile",
+    "tableOrStore": "public.profiles",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+    "category": "Auth User",
+    "tableOrStore": "auth.users",
+    "status": "FAILED",
+    "details": "This endpoint requires a valid Bearer token"
+  },
+  {
+    "targetId": "notif_1790256485280_0ee84cd6",
+    "category": "Notification",
+    "tableOrStore": "data/notifications.json",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "notif_1790256485297_a311b7bf",
+    "category": "Notification",
+    "tableOrStore": "data/notifications.json",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "notif_1790256485313_e110ebea",
+    "category": "Notification",
+    "tableOrStore": "data/notifications.json",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "rep_1790256485321_wcwxj",
+    "category": "Report",
+    "tableOrStore": "data/reports.json",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "apl_1790256485802_9kjyg",
+    "category": "Appeal",
+    "tableOrStore": "data/appeals.json",
+    "status": "DELETED"
+  },
+  {
+    "targetId": "apl_1790267352995_fbpqe",
+    "category": "Appeal",
+    "tableOrStore": "data/appeals.json",
+    "status": "DELETED"
+  }
+]

@@ -1,0 +1,91 @@
+[
+  {
+    "testId": "V-STOR-01",
+    "description": "User A upload to User A folder",
+    "actor": "User A (@doc_auditor)",
+    "targetPath": "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/v_test_owner.txt",
+    "actualResponse": {
+      "data": {
+        "path": "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/v_test_owner.txt",
+        "id": "be30ad95-98dc-4e9e-b166-4ed1fd1d32b2",
+        "fullPath": "app-files/c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/v_test_owner.txt"
+      }
+    },
+    "expectedOutcome": "Upload succeeds (error: null)",
+    "passed": true,
+    "unexpectedSuccess": false,
+    "notes": "Legitimate owner upload succeeded as expected."
+  },
+  {
+    "testId": "V-STOR-02",
+    "description": "User A upload to User B folder",
+    "actor": "User A (@doc_auditor)",
+    "targetPath": "9cd3413e-94ae-4bc8-b64d-ba42c21599be/posts/v_test_cross.txt",
+    "actualResponse": {
+      "data": null,
+      "error": "new row violates row-level security policy"
+    },
+    "expectedOutcome": "Upload rejected by RLS policy",
+    "passed": true,
+    "unexpectedSuccess": false,
+    "notes": "Cross-user upload successfully blocked (new row violates row-level security policy)."
+  },
+  {
+    "testId": "V-STOR-03",
+    "description": "Cross-user overwrite attempt (upsert: true)",
+    "actor": "User A (@doc_auditor)",
+    "targetPath": "9cd3413e-94ae-4bc8-b64d-ba42c21599be/posts/v_test_cross.txt",
+    "actualResponse": {
+      "data": null,
+      "error": "new row violates row-level security policy"
+    },
+    "expectedOutcome": "Overwrite rejected by RLS policy",
+    "passed": true,
+    "unexpectedSuccess": false,
+    "notes": "Cross-user overwrite successfully blocked (new row violates row-level security policy)."
+  },
+  {
+    "testId": "V-STOR-04",
+    "description": "User B deletion of User A object",
+    "actor": "User B (@qa_user_b)",
+    "targetPath": "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/v_test_owner.txt",
+    "actualResponse": {
+      "removeData": [],
+      "fileStillExists": true
+    },
+    "expectedOutcome": "Deletion rejected or affects 0 objects; User A file preserved",
+    "passed": true,
+    "unexpectedSuccess": false,
+    "notes": "Cross-user deletion successfully prevented. User A object intact."
+  },
+  {
+    "testId": "V-STOR-05",
+    "description": "Anonymous unauthenticated upload attempt",
+    "actor": "Anonymous Client",
+    "targetPath": "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/v_test_anon.txt",
+    "actualResponse": {
+      "data": null,
+      "error": "new row violates row-level security policy"
+    },
+    "expectedOutcome": "Upload rejected with Unauthorized / RLS error",
+    "passed": true,
+    "unexpectedSuccess": false,
+    "notes": "Unauthenticated upload successfully rejected (new row violates row-level security policy)."
+  },
+  {
+    "testId": "V-STOR-06",
+    "description": "Cleanup and zero-residual-object verification",
+    "actor": "User A (@doc_auditor)",
+    "targetPath": "All QA folders",
+    "actualResponse": {
+      "countA": 0,
+      "countB": 0,
+      "countRoot": 0,
+      "totalResidual": 0
+    },
+    "expectedOutcome": "Exactly 0 residual objects remain",
+    "passed": true,
+    "unexpectedSuccess": false,
+    "notes": "Verified: Exactly 0 residual objects remain in storage."
+  }
+]

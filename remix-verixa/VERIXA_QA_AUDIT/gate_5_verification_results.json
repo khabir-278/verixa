@@ -1,0 +1,277 @@
+[
+  {
+    "testId": "QA-NOTIF-01",
+    "name": "In-App Notification Creation",
+    "actor": "User A (@doc_auditor)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Creates in-app notification with read=false, valid ID, zero external email",
+    "actualBehavior": "Notification created successfully (id: notif_1790266236481_fe4eb606, read: false)",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "Record inserted into data/notifications.json & Supabase notifications table",
+    "passed": true,
+    "evidence": {
+      "id": "notif_1790266236481_fe4eb606",
+      "recipient_id": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+      "sender_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+      "type": "like",
+      "message": "[VERIXA-QA] Gate 5 base notification probe",
+      "post_id": null,
+      "detail": null,
+      "read": false,
+      "created_at": "2026-09-24T16:10:36.481Z",
+      "sender": {
+        "id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+        "username": "doc_auditor",
+        "name": "Document Auditor",
+        "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80",
+        "verified": true,
+        "ai_trust_badge": "Verified Human",
+        "safety_score": 100
+      }
+    }
+  },
+  {
+    "testId": "QA-NOTIF-02",
+    "name": "Post Like Notification & Self Suppression",
+    "actor": "User A (@doc_auditor)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Like notification created for recipient; self-notification strictly suppressed",
+    "actualBehavior": "Like notification delivered (id: notif_1790266236491_3495cdfc); self-notification ignored (Self-notification ignored)",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "One like notification added; zero self notifications created",
+    "passed": true,
+    "evidence": {
+      "likeNotif": {
+        "id": "notif_1790266236491_3495cdfc",
+        "recipient_id": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+        "sender_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+        "type": "like",
+        "message": "[VERIXA-QA] liked your post",
+        "post_id": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+        "detail": null,
+        "read": false,
+        "created_at": "2026-09-24T16:10:36.491Z",
+        "sender": {
+          "id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+          "username": "doc_auditor",
+          "name": "Document Auditor",
+          "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80",
+          "verified": true,
+          "ai_trust_badge": "Verified Human",
+          "safety_score": 100
+        }
+      },
+      "selfSuppressionResponse": {
+        "ignored": true,
+        "reason": "Self-notification ignored"
+      }
+    }
+  },
+  {
+    "testId": "QA-NOTIF-03",
+    "name": "Post Comment Notification",
+    "actor": "User A (@doc_auditor)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Comment notification created with comment snippet and detail payload",
+    "actualBehavior": "Comment notification delivered with detail payload (id: notif_1790266236516_fbc01cd4)",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "One comment notification added",
+    "passed": true,
+    "evidence": {
+      "id": "notif_1790266236516_fbc01cd4",
+      "recipient_id": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+      "sender_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+      "type": "comment",
+      "message": "[VERIXA-QA] commented on your post: \"Verified comment delivery\"",
+      "post_id": "c2d82f70-f648-4b7b-8a62-9022f3eeb9aa",
+      "detail": "Verified comment delivery under Option A quarantine",
+      "read": false,
+      "created_at": "2026-09-24T16:10:36.516Z",
+      "sender": {
+        "id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+        "username": "doc_auditor",
+        "name": "Document Auditor",
+        "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80",
+        "verified": true,
+        "ai_trust_badge": "Verified Human",
+        "safety_score": 100
+      }
+    }
+  },
+  {
+    "testId": "QA-NOTIF-04",
+    "name": "Follow Notification",
+    "actor": "User A (@doc_auditor)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Follow notification created for followed user; zero email dispatch",
+    "actualBehavior": "Follow notification delivered (id: notif_1790266236532_295d829a)",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "One follow notification added",
+    "passed": true,
+    "evidence": {
+      "id": "notif_1790266236532_295d829a",
+      "recipient_id": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+      "sender_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+      "type": "follow",
+      "message": "[VERIXA-QA] started following you.",
+      "post_id": null,
+      "detail": null,
+      "read": false,
+      "created_at": "2026-09-24T16:10:36.532Z",
+      "sender": {
+        "id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+        "username": "doc_auditor",
+        "name": "Document Auditor",
+        "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80",
+        "verified": true,
+        "ai_trust_badge": "Verified Human",
+        "safety_score": 100
+      }
+    }
+  },
+  {
+    "testId": "QA-NOTIF-05",
+    "name": "Message Event & In-App Notification",
+    "actor": "User A (@doc_auditor)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Direct message persisted and delivered to recipient; in-app notification generated; zero external email",
+    "actualBehavior": "Message 25b5a5ff-7f29-4431-b4aa-e3e89243c9b5 delivered; in-app notification notif_1790266238939_d07e61b0 created; zero email dispatched",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "One message row in public.messages; one mention notification row",
+    "passed": true,
+    "evidence": {
+      "message": {
+        "id": "25b5a5ff-7f29-4431-b4aa-e3e89243c9b5",
+        "text": "[VERIXA-QA] Direct message test for Gate 5 notification verification",
+        "sender_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+        "receiver_id": "9cd3413e-94ae-4bc8-b64d-ba42c21599be"
+      },
+      "notification": {
+        "id": "notif_1790266238939_d07e61b0",
+        "recipient_id": "9cd3413e-94ae-4bc8-b64d-ba42c21599be",
+        "sender_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+        "type": "mention",
+        "message": "[VERIXA-QA] sent you a new direct message",
+        "post_id": null,
+        "detail": "Direct message event in conversation",
+        "read": false,
+        "created_at": "2026-09-24T16:10:38.939Z",
+        "sender": {
+          "id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+          "username": "doc_auditor",
+          "name": "Document Auditor",
+          "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80",
+          "verified": true,
+          "ai_trust_badge": "Verified Human",
+          "safety_score": 100
+        }
+      }
+    }
+  },
+  {
+    "testId": "QA-NOTIF-06",
+    "name": "Read/Unread State Management",
+    "actor": "User B (@qa_user_b)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Single mark-read updates specific record; bulk mark-read transitions all records to read=true",
+    "actualBehavior": "Single mark-read verified (item read=true); bulk mark-read verified (4 items updated to read=true)",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "Updated read status in memory, JSON file, and Supabase notifications table",
+    "passed": true,
+    "evidence": {
+      "singleSuccess": true,
+      "bulkCount": 4,
+      "allRead": true
+    }
+  },
+  {
+    "testId": "QA-NOTIF-07",
+    "name": "Recipient Isolation & Multi-Tenant Boundary",
+    "actor": "User A (@doc_auditor)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "User A cannot access User B notifications via API or Supabase RLS",
+    "actualBehavior": "Strict multi-tenant isolation confirmed: API filtered; Supabase RLS returned 0 cross-user rows (visible: 5)",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "Read-only verification query",
+    "passed": true,
+    "evidence": {
+      "apiIsolated": true,
+      "sbRlsIsolated": true
+    }
+  },
+  {
+    "testId": "QA-NOTIF-08",
+    "name": "Duplicate Notification Prevention",
+    "actor": "User A (@doc_auditor)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Identical notification within 3-second window returns existing record, avoiding duplicate spam",
+    "actualBehavior": "Deduplication active: First ID (notif_1790266239711_c3258000) matches Second ID (notif_1790266239711_c3258000); no duplicate record created",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "Zero duplicate records created",
+    "passed": true,
+    "evidence": {
+      "firstId": "notif_1790266239711_c3258000",
+      "secondId": "notif_1790266239711_c3258000",
+      "deduplicated": true
+    }
+  },
+  {
+    "testId": "QA-NOTIF-09",
+    "name": "Dual Persistence Verification",
+    "actor": "Server Infrastructure",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "Notifications durable in local file system and retrievable via API and database",
+    "actualBehavior": "Persistence verified: record found in data/notifications.json and returned by GET /api/notifications",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "Durable writes verified",
+    "passed": true,
+    "evidence": {
+      "filePersisted": true,
+      "apiPersisted": true
+    }
+  },
+  {
+    "testId": "QA-NOTIF-10",
+    "name": "QA Notification Cleanup & Isolation",
+    "actor": "User B (@qa_user_b)",
+    "recipient": "User B (@qa_user_b)",
+    "expectedBehavior": "All QA probe notifications deleted (0 residual); real-user data preserved 100%",
+    "actualBehavior": "Purged 6 probe notifications (remaining: 0). Real user count preserved (11/11)",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "Purged QA notifications and QA test message; zero real-user mutations",
+    "passed": true,
+    "evidence": {
+      "deletedCount": 6,
+      "remainingQA": 0,
+      "realUserBaselineCount": 11,
+      "currentRealUserCount": 11
+    }
+  },
+  {
+    "testId": "QA-NOTIF-11",
+    "name": "Email Dispatch Code-Path Quarantine Verification",
+    "actor": "Auditor Verification Engine",
+    "recipient": "External Inboxes",
+    "expectedBehavior": "Zero email transport dependencies; zero external emails attempted; zero delivered",
+    "actualBehavior": "Quarantine confirmed: No custom email transports in codebase; exactly 0 external emails attempted; 0 delivered",
+    "externalEmailAttempted": false,
+    "externalEmailDelivered": false,
+    "databaseMutation": "Read-only dependency and runtime assertion",
+    "passed": true,
+    "evidence": {
+      "hasMailDeps": false,
+      "totalEmailsAttempted": 0,
+      "totalEmailsDelivered": 0
+    }
+  }
+]

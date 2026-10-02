@@ -3049,7 +3049,7 @@ export async function toggleStoryLike(
         await fetch(`/api/stories/${storyId}/like`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId }),
+          body: JSON.stringify({ userId, targetLiked: true }),
         });
       }
     } else {
@@ -3062,7 +3062,7 @@ export async function toggleStoryLike(
         await fetch(`/api/stories/${storyId}/like`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId }),
+          body: JSON.stringify({ userId, targetLiked: false }),
         });
       }
     }
@@ -3074,7 +3074,7 @@ export async function toggleStoryLike(
       await fetch(`/api/stories/${storyId}/like`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId, targetLiked }),
       });
     } catch {}
     return { success: true, isLiked: targetLiked ?? true };
@@ -3154,15 +3154,20 @@ export async function fetchStoryInsightsFromDatabase(storyId: string): Promise<{
       if (userIdsToFetch.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, name, username, avatar_url')
+          .select('id, name, username, avatar')
           .in('id', userIdsToFetch);
         if (profiles) {
+          const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
           profiles.forEach((p: any) => {
+            const cleanUsername = p.username && !isUuid(p.username)
+              ? p.username
+              : (p.name && !isUuid(p.name) ? p.name.toLowerCase().replace(/[^a-z0-9_]/g, '') : `user_${p.id.slice(0, 6)}`);
+            const cleanName = p.name && !isUuid(p.name) ? p.name : cleanUsername;
             profilesMap[p.id] = {
               id: p.id,
-              name: p.name || p.username || 'User',
-              username: p.username || 'user',
-              avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
+              name: cleanName,
+              username: cleanUsername,
+              avatar: p.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=4285F4&color=fff&size=256&bold=true`,
             };
           });
         }

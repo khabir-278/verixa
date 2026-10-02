@@ -1,0 +1,286 @@
+[
+  {
+    "testId": "MOD-01",
+    "category": "Safe Text",
+    "expectedDecision": "ALLOW",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "allowed": false,
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "analysisId": "mod_1790271131936_o43izfr",
+    "auditVerified": true,
+    "passed": false,
+    "attempts": 3,
+    "rawResponse": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T17:32:14.802Z",
+      "content_type": "post_text",
+      "language": "English",
+      "language_detected": "English",
+      "categories": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_1790271131936_o43izfr",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "AI_ANALYSIS_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-03",
+    "category": "Borderline/Ambiguous Text",
+    "expectedDecision": "WARNING / ALLOW",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "allowed": false,
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "analysisId": "mod_1790271168596_bnrdyoe",
+    "auditVerified": true,
+    "passed": false,
+    "attempts": 3,
+    "rawResponse": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T17:32:55.761Z",
+      "content_type": "comment",
+      "language": "English",
+      "language_detected": "English",
+      "categories": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_1790271168596_bnrdyoe",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "AI_ANALYSIS_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "AI_ANALYSIS_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-07",
+    "category": "Safe Image",
+    "expectedDecision": "ALLOW",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "allowed": false,
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+    "analysisId": "mod_img_1790271178773_z6wpv90",
+    "auditVerified": true,
+    "passed": false,
+    "attempts": 1,
+    "rawResponse": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T17:33:20.236Z",
+      "content_type": "image",
+      "language": "Visual",
+      "language_detected": "Visual",
+      "categories": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_img_1790271178773_z6wpv90",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "MEDIA_SCAN_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "MEDIA_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  },
+  {
+    "testId": "MOD-08",
+    "category": "Safe Video/Reel",
+    "expectedDecision": "ALLOW / WARNING",
+    "actualDecision": "QUARANTINE",
+    "moderationStatus": "QUARANTINED",
+    "allowed": false,
+    "model": "gemini-3.1-flash-lite",
+    "modelVersion": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "VIDEO_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "reason": "Video safety audit encountered an error or timeout. Placed in quarantine pending human review.",
+    "analysisId": "mod_vid_1790271204527_jmp25m9",
+    "auditVerified": true,
+    "passed": false,
+    "attempts": 1,
+    "rawResponse": {
+      "decision": "QUARANTINE",
+      "allowed": false,
+      "status": "QUARANTINED",
+      "state": "REVIEW_REQUIRED",
+      "timestamp": "2026-09-24T17:33:27.305Z",
+      "content_type": "reel",
+      "language": "Visual",
+      "language_detected": "Visual",
+      "categories": [
+        "VIDEO_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "toxicity_score": 50,
+      "confidence": 50,
+      "risk_score": 50,
+      "reason": "Video safety audit encountered an error or timeout. Placed in quarantine pending human review.",
+      "safe_rewrite": null,
+      "model": "gemini-3.1-flash-lite",
+      "model_version": "2026.1",
+      "analysis_id": "mod_vid_1790271204527_jmp25m9",
+      "scores": {
+        "toxicity": 50,
+        "risk": 50,
+        "nsfw": 50,
+        "violence": 50,
+        "deepfake_risk": 50
+      },
+      "labels": [
+        "VIDEO_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "deepfake_risk": 50,
+      "toxicityScore": 50,
+      "category": "VIDEO_SCAN_ERROR",
+      "message": "Review Required: Content placed in quarantine pending safety verification.",
+      "under_review": true,
+      "safe": false,
+      "suggestion": "Your content is held in quarantine pending safety verification.",
+      "detected_labels": [
+        "VIDEO_SCAN_ERROR",
+        "PENDING_REVIEW"
+      ],
+      "classification": "QUARANTINE"
+    }
+  }
+]

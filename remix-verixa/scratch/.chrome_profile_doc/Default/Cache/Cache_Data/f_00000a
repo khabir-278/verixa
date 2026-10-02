@@ -1,0 +1,365 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f5065f8b"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import { useApp } from "/@fs/C:/verixa/remix-verixa/src/context/AppContext.tsx?t=1790086579334";
+import { ShieldAlert, AlertOctagon, Lightbulb, CheckCircle, ArrowRight, ShieldCheck, HeartHandshake } from "/node_modules/.vite/deps/lucide-react.js?v=f5065f8b";
+import { motion, AnimatePresence } from "/node_modules/.vite/deps/motion_react.js?v=f5065f8b";
+export const BlockedCommentModal = () => {
+  _s();
+  const { blockedCommentModal, closeBlockedCommentModal, setCurrentPage } = useApp();
+  if (!blockedCommentModal.open) return null;
+  const isCaption = blockedCommentModal.contentType === "caption";
+  const isTitle = blockedCommentModal.contentType === "title";
+  const typeLabel = isCaption ? "Caption" : isTitle ? "Title" : "Comment";
+  return /* @__PURE__ */ jsxDEV(AnimatePresence, { children: /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md", children: /* @__PURE__ */ jsxDEV(
+    motion.div,
+    {
+      initial: { opacity: 0, scale: 0.88, y: 20 },
+      animate: { opacity: 1, scale: 1, y: 0 },
+      exit: { opacity: 0, scale: 0.9, y: 10 },
+      transition: { type: "spring", damping: 25, stiffness: 300 },
+      className: "relative max-w-lg w-full bg-slate-900/90 border border-rose-500/40 rounded-3xl p-6 md:p-8 shadow-2xl shadow-rose-950/50 overflow-hidden",
+      children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "absolute -top-24 -left-24 w-48 h-48 bg-rose-600/30 rounded-full blur-3xl pointer-events-none" }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+          lineNumber: 26,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "absolute -bottom-24 -right-24 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+          lineNumber: 27,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-4 border-b border-rose-500/20 pb-5", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400 shrink-0 shadow-inner", children: /* @__PURE__ */ jsxDEV(ShieldAlert, { className: "w-8 h-8 animate-pulse" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 32,
+            columnNumber: 15
+          }, this) }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 31,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold uppercase tracking-wider", children: [
+              /* @__PURE__ */ jsxDEV(AlertOctagon, { className: "w-3.5 h-3.5" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 36,
+                columnNumber: 17
+              }, this),
+              " ",
+              typeLabel,
+              " Blocked"
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 35,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("h2", { className: "text-xl md:text-2xl font-bold text-white mt-1", children: [
+              "Please Rewrite Your ",
+              typeLabel
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 38,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 34,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+          lineNumber: 30,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "mt-5 space-y-4", children: [
+          /* @__PURE__ */ jsxDEV("div", { id: "blocked-comment-notice-box", className: "p-4 rounded-2xl bg-rose-950/60 border border-rose-500/40 shadow-inner", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-xs uppercase tracking-wider text-rose-300 font-bold flex items-center gap-1.5", children: [
+              /* @__PURE__ */ jsxDEV(HeartHandshake, { className: "w-4 h-4 text-rose-400" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 49,
+                columnNumber: 17
+              }, this),
+              " Moderation Notice"
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 48,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "text-sm font-semibold text-rose-100 mt-1.5 leading-relaxed", children: blockedCommentModal.message || "Your comment couldn't be posted because it may contain offensive or inappropriate content." }, void 0, false, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 51,
+              columnNumber: 15
+            }, this),
+            blockedCommentModal.reason && /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-rose-300/80 mt-1 font-medium", children: blockedCommentModal.reason }, void 0, false, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 55,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 47,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between mb-1", children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "text-slate-500 font-mono uppercase", children: [
+                "YOUR ATTEMPTED ",
+                typeLabel,
+                ":"
+              ] }, void 0, true, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 64,
+                columnNumber: 17
+              }, this),
+              blockedCommentModal.languageDetected && /* @__PURE__ */ jsxDEV("span", { className: "text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30", children: blockedCommentModal.languageDetected }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 66,
+                columnNumber: 17
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 63,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "italic font-medium text-slate-200 line-clamp-3", children: [
+              '"',
+              blockedCommentModal.commentText,
+              '"'
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 71,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 62,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex justify-between text-xs font-medium mb-1.5", children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "text-slate-400 flex items-center gap-2", children: [
+                /* @__PURE__ */ jsxDEV("span", { children: "AI Toxicity Analysis Score" }, void 0, false, {
+                  fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                  lineNumber: 80,
+                  columnNumber: 19
+                }, this),
+                typeof blockedCommentModal.confidence === "number" && /* @__PURE__ */ jsxDEV("span", { className: "text-[11px] text-purple-300 font-mono bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-500/30", children: [
+                  blockedCommentModal.confidence,
+                  "% conf"
+                ] }, void 0, true, {
+                  fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                  lineNumber: 82,
+                  columnNumber: 19
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 79,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "text-rose-400 font-bold", children: [
+                blockedCommentModal.toxicityScore,
+                "% Harm Risk"
+              ] }, void 0, true, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 87,
+                columnNumber: 17
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 78,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "w-full bg-slate-800 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-700", children: /* @__PURE__ */ jsxDEV(
+              "div",
+              {
+                className: "bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 h-full rounded-full transition-all duration-1000",
+                style: { width: `${Math.max(blockedCommentModal.toxicityScore, 10)}%` }
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 90,
+                columnNumber: 17
+              },
+              this
+            ) }, void 0, false, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 89,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 77,
+            columnNumber: 13
+          }, this),
+          blockedCommentModal.categories.length > 0 && /* @__PURE__ */ jsxDEV("div", { className: "flex flex-wrap gap-2", children: blockedCommentModal.categories.map(
+            (cat, idx) => /* @__PURE__ */ jsxDEV(
+              "span",
+              {
+                className: "px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-mono",
+                children: [
+                  "#",
+                  cat
+                ]
+              },
+              idx,
+              true,
+              {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 101,
+                columnNumber: 15
+              },
+              this
+            )
+          ) }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 99,
+            columnNumber: 13
+          }, this),
+          blockedCommentModal.suggestion && /* @__PURE__ */ jsxDEV("div", { className: "p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-xs flex items-start gap-3", children: [
+            /* @__PURE__ */ jsxDEV(Lightbulb, { className: "w-5 h-5 text-indigo-400 shrink-0 mt-0.5" }, void 0, false, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 114,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "font-semibold text-indigo-200 block", children: "AI Constructive Suggestion:" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 116,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("p", { className: "text-indigo-300 mt-0.5", children: blockedCommentModal.suggestion }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                lineNumber: 117,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 115,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+            lineNumber: 113,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+          lineNumber: 45,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "mt-6 flex flex-col sm:flex-row items-center gap-3", children: [
+          /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              id: "edit-comment-try-again-btn",
+              onClick: closeBlockedCommentModal,
+              className: "w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-semibold text-sm transition shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2 cursor-pointer",
+              children: [
+                /* @__PURE__ */ jsxDEV(CheckCircle, { className: "w-4 h-4" }, void 0, false, {
+                  fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                  lineNumber: 130,
+                  columnNumber: 15
+                }, this),
+                " Edit Comment & Try Again"
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 125,
+              columnNumber: 13
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              id: "view-community-guidelines-btn",
+              onClick: () => {
+                closeBlockedCommentModal();
+                setCurrentPage("terms");
+              },
+              className: "w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium text-sm transition flex items-center justify-center gap-1.5 cursor-pointer",
+              children: [
+                /* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-4 h-4 text-purple-400" }, void 0, false, {
+                  fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                  lineNumber: 140,
+                  columnNumber: 15
+                }, this),
+                " Community Rules ",
+                /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3.5 h-3.5" }, void 0, false, {
+                  fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+                  lineNumber: 140,
+                  columnNumber: 83
+                }, this)
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+              lineNumber: 132,
+              columnNumber: 13
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+          lineNumber: 124,
+          columnNumber: 11
+        }, this)
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+      lineNumber: 18,
+      columnNumber: 9
+    },
+    this
+  ) }, void 0, false, {
+    fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+    lineNumber: 17,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx",
+    lineNumber: 16,
+    columnNumber: 5
+  }, this);
+};
+_s(BlockedCommentModal, "A6Mk7Nt5RN0V38GtclzNoR3xE08=", false, function() {
+  return [useApp];
+});
+_c = BlockedCommentModal;
+var _c;
+$RefreshReg$(_c, "BlockedCommentModal");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/verixa/remix-verixa/src/components/BlockedCommentModal.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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O0FBQUEsdUJBQWdDO0FBQUEsZ0JBQUc7QUFBQTtBQUFBO0FBQUEsWUFMckM7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFVBTUE7QUFBQSxVQUNBO0FBQUEsWUFBQztBQUFBO0FBQUEsY0FDQyxJQUFHO0FBQUEsY0FDSCxTQUFTLE1BQU07QUFDYkEseUNBQXlCO0FBQ3pCQywrQkFBZSxPQUFPO0FBQUEsY0FDeEI7QUFBQSxjQUNBLFdBQVU7QUFBQSxjQUVWO0FBQUEsdUNBQUMsZUFBWSxXQUFVLDZCQUF2QjtBQUFBO0FBQUE7QUFBQTtBQUFBLHVCQUFnRDtBQUFBLGdCQUFHO0FBQUEsZ0JBQWlCLHVCQUFDLGNBQVcsV0FBVSxpQkFBdEI7QUFBQTtBQUFBO0FBQUE7QUFBQSx1QkFBbUM7QUFBQTtBQUFBO0FBQUEsWUFSekc7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFVBU0E7QUFBQSxhQWpCRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBa0JBO0FBQUE7QUFBQTtBQUFBLElBNUhGO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxFQTZIQSxLQTlIRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBK0hBLEtBaElGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FpSUE7QUFFSjtBQUFFSCxHQTdJV0QscUJBQTZCO0FBQUEsVUFDa0NWLE1BQU07QUFBQTtBQUFBLEtBRHJFVTtBQUE2QixJQUFBK0I7QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlQXBwIiwiU2hpZWxkQWxlcnQiLCJBbGVydE9jdGFnb24iLCJMaWdodGJ1bGIiLCJDaGVja0NpcmNsZSIsIkFycm93UmlnaHQiLCJTaGllbGRDaGVjayIsIkhlYXJ0SGFuZHNoYWtlIiwibW90aW9uIiwiQW5pbWF0ZVByZXNlbmNlIiwiQmxvY2tlZENvbW1lbnRNb2RhbCIsIl9zIiwiYmxvY2tlZENvbW1lbnRNb2RhbCIsImNsb3NlQmxvY2tlZENvbW1lbnRNb2RhbCIsInNldEN1cnJlbnRQYWdlIiwib3BlbiIsImlzQ2FwdGlvbiIsImNvbnRlbnRUeXBlIiwiaXNUaXRsZSIsInR5cGVMYWJlbCIsIm9wYWNpdHkiLCJzY2FsZSIsInkiLCJ0eXBlIiwiZGFtcGluZyIsInN0aWZmbmVzcyIsIm1lc3NhZ2UiLCJyZWFzb24iLCJsYW5ndWFnZURldGVjdGVkIiwiY29tbWVudFRleHQiLCJjb25maWRlbmNlIiwidG94aWNpdHlTY29yZSIsIndpZHRoIiwiTWF0aCIsIm1heCIsImNhdGVnb3JpZXMiLCJsZW5ndGgiLCJtYXAiLCJjYXQiLCJpZHgiLCJzdWdnZXN0aW9uIiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiQmxvY2tlZENvbW1lbnRNb2RhbC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IHVzZUFwcCB9IGZyb20gJy4uL2NvbnRleHQvQXBwQ29udGV4dCc7XG5pbXBvcnQgeyBTaGllbGRBbGVydCwgQWxlcnRPY3RhZ29uLCBMaWdodGJ1bGIsIENoZWNrQ2lyY2xlLCBBcnJvd1JpZ2h0LCBTaGllbGRDaGVjaywgSGVhcnRIYW5kc2hha2UgfSBmcm9tICdsdWNpZGUtcmVhY3QnO1xuaW1wb3J0IHsgbW90aW9uLCBBbmltYXRlUHJlc2VuY2UgfSBmcm9tICdtb3Rpb24vcmVhY3QnO1xuXG5leHBvcnQgY29uc3QgQmxvY2tlZENvbW1lbnRNb2RhbDogUmVhY3QuRkMgPSAoKSA9PiB7XG4gIGNvbnN0IHsgYmxvY2tlZENvbW1lbnRNb2RhbCwgY2xvc2VCbG9ja2VkQ29tbWVudE1vZGFsLCBzZXRDdXJyZW50UGFnZSB9ID0gdXNlQXBwKCk7XG5cbiAgaWYgKCFibG9ja2VkQ29tbWVudE1vZGFsLm9wZW4pIHJldHVybiBudWxsO1xuXG4gIGNvbnN0IGlzQ2FwdGlvbiA9IGJsb2NrZWRDb21tZW50TW9kYWwuY29udGVudFR5cGUgPT09ICdjYXB0aW9uJztcbiAgY29uc3QgaXNUaXRsZSA9IGJsb2NrZWRDb21tZW50TW9kYWwuY29udGVudFR5cGUgPT09ICd0aXRsZSc7XG4gIGNvbnN0IHR5cGVMYWJlbCA9IGlzQ2FwdGlvbiA/ICdDYXB0aW9uJyA6IGlzVGl0bGUgPyAnVGl0bGUnIDogJ0NvbW1lbnQnO1xuXG4gIHJldHVybiAoXG4gICAgPEFuaW1hdGVQcmVzZW5jZT5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZml4ZWQgaW5zZXQtMCB6LTUwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHAtNCBiZy1ibGFjay84MCBiYWNrZHJvcC1ibHVyLW1kXCI+XG4gICAgICAgIDxtb3Rpb24uZGl2XG4gICAgICAgICAgaW5pdGlhbD17eyBvcGFjaXR5OiAwLCBzY2FsZTogMC44OCwgeTogMjAgfX1cbiAgICAgICAgICBhbmltYXRlPXt7IG9wYWNpdHk6IDEsIHNjYWxlOiAxLCB5OiAwIH19XG4gICAgICAgICAgZXhpdD17eyBvcGFjaXR5OiAwLCBzY2FsZTogMC45LCB5OiAxMCB9fVxuICAgICAgICAgIHRyYW5zaXRpb249e3sgdHlwZTogJ3NwcmluZycsIGRhbXBpbmc6IDI1LCBzdGlmZm5lc3M6IDMwMCB9fVxuICAgICAgICAgIGNsYXNzTmFtZT1cInJlbGF0aXZlIG1heC13LWxnIHctZnVsbCBiZy1zbGF0ZS05MDAvOTAgYm9yZGVyIGJvcmRlci1yb3NlLTUwMC80MCByb3VuZGVkLTN4bCBwLTYgbWQ6cC04IHNoYWRvdy0yeGwgc2hhZG93LXJvc2UtOTUwLzUwIG92ZXJmbG93LWhpZGRlblwiXG4gICAgICAgID5cbiAgICAgICAgICB7LyogQW5pbWF0ZWQgR2xvdyBCYWNrZHJvcHMgKi99XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhYnNvbHV0ZSAtdG9wLTI0IC1sZWZ0LTI0IHctNDggaC00OCBiZy1yb3NlLTYwMC8zMCByb3VuZGVkLWZ1bGwgYmx1ci0zeGwgcG9pbnRlci1ldmVudHMtbm9uZVwiIC8+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhYnNvbHV0ZSAtYm90dG9tLTI0IC1yaWdodC0yNCB3LTQ4IGgtNDggYmctcHVycGxlLTYwMC8yMCByb3VuZGVkLWZ1bGwgYmx1ci0zeGwgcG9pbnRlci1ldmVudHMtbm9uZVwiIC8+XG5cbiAgICAgICAgICB7LyogSGVhZGVyIEJhbm5lciAqL31cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC00IGJvcmRlci1iIGJvcmRlci1yb3NlLTUwMC8yMCBwYi01XCI+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtMy41IGJnLXJvc2UtNTAwLzEwIGJvcmRlciBib3JkZXItcm9zZS01MDAvMzAgcm91bmRlZC0yeGwgdGV4dC1yb3NlLTQwMCBzaHJpbmstMCBzaGFkb3ctaW5uZXJcIj5cbiAgICAgICAgICAgICAgPFNoaWVsZEFsZXJ0IGNsYXNzTmFtZT1cInctOCBoLTggYW5pbWF0ZS1wdWxzZVwiIC8+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiaW5saW5lLWZsZXggaXRlbXMtY2VudGVyIGdhcC0xLjUgcHgtMi41IHB5LTAuNSByb3VuZGVkLWZ1bGwgYmctcm9zZS01MDAvMTUgYm9yZGVyIGJvcmRlci1yb3NlLTUwMC8zMCB0ZXh0LXJvc2UtMzAwIHRleHQteHMgZm9udC1zZW1pYm9sZCB1cHBlcmNhc2UgdHJhY2tpbmctd2lkZXJcIj5cbiAgICAgICAgICAgICAgICA8QWxlcnRPY3RhZ29uIGNsYXNzTmFtZT1cInctMy41IGgtMy41XCIgLz4ge3R5cGVMYWJlbH0gQmxvY2tlZFxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPGgyIGNsYXNzTmFtZT1cInRleHQteGwgbWQ6dGV4dC0yeGwgZm9udC1ib2xkIHRleHQtd2hpdGUgbXQtMVwiPlxuICAgICAgICAgICAgICAgIFBsZWFzZSBSZXdyaXRlIFlvdXIge3R5cGVMYWJlbH1cbiAgICAgICAgICAgICAgPC9oMj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgey8qIENvbnRlbnQgQm9keSAqL31cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm10LTUgc3BhY2UteS00XCI+XG4gICAgICAgICAgICB7LyogV2FybmluZyBNZXNzYWdlIEJveCAqL31cbiAgICAgICAgICAgIDxkaXYgaWQ9XCJibG9ja2VkLWNvbW1lbnQtbm90aWNlLWJveFwiIGNsYXNzTmFtZT1cInAtNCByb3VuZGVkLTJ4bCBiZy1yb3NlLTk1MC82MCBib3JkZXIgYm9yZGVyLXJvc2UtNTAwLzQwIHNoYWRvdy1pbm5lclwiPlxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHVwcGVyY2FzZSB0cmFja2luZy13aWRlciB0ZXh0LXJvc2UtMzAwIGZvbnQtYm9sZCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMS41XCI+XG4gICAgICAgICAgICAgICAgPEhlYXJ0SGFuZHNoYWtlIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1yb3NlLTQwMFwiIC8+IE1vZGVyYXRpb24gTm90aWNlXG4gICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtcm9zZS0xMDAgbXQtMS41IGxlYWRpbmctcmVsYXhlZFwiPlxuICAgICAgICAgICAgICAgIHtibG9ja2VkQ29tbWVudE1vZGFsLm1lc3NhZ2UgfHwgXCJZb3VyIGNvbW1lbnQgY291bGRuJ3QgYmUgcG9zdGVkIGJlY2F1c2UgaXQgbWF5IGNvbnRhaW4gb2ZmZW5zaXZlIG9yIGluYXBwcm9wcmlhdGUgY29udGVudC5cIn1cbiAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICB7YmxvY2tlZENvbW1lbnRNb2RhbC5yZWFzb24gJiYgKFxuICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1yb3NlLTMwMC84MCBtdC0xIGZvbnQtbWVkaXVtXCI+XG4gICAgICAgICAgICAgICAgICB7YmxvY2tlZENvbW1lbnRNb2RhbC5yZWFzb259XG4gICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIHsvKiBCbG9ja2VkIENvbnRlbnQgUHJldmlldyAqL31cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC0zLjUgcm91bmRlZC14bCBiZy1zbGF0ZS05NTAvNjAgYm9yZGVyIGJvcmRlci1zbGF0ZS04MDAgdGV4dC14cyB0ZXh0LXNsYXRlLTMwMFwiPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBtYi0xXCI+XG4gICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbGF0ZS01MDAgZm9udC1tb25vIHVwcGVyY2FzZVwiPllPVVIgQVRURU1QVEVEIHt0eXBlTGFiZWx9Ojwvc3Bhbj5cbiAgICAgICAgICAgICAgICB7YmxvY2tlZENvbW1lbnRNb2RhbC5sYW5ndWFnZURldGVjdGVkICYmIChcbiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtWzExcHhdIHB4LTIgcHktMC41IHJvdW5kZWQtZnVsbCBiZy1wdXJwbGUtNTAwLzIwIHRleHQtcHVycGxlLTMwMCBib3JkZXIgYm9yZGVyLXB1cnBsZS01MDAvMzBcIj5cbiAgICAgICAgICAgICAgICAgICAge2Jsb2NrZWRDb21tZW50TW9kYWwubGFuZ3VhZ2VEZXRlY3RlZH1cbiAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwiaXRhbGljIGZvbnQtbWVkaXVtIHRleHQtc2xhdGUtMjAwIGxpbmUtY2xhbXAtM1wiPlxuICAgICAgICAgICAgICAgIFwie2Jsb2NrZWRDb21tZW50TW9kYWwuY29tbWVudFRleHR9XCJcbiAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIHsvKiBUb3hpY2l0eSBHYXVnZSAmIENvbmZpZGVuY2UgKi99XG4gICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgganVzdGlmeS1iZXR3ZWVuIHRleHQteHMgZm9udC1tZWRpdW0gbWItMS41XCI+XG4gICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbGF0ZS00MDAgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cbiAgICAgICAgICAgICAgICAgIDxzcGFuPkFJIFRveGljaXR5IEFuYWx5c2lzIFNjb3JlPC9zcGFuPlxuICAgICAgICAgICAgICAgICAge3R5cGVvZiBibG9ja2VkQ29tbWVudE1vZGFsLmNvbmZpZGVuY2UgPT09ICdudW1iZXInICYmIChcbiAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1bMTFweF0gdGV4dC1wdXJwbGUtMzAwIGZvbnQtbW9ubyBiZy1wdXJwbGUtOTUwLzYwIHB4LTEuNSBweS0wLjUgcm91bmRlZCBib3JkZXIgYm9yZGVyLXB1cnBsZS01MDAvMzBcIj5cbiAgICAgICAgICAgICAgICAgICAgICB7YmxvY2tlZENvbW1lbnRNb2RhbC5jb25maWRlbmNlfSUgY29uZlxuICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXJvc2UtNDAwIGZvbnQtYm9sZFwiPntibG9ja2VkQ29tbWVudE1vZGFsLnRveGljaXR5U2NvcmV9JSBIYXJtIFJpc2s8L3NwYW4+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctZnVsbCBiZy1zbGF0ZS04MDAgcm91bmRlZC1mdWxsIGgtMi41IG92ZXJmbG93LWhpZGRlbiBwLTAuNSBib3JkZXIgYm9yZGVyLXNsYXRlLTcwMFwiPlxuICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImJnLWdyYWRpZW50LXRvLXIgZnJvbS1hbWJlci01MDAgdmlhLXJvc2UtNTAwIHRvLXJlZC02MDAgaC1mdWxsIHJvdW5kZWQtZnVsbCB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0xMDAwXCJcbiAgICAgICAgICAgICAgICAgIHN0eWxlPXt7IHdpZHRoOiBgJHtNYXRoLm1heChibG9ja2VkQ29tbWVudE1vZGFsLnRveGljaXR5U2NvcmUsIDEwKX0lYCB9fVxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIHsvKiBGbGFnZ2VkIENhdGVnb3JpZXMgQmFkZ2VzICovfVxuICAgICAgICAgICAge2Jsb2NrZWRDb21tZW50TW9kYWwuY2F0ZWdvcmllcy5sZW5ndGggPiAwICYmIChcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtd3JhcCBnYXAtMlwiPlxuICAgICAgICAgICAgICAgIHtibG9ja2VkQ29tbWVudE1vZGFsLmNhdGVnb3JpZXMubWFwKChjYXQsIGlkeCkgPT4gKFxuICAgICAgICAgICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgICAgICAgICAga2V5PXtpZHh9XG4gICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInB4LTIuNSBweS0xIHJvdW5kZWQtbGcgYmctc2xhdGUtODAwLzgwIGJvcmRlciBib3JkZXItc2xhdGUtNzAwIHRleHQtc2xhdGUtMzAwIHRleHQteHMgZm9udC1tb25vXCJcbiAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgI3tjYXR9XG4gICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgKX1cblxuICAgICAgICAgICAgey8qIEFJIFJlcGhyYXNpbmcgVGlwICovfVxuICAgICAgICAgICAge2Jsb2NrZWRDb21tZW50TW9kYWwuc3VnZ2VzdGlvbiAmJiAoXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC00IHJvdW5kZWQtMnhsIGJnLWluZGlnby05NTAvNDAgYm9yZGVyIGJvcmRlci1pbmRpZ28tNTAwLzMwIHRleHQteHMgZmxleCBpdGVtcy1zdGFydCBnYXAtM1wiPlxuICAgICAgICAgICAgICAgIDxMaWdodGJ1bGIgY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LWluZGlnby00MDAgc2hyaW5rLTAgbXQtMC41XCIgLz5cbiAgICAgICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZm9udC1zZW1pYm9sZCB0ZXh0LWluZGlnby0yMDAgYmxvY2tcIj5BSSBDb25zdHJ1Y3RpdmUgU3VnZ2VzdGlvbjo8L3NwYW4+XG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LWluZGlnby0zMDAgbXQtMC41XCI+e2Jsb2NrZWRDb21tZW50TW9kYWwuc3VnZ2VzdGlvbn08L3A+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgKX1cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIHsvKiBNb2RhbCBBY3Rpb25zICovfVxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibXQtNiBmbGV4IGZsZXgtY29sIHNtOmZsZXgtcm93IGl0ZW1zLWNlbnRlciBnYXAtM1wiPlxuICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICBpZD1cImVkaXQtY29tbWVudC10cnktYWdhaW4tYnRuXCJcbiAgICAgICAgICAgICAgb25DbGljaz17Y2xvc2VCbG9ja2VkQ29tbWVudE1vZGFsfVxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgc206ZmxleC0xIHB5LTMgcHgtNCByb3VuZGVkLXhsIGJnLWdyYWRpZW50LXRvLXIgZnJvbS1yb3NlLTYwMCB0by1wdXJwbGUtNjAwIGhvdmVyOmZyb20tcm9zZS01MDAgaG92ZXI6dG8tcHVycGxlLTUwMCB0ZXh0LXdoaXRlIGZvbnQtc2VtaWJvbGQgdGV4dC1zbSB0cmFuc2l0aW9uIHNoYWRvdy1sZyBzaGFkb3ctcm9zZS05MDAvMzAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgZ2FwLTIgY3Vyc29yLXBvaW50ZXJcIlxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICA8Q2hlY2tDaXJjbGUgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+IEVkaXQgQ29tbWVudCAmIFRyeSBBZ2FpblxuICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgIGlkPVwidmlldy1jb21tdW5pdHktZ3VpZGVsaW5lcy1idG5cIlxuICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiB7XG4gICAgICAgICAgICAgICAgY2xvc2VCbG9ja2VkQ29tbWVudE1vZGFsKCk7XG4gICAgICAgICAgICAgICAgc2V0Q3VycmVudFBhZ2UoJ3Rlcm1zJyk7XG4gICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBzbTp3LWF1dG8gcHktMyBweC00IHJvdW5kZWQteGwgYmctc2xhdGUtODAwIGhvdmVyOmJnLXNsYXRlLTcwMCBib3JkZXIgYm9yZGVyLXNsYXRlLTcwMCB0ZXh0LXNsYXRlLTMwMCBmb250LW1lZGl1bSB0ZXh0LXNtIHRyYW5zaXRpb24gZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgZ2FwLTEuNSBjdXJzb3ItcG9pbnRlclwiXG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIDxTaGllbGRDaGVjayBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtcHVycGxlLTQwMFwiIC8+IENvbW11bml0eSBSdWxlcyA8QXJyb3dSaWdodCBjbGFzc05hbWU9XCJ3LTMuNSBoLTMuNVwiIC8+XG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9tb3Rpb24uZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9BbmltYXRlUHJlc2VuY2U+XG4gICk7XG59O1xuIl0sImZpbGUiOiJDOi92ZXJpeGEvcmVtaXgtdmVyaXhhL3NyYy9jb21wb25lbnRzL0Jsb2NrZWRDb21tZW50TW9kYWwudHN4In0=

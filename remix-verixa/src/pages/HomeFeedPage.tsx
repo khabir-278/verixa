@@ -377,11 +377,24 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     );
 
     const groupMap = new Map<string, UserStoryGroup>();
+    const isUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     for (const story of nonUserStories) {
       const uId = String(story.user?.id || (story as any).user_id || story.user?.username || 'user');
       if (!groupMap.has(uId)) {
-        const authorName = story.user?.name || (story as any).user_name || 'User';
-        const authorUsername = story.user?.username || (story as any).username || 'user';
+        let authorUsername = story.user?.username || (story as any).username || '';
+        let authorName = story.user?.name || (story as any).user_name || '';
+
+        if (!authorUsername || isUuidPattern.test(authorUsername)) {
+          if (authorName && !isUuidPattern.test(authorName)) {
+            authorUsername = authorName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+          } else {
+            authorUsername = `user_${uId.slice(0, 6)}`;
+          }
+        }
+        if (!authorName || isUuidPattern.test(authorName)) {
+          authorName = authorUsername.startsWith('user_') ? `User ${uId.slice(0, 6)}` : authorUsername;
+        }
+
         const rawAvatar = story.user?.avatar || (story as any).user_avatar;
         const safeAvatar = (rawAvatar && !rawAvatar.includes('unsplash.com'))
           ? rawAvatar
@@ -786,8 +799,11 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                 </span>
               )}
             </div>
-            <span className="text-[11px] font-medium text-gray-300 truncate w-14 text-center">
-              @{group.user.username}
+            <span
+              className="text-[11px] font-medium text-gray-300 truncate w-16 text-center"
+              title={group.user.name || group.user.username}
+            >
+              {group.user.name || group.user.username}
             </span>
           </button>
         ))}
@@ -1214,10 +1230,31 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
           {/* Story Viewer Modal */}
           {activeStoryGroup && (() => {
             const currentStoryRaw = activeStoryGroup.stories[activeStoryIndex] || activeStoryGroup.stories[0];
-            if (!currentStoryRaw) return null;
+            const currentLikedBy = currentStoryRaw.likedBy || (currentStoryRaw as any).liked_by;
+            const liveStoryFromContext = stories.find((s) => s.id === currentStoryRaw.id);
+            const contextLikedBy = liveStoryFromContext?.likedBy || (liveStoryFromContext as any)?.liked_by;
+            const finalLikedBy: string[] = currentLikedBy !== undefined ? currentLikedBy : (contextLikedBy || []);
 
-            // Live story reference synced from stories state
-            const liveCurrentStory = stories.find((s) => s.id === currentStoryRaw.id) || currentStoryRaw;
+            const isLiked = Boolean(
+              currentStoryRaw.isLiked !== undefined
+                ? currentStoryRaw.isLiked
+                : (liveStoryFromContext?.isLiked || (currentUser?.id && finalLikedBy.includes(currentUser.id)))
+            );
+
+            const likesCount = currentStoryRaw.likesCount !== undefined
+              ? currentStoryRaw.likesCount
+              : (liveStoryFromContext?.likesCount ?? (liveStoryFromContext as any)?.likes_count ?? finalLikedBy.length ?? 0);
+
+            // Live story reference synced from stories state with local optimistic priority
+            const liveCurrentStory = {
+              ...currentStoryRaw,
+              ...(liveStoryFromContext || {}),
+              isLiked,
+              likesCount,
+              likes_count: likesCount,
+              likedBy: finalLikedBy,
+              liked_by: finalLikedBy,
+            };
 
             const storyMedia = liveCurrentStory.mediaUrl || (liveCurrentStory as any).media_url || '';
             const isVideo =
@@ -1230,19 +1267,18 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
               (liveCurrentStory.user?.id && liveCurrentStory.user.id === currentUser?.id) ||
               (liveCurrentStory as any).user_id === currentUser?.id;
 
-            const userName = activeStoryGroup.user.name || activeStoryGroup.user.username || 'User';
+            const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+            const rawUserName = activeStoryGroup.user.name;
+            const rawUserHandle = activeStoryGroup.user.username;
+            const displayUsername = rawUserHandle && !isUuid(rawUserHandle)
+              ? rawUserHandle
+              : (rawUserName && !isUuid(rawUserName) ? rawUserName.toLowerCase().replace(/[^a-z0-9_]/g, '') : `user_${activeStoryGroup.userId.slice(0, 6)}`);
+            const userName = rawUserName && !isUuid(rawUserName) ? rawUserName : displayUsername;
             const userAvatar =
               activeStoryGroup.user.avatar ||
               `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=4285F4&color=fff&size=256&bold=true`;
             const storyTimestamp = liveCurrentStory.timestamp || (liveCurrentStory as any).created_at || 'Just now';
             const viewsCount = liveCurrentStory.viewsCount ?? (liveCurrentStory as any).views_count ?? 1;
-
-            const likedBy = liveCurrentStory.likedBy || (liveCurrentStory as any).liked_by || [];
-            const isLiked = Boolean(
-              liveCurrentStory.isLiked ||
-              (currentUser?.id && likedBy.includes(currentUser.id))
-            );
-            const likesCount = liveCurrentStory.likesCount ?? (liveCurrentStory as any).likes_count ?? likedBy.length ?? 0;
 
             const totalInGroup = activeStoryGroup.stories.length;
 
@@ -1333,8 +1369,16 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
 
                   {/* Top Header Bar */}
                   <div className="relative z-20 px-4 py-2 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent">
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500">
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveStoryGroup(null);
+                        openUserProfile(activeStoryGroup.userId);
+                      }}
+                      className="flex items-center gap-2.5 cursor-pointer group hover:opacity-90 transition select-none"
+                      title={`View ${userName}'s profile`}
+                    >
+                      <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 group-hover:scale-105 transition-transform">
                         <img
                           src={userAvatar}
                           alt={userName}
@@ -1344,10 +1388,15 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-bold text-sm text-white drop-shadow-sm">{userName}</h4>
+                          <h4 className="font-bold text-sm text-white drop-shadow-sm group-hover:text-purple-300 transition-colors">
+                            {userName}
+                          </h4>
                           {activeStoryGroup.user.verified && (
                             <span className="text-blue-400 text-xs" title="Verified Account">✓</span>
                           )}
+                          <span className="text-xs text-slate-300/80 font-normal">
+                            @{displayUsername}
+                          </span>
                           {totalInGroup > 1 && (
                             <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-mono text-white/90">
                               {activeStoryIndex + 1}/{totalInGroup}
@@ -1590,16 +1639,16 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
 
                             const nextLiked = !isLiked;
                             const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+                            const prevLikedBy = finalLikedBy;
+                            const updatedLikedBy = nextLiked
+                              ? Array.from(new Set([...prevLikedBy, currentUser.id]))
+                              : prevLikedBy.filter((id: string) => id !== currentUser.id);
 
-                            // Optimistic update
+                            // Optimistic update for activeStoryGroup
                             setActiveStoryGroup((prev) => {
                               if (!prev) return null;
                               const updatedStories = prev.stories.map((s, idx) => {
                                 if (idx === activeStoryIndex || s.id === liveCurrentStory.id) {
-                                  const prevLikedBy = s.likedBy || (s as any).liked_by || [];
-                                  const updatedLikedBy = nextLiked
-                                    ? Array.from(new Set([...prevLikedBy, currentUser.id]))
-                                    : prevLikedBy.filter((id: string) => id !== currentUser.id);
                                   return {
                                     ...s,
                                     isLiked: nextLiked,
@@ -1617,7 +1666,31 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                               };
                             });
 
-                            await likeStory(liveCurrentStory.id, activeStoryGroup.userId, userName);
+                            // Optimistic update for dbInsights if open
+                            setDbInsights((prev) => {
+                              if (!prev) return null;
+                              const currentLikers = prev.likers || [];
+                              const updatedLikers = nextLiked
+                                ? [
+                                    ...currentLikers.filter((l) => l.id !== currentUser.id),
+                                    {
+                                      id: currentUser.id,
+                                      name: currentUser.name || currentUser.username,
+                                      username: currentUser.username,
+                                      avatar: currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || currentUser.username)}&background=4285F4&color=fff&size=256&bold=true`,
+                                    },
+                                  ]
+                                : currentLikers.filter((l) => l.id !== currentUser.id);
+
+                              return {
+                                ...prev,
+                                likesCount: nextCount,
+                                likedBy: updatedLikedBy,
+                                likers: updatedLikers,
+                              };
+                            });
+
+                            await likeStory(liveCurrentStory.id, activeStoryGroup.userId, userName, nextLiked);
                           }}
                           className={`w-10 h-10 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all duration-200 active:scale-90 shadow-xl cursor-pointer shrink-0 ${
                             isLiked
@@ -1885,22 +1958,39 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                     <Heart className="w-3 h-3 fill-rose-400" /> Liked by ({dbInsights.likers.length})
                   </p>
                   <div className="space-y-1.5">
-                    {dbInsights.likers.map((liker) => (
-                      <div key={liker.id} className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-200">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <img
-                            src={liker.avatar}
-                            alt={liker.name}
-                            className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 bg-slate-800"
-                          />
-                          <div className="min-w-0">
-                            <p className="font-semibold text-white text-xs truncate">{liker.name}</p>
-                            <p className="text-[10px] text-slate-400 truncate">@{liker.username}</p>
+                    {dbInsights.likers.map((liker) => {
+                      const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+                      const displayUsername = liker.username && !isUuid(liker.username)
+                        ? liker.username
+                        : (liker.name && !isUuid(liker.name) ? liker.name.toLowerCase().replace(/[^a-z0-9_]/g, '') : `user_${liker.id.slice(0, 6)}`);
+                      const displayName = liker.name && !isUuid(liker.name) ? liker.name : displayUsername;
+
+                      return (
+                        <div
+                          key={liker.id}
+                          onClick={() => {
+                            setStoryViewersModalStory(null);
+                            setActiveStoryGroup(null);
+                            openUserProfile(liker.id);
+                          }}
+                          className="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-purple-500/30 transition text-xs text-slate-200 cursor-pointer group"
+                          title={`View ${displayName}'s profile`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={liker.avatar}
+                              alt={displayName}
+                              className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 bg-slate-800 group-hover:scale-105 transition-transform"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-white text-xs truncate group-hover:text-purple-300 transition-colors">{displayName}</p>
+                              <p className="text-[10px] text-slate-400 truncate">@{displayUsername}</p>
+                            </div>
                           </div>
+                          <span className="text-[10px] text-rose-400 font-medium px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 shrink-0">Liked</span>
                         </div>
-                        <span className="text-[10px] text-rose-400 font-medium px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 shrink-0">Liked</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1917,22 +2007,39 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                   </div>
                 ) : dbInsights?.viewers && dbInsights.viewers.length > 0 ? (
                   <div className="space-y-1.5">
-                    {dbInsights.viewers.map((viewer) => (
-                      <div key={viewer.id} className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-200">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <img
-                            src={viewer.avatar}
-                            alt={viewer.name}
-                            className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 bg-slate-800"
-                          />
-                          <div className="min-w-0">
-                            <p className="font-semibold text-white text-xs truncate">{viewer.name}</p>
-                            <p className="text-[10px] text-slate-400 truncate">@{viewer.username}</p>
+                    {dbInsights.viewers.map((viewer) => {
+                      const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+                      const displayUsername = viewer.username && !isUuid(viewer.username)
+                        ? viewer.username
+                        : (viewer.name && !isUuid(viewer.name) ? viewer.name.toLowerCase().replace(/[^a-z0-9_]/g, '') : `user_${viewer.id.slice(0, 6)}`);
+                      const displayName = viewer.name && !isUuid(viewer.name) ? viewer.name : displayUsername;
+
+                      return (
+                        <div
+                          key={viewer.id}
+                          onClick={() => {
+                            setStoryViewersModalStory(null);
+                            setActiveStoryGroup(null);
+                            openUserProfile(viewer.id);
+                          }}
+                          className="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-cyan-500/30 transition text-xs text-slate-200 cursor-pointer group"
+                          title={`View ${displayName}'s profile`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={viewer.avatar}
+                              alt={displayName}
+                              className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 bg-slate-800 group-hover:scale-105 transition-transform"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-white text-xs truncate group-hover:text-cyan-300 transition-colors">{displayName}</p>
+                              <p className="text-[10px] text-slate-400 truncate">@{displayUsername}</p>
+                            </div>
                           </div>
+                          <span className="text-[10px] text-slate-400 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0">Viewed</span>
                         </div>
-                        <span className="text-[10px] text-slate-400 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0">Viewed</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-6 px-4 rounded-2xl bg-white/5 border border-dashed border-white/10 text-xs text-slate-400">

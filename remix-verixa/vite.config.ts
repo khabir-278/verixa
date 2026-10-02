@@ -12,6 +12,7 @@ export default defineConfig(() => {
   } catch {}
 
   return {
+    root: realRootDir,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

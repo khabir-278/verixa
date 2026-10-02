@@ -1,0 +1,440 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx");import.meta.env = {"BASE_URL": "/", "DEV": true, "MODE": "development", "PROD": false, "SSR": false, "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2", "VITE_SUPABASE_URL": "https://jnbaumemwxydjktwedtz.supabase.co"};import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f5065f8b"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport1_react from "/node_modules/.vite/deps/react.js?v=f5065f8b"; const useState = __vite__cjsImport1_react["useState"];
+import { motion, AnimatePresence } from "/node_modules/.vite/deps/motion_react.js?v=f5065f8b";
+import { useApp } from "/@fs/C:/verixa/remix-verixa/src/context/AppContext.tsx";
+import { X, ExternalLink, Copy, Check, ShieldAlert, RefreshCw } from "/node_modules/.vite/deps/lucide-react.js?v=f5065f8b";
+export const GoogleUnauthorizedDomainModal = () => {
+  _s();
+  const {
+    isUnauthorizedDomainModalOpen,
+    closeUnauthorizedDomainModal,
+    loginWithGoogle
+  } = useApp();
+  const [copiedOrigin, setCopiedOrigin] = useState(false);
+  const [copiedCallback, setCopiedCallback] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  if (!isUnauthorizedDomainModalOpen) return null;
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "https://run.app";
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://jnbaumemwxydjktwedtz.supabase.co";
+  const supabaseCallbackUrl = `${supabaseUrl}/auth/v1/callback`;
+  const supabaseConsoleUrl = "https://supabase.com/dashboard/project/jnbaumemwxydjktwedtz/auth/url-configuration";
+  const handleCopyOrigin = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentOrigin);
+      setCopiedOrigin(true);
+      setTimeout(() => setCopiedOrigin(false), 2e3);
+    }
+  };
+  const handleCopyCallback = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(supabaseCallbackUrl);
+      setCopiedCallback(true);
+      setTimeout(() => setCopiedCallback(false), 2e3);
+    }
+  };
+  const handleRetryGoogleLogin = async () => {
+    setIsRetrying(true);
+    closeUnauthorizedDomainModal();
+    await loginWithGoogle();
+    setIsRetrying(false);
+  };
+  return /* @__PURE__ */ jsxDEV(AnimatePresence, { children: /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 z-[120] flex items-center justify-center p-4", children: [
+    /* @__PURE__ */ jsxDEV(
+      motion.div,
+      {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        onClick: closeUnauthorizedDomainModal,
+        className: "fixed inset-0 bg-black/85 backdrop-blur-sm"
+      },
+      void 0,
+      false,
+      {
+        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+        lineNumber: 51,
+        columnNumber: 9
+      },
+      this
+    ),
+    /* @__PURE__ */ jsxDEV(
+      motion.div,
+      {
+        initial: { opacity: 0, scale: 0.95, y: 15 },
+        animate: { opacity: 1, scale: 1, y: 0 },
+        exit: { opacity: 0, scale: 0.95, y: 15 },
+        transition: { type: "spring", damping: 25, stiffness: 350 },
+        className: "relative w-full max-w-lg bg-[#111215] text-white rounded-3xl border border-amber-500/30 shadow-2xl overflow-hidden z-10 font-sans",
+        children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "px-6 pt-6 pb-4 border-b border-white/10 flex items-start justify-between gap-4", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0", children: /* @__PURE__ */ jsxDEV(ShieldAlert, { className: "w-5 h-5 text-amber-400" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 71,
+                columnNumber: 17
+              }, this) }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 70,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { children: [
+                /* @__PURE__ */ jsxDEV("h3", { className: "text-base font-bold text-white", children: "Supabase Google OAuth Setup" }, void 0, false, {
+                  fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                  lineNumber: 74,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-amber-400/90 font-mono", children: "Redirect URL / Domain Configuration" }, void 0, false, {
+                  fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                  lineNumber: 75,
+                  columnNumber: 17
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 73,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+              lineNumber: 69,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: closeUnauthorizedDomainModal,
+                className: "w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer",
+                children: /* @__PURE__ */ jsxDEV(X, { className: "w-4 h-4" }, void 0, false, {
+                  fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                  lineNumber: 83,
+                  columnNumber: 15
+                }, this)
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 79,
+                columnNumber: 13
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+            lineNumber: 68,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "p-6 space-y-5 text-sm max-h-[82vh] overflow-y-auto", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-gray-300 text-xs leading-relaxed", children: "To enable Google Sign-In with Supabase, ensure your site redirect URL is listed in Supabase and the Supabase callback URL is configured in Google Cloud Console." }, void 0, false, {
+              fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+              lineNumber: 89,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-gray-300 uppercase tracking-wider", children: "Step 1: Add to Supabase Redirect URLs" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 95,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between p-2.5 rounded-xl bg-black/50 border border-white/10 gap-2", children: [
+                /* @__PURE__ */ jsxDEV("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "text-[11px] text-gray-400", children: "Current Site URL / Origin" }, void 0, false, {
+                    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                    lineNumber: 101,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("div", { className: "text-xs font-mono text-purple-300 truncate", children: currentOrigin }, void 0, false, {
+                    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                    lineNumber: 102,
+                    columnNumber: 19
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                  lineNumber: 100,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleCopyOrigin,
+                    className: "px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-medium transition flex items-center gap-1.5 shrink-0 cursor-pointer",
+                    children: copiedOrigin ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
+                      /* @__PURE__ */ jsxDEV(Check, { className: "w-3.5 h-3.5 text-emerald-400" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 111,
+                        columnNumber: 23
+                      }, this),
+                      /* @__PURE__ */ jsxDEV("span", { className: "text-emerald-400", children: "Copied!" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 112,
+                        columnNumber: 23
+                      }, this)
+                    ] }, void 0, true, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 110,
+                      columnNumber: 19
+                    }, this) : /* @__PURE__ */ jsxDEV(Fragment, { children: [
+                      /* @__PURE__ */ jsxDEV(Copy, { className: "w-3.5 h-3.5" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 116,
+                        columnNumber: 23
+                      }, this),
+                      /* @__PURE__ */ jsxDEV("span", { children: "Copy" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 117,
+                        columnNumber: 23
+                      }, this)
+                    ] }, void 0, true, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 115,
+                      columnNumber: 19
+                    }, this)
+                  },
+                  void 0,
+                  false,
+                  {
+                    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                    lineNumber: 104,
+                    columnNumber: 17
+                  },
+                  this
+                )
+              ] }, void 0, true, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 99,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+              lineNumber: 94,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-gray-300 uppercase tracking-wider", children: "Step 2: Google Cloud Console Callback URL" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 126,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between p-2.5 rounded-xl bg-black/50 border border-white/10 gap-2", children: [
+                /* @__PURE__ */ jsxDEV("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "text-[11px] text-gray-400", children: "Authorized Redirect URI" }, void 0, false, {
+                    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                    lineNumber: 132,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("div", { className: "text-xs font-mono text-purple-300 truncate", children: supabaseCallbackUrl }, void 0, false, {
+                    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                    lineNumber: 133,
+                    columnNumber: 19
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                  lineNumber: 131,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleCopyCallback,
+                    className: "px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-medium transition flex items-center gap-1.5 shrink-0 cursor-pointer",
+                    children: copiedCallback ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
+                      /* @__PURE__ */ jsxDEV(Check, { className: "w-3.5 h-3.5 text-emerald-400" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 142,
+                        columnNumber: 23
+                      }, this),
+                      /* @__PURE__ */ jsxDEV("span", { className: "text-emerald-400", children: "Copied!" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 143,
+                        columnNumber: 23
+                      }, this)
+                    ] }, void 0, true, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 141,
+                      columnNumber: 19
+                    }, this) : /* @__PURE__ */ jsxDEV(Fragment, { children: [
+                      /* @__PURE__ */ jsxDEV(Copy, { className: "w-3.5 h-3.5" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 147,
+                        columnNumber: 23
+                      }, this),
+                      /* @__PURE__ */ jsxDEV("span", { children: "Copy" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 148,
+                        columnNumber: 23
+                      }, this)
+                    ] }, void 0, true, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 146,
+                      columnNumber: 19
+                    }, this)
+                  },
+                  void 0,
+                  false,
+                  {
+                    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                    lineNumber: 135,
+                    columnNumber: 17
+                  },
+                  this
+                )
+              ] }, void 0, true, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 130,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+              lineNumber: 125,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-gray-300 uppercase tracking-wider", children: "Step 3: Supabase Dashboard" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 157,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV(
+                "a",
+                {
+                  href: supabaseConsoleUrl,
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                  className: "w-full p-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-200 font-semibold text-xs transition flex items-center justify-between group cursor-pointer",
+                  children: [
+                    /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+                      /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 167,
+                        columnNumber: 19
+                      }, this),
+                      /* @__PURE__ */ jsxDEV("span", { children: "Open Supabase Auth → URL Configuration" }, void 0, false, {
+                        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                        lineNumber: 168,
+                        columnNumber: 19
+                      }, this)
+                    ] }, void 0, true, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 166,
+                      columnNumber: 17
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: "text-[11px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded", children: "Dashboard" }, void 0, false, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 170,
+                      columnNumber: 17
+                    }, this)
+                  ]
+                },
+                void 0,
+                true,
+                {
+                  fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                  lineNumber: 160,
+                  columnNumber: 15
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+              lineNumber: 156,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "pt-3 border-t border-white/10 flex items-center justify-between text-xs text-gray-400", children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Ready to try again?" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                lineNumber: 176,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV(
+                "button",
+                {
+                  type: "button",
+                  onClick: handleRetryGoogleLogin,
+                  disabled: isRetrying,
+                  className: "px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold flex items-center gap-2 transition cursor-pointer shadow-lg shadow-purple-900/30",
+                  children: [
+                    /* @__PURE__ */ jsxDEV(RefreshCw, { className: `w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}` }, void 0, false, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 183,
+                      columnNumber: 17
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { children: "Retry Google Sign-In" }, void 0, false, {
+                      fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                      lineNumber: 184,
+                      columnNumber: 17
+                    }, this)
+                  ]
+                },
+                void 0,
+                true,
+                {
+                  fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+                  lineNumber: 177,
+                  columnNumber: 15
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+              lineNumber: 175,
+              columnNumber: 13
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+            lineNumber: 88,
+            columnNumber: 11
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+        lineNumber: 60,
+        columnNumber: 9
+      },
+      this
+    )
+  ] }, void 0, true, {
+    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+    lineNumber: 49,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx",
+    lineNumber: 48,
+    columnNumber: 5
+  }, this);
+};
+_s(GoogleUnauthorizedDomainModal, "a6XoWw1fp96zXohWGNU3D2+DZoU=", false, function() {
+  return [useApp];
+});
+_c = GoogleUnauthorizedDomainModal;
+var _c;
+$RefreshReg$(_c, "GoogleUnauthorizedDomainModal");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/verixa/remix-verixa/src/components/GoogleUnauthorizedDomainModal.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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QTtBQUFBO0FBQUEsY0FXQTtBQUFBLGlCQWZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBZ0JBO0FBQUEsWUFHQSx1QkFBQyxTQUFJLFdBQVUseUZBQ2I7QUFBQSxxQ0FBQyxVQUFLLG1DQUFOO0FBQUE7QUFBQTtBQUFBO0FBQUEscUJBQXlCO0FBQUEsY0FDekI7QUFBQSxnQkFBQztBQUFBO0FBQUEsa0JBQ0MsTUFBSztBQUFBLGtCQUNMLFNBQVNPO0FBQUFBLGtCQUNULFVBQVVsQjtBQUFBQSxrQkFDVixXQUFVO0FBQUEsa0JBRVY7QUFBQSwyQ0FBQyxhQUFVLFdBQVcsZUFBZUEsYUFBYSxpQkFBaUIsRUFBRSxNQUFyRTtBQUFBO0FBQUE7QUFBQTtBQUFBLDJCQUF3RTtBQUFBLG9CQUN4RSx1QkFBQyxVQUFLLG9DQUFOO0FBQUE7QUFBQTtBQUFBO0FBQUEsMkJBQTBCO0FBQUE7QUFBQTtBQUFBLGdCQVA1QjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsY0FRQTtBQUFBLGlCQVZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBV0E7QUFBQSxlQWxHRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQW1HQTtBQUFBO0FBQUE7QUFBQSxNQS9IRjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsSUFnSUE7QUFBQSxPQTNJRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBNElBLEtBN0lGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0E4SUE7QUFFSjtBQUFFUixHQTFMV0QsK0JBQXVDO0FBQUEsVUFLOUNQLE1BQU07QUFBQTtBQUFBLEtBTENPO0FBQXVDLElBQUFrQztBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsIm1vdGlvbiIsIkFuaW1hdGVQcmVzZW5jZSIsInVzZUFwcCIsIlgiLCJFeHRlcm5hbExpbmsiLCJDb3B5IiwiQ2hlY2siLCJTaGllbGRBbGVydCIsIlJlZnJlc2hDdyIsIkdvb2dsZVVuYXV0aG9yaXplZERvbWFpbk1vZGFsIiwiX3MiLCJpc1VuYXV0aG9yaXplZERvbWFpbk1vZGFsT3BlbiIsImNsb3NlVW5hdXRob3JpemVkRG9tYWluTW9kYWwiLCJsb2dpbldpdGhHb29nbGUiLCJjb3BpZWRPcmlnaW4iLCJzZXRDb3BpZWRPcmlnaW4iLCJjb3BpZWRDYWxsYmFjayIsInNldENvcGllZENhbGxiYWNrIiwiaXNSZXRyeWluZyIsInNldElzUmV0cnlpbmciLCJjdXJyZW50T3JpZ2luIiwid2luZG93IiwibG9jYXRpb24iLCJvcmlnaW4iLCJzdXBhYmFzZVVybCIsImltcG9ydCIsImVudiIsIlZJVEVfU1VQQUJBU0VfVVJMIiwic3VwYWJhc2VDYWxsYmFja1VybCIsInN1cGFiYXNlQ29uc29sZVVybCIsImhhbmRsZUNvcHlPcmlnaW4iLCJuYXZpZ2F0b3IiLCJjbGlwYm9hcmQiLCJ3cml0ZVRleHQiLCJzZXRUaW1lb3V0IiwiaGFuZGxlQ29weUNhbGxiYWNrIiwiaGFuZGxlUmV0cnlHb29nbGVMb2dpbiIsIm9wYWNpdHkiLCJzY2FsZSIsInkiLCJ0eXBlIiwiZGFtcGluZyIsInN0aWZmbmVzcyIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkdvb2dsZVVuYXV0aG9yaXplZERvbWFpbk1vZGFsLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XHJcbmltcG9ydCB7IG1vdGlvbiwgQW5pbWF0ZVByZXNlbmNlIH0gZnJvbSAnbW90aW9uL3JlYWN0JztcclxuaW1wb3J0IHsgdXNlQXBwIH0gZnJvbSAnLi4vY29udGV4dC9BcHBDb250ZXh0JztcclxuaW1wb3J0IHsgWCwgRXh0ZXJuYWxMaW5rLCBDb3B5LCBDaGVjaywgU2hpZWxkQWxlcnQsIFJlZnJlc2hDdyB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XHJcblxyXG5leHBvcnQgY29uc3QgR29vZ2xlVW5hdXRob3JpemVkRG9tYWluTW9kYWw6IFJlYWN0LkZDID0gKCkgPT4ge1xyXG4gIGNvbnN0IHtcclxuICAgIGlzVW5hdXRob3JpemVkRG9tYWluTW9kYWxPcGVuLFxyXG4gICAgY2xvc2VVbmF1dGhvcml6ZWREb21haW5Nb2RhbCxcclxuICAgIGxvZ2luV2l0aEdvb2dsZSxcclxuICB9ID0gdXNlQXBwKCk7XHJcblxyXG4gIGNvbnN0IFtjb3BpZWRPcmlnaW4sIHNldENvcGllZE9yaWdpbl0gPSB1c2VTdGF0ZShmYWxzZSk7XHJcbiAgY29uc3QgW2NvcGllZENhbGxiYWNrLCBzZXRDb3BpZWRDYWxsYmFja10gPSB1c2VTdGF0ZShmYWxzZSk7XHJcbiAgY29uc3QgW2lzUmV0cnlpbmcsIHNldElzUmV0cnlpbmddID0gdXNlU3RhdGUoZmFsc2UpO1xyXG5cclxuICBpZiAoIWlzVW5hdXRob3JpemVkRG9tYWluTW9kYWxPcGVuKSByZXR1cm4gbnVsbDtcclxuXHJcbiAgY29uc3QgY3VycmVudE9yaWdpbiA9IHR5cGVvZiB3aW5kb3cgIT09ICd1bmRlZmluZWQnID8gd2luZG93LmxvY2F0aW9uLm9yaWdpbiA6ICdodHRwczovL3J1bi5hcHAnO1xyXG4gIGNvbnN0IHN1cGFiYXNlVXJsID0gaW1wb3J0Lm1ldGEuZW52LlZJVEVfU1VQQUJBU0VfVVJMIHx8ICdodHRwczovL2puYmF1bWVtd3h5ZGprdHdlZHR6LnN1cGFiYXNlLmNvJztcclxuICBjb25zdCBzdXBhYmFzZUNhbGxiYWNrVXJsID0gYCR7c3VwYWJhc2VVcmx9L2F1dGgvdjEvY2FsbGJhY2tgO1xyXG4gIGNvbnN0IHN1cGFiYXNlQ29uc29sZVVybCA9ICdodHRwczovL3N1cGFiYXNlLmNvbS9kYXNoYm9hcmQvcHJvamVjdC9qbmJhdW1lbXd4eWRqa3R3ZWR0ei9hdXRoL3VybC1jb25maWd1cmF0aW9uJztcclxuXHJcbiAgY29uc3QgaGFuZGxlQ29weU9yaWdpbiA9ICgpID0+IHtcclxuICAgIGlmIChuYXZpZ2F0b3IuY2xpcGJvYXJkKSB7XHJcbiAgICAgIG5hdmlnYXRvci5jbGlwYm9hcmQud3JpdGVUZXh0KGN1cnJlbnRPcmlnaW4pO1xyXG4gICAgICBzZXRDb3BpZWRPcmlnaW4odHJ1ZSk7XHJcbiAgICAgIHNldFRpbWVvdXQoKCkgPT4gc2V0Q29waWVkT3JpZ2luKGZhbHNlKSwgMjAwMCk7XHJcbiAgICB9XHJcbiAgfTtcclxuXHJcbiAgY29uc3QgaGFuZGxlQ29weUNhbGxiYWNrID0gKCkgPT4ge1xyXG4gICAgaWYgKG5hdmlnYXRvci5jbGlwYm9hcmQpIHtcclxuICAgICAgbmF2aWdhdG9yLmNsaXBib2FyZC53cml0ZVRleHQoc3VwYWJhc2VDYWxsYmFja1VybCk7XHJcbiAgICAgIHNldENvcGllZENhbGxiYWNrKHRydWUpO1xyXG4gICAgICBzZXRUaW1lb3V0KCgpID0+IHNldENvcGllZENhbGxiYWNrKGZhbHNlKSwgMjAwMCk7XHJcbiAgICB9XHJcbiAgfTtcclxuXHJcbiAgY29uc3QgaGFuZGxlUmV0cnlHb29nbGVMb2dpbiA9IGFzeW5jICgpID0+IHtcclxuICAgIHNldElzUmV0cnlpbmcodHJ1ZSk7XHJcbiAgICBjbG9zZVVuYXV0aG9yaXplZERvbWFpbk1vZGFsKCk7XHJcbiAgICBhd2FpdCBsb2dpbldpdGhHb29nbGUoKTtcclxuICAgIHNldElzUmV0cnlpbmcoZmFsc2UpO1xyXG4gIH07XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8QW5pbWF0ZVByZXNlbmNlPlxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImZpeGVkIGluc2V0LTAgei1bMTIwXSBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBwLTRcIj5cclxuICAgICAgICB7LyogQmFja2Ryb3AgKi99XHJcbiAgICAgICAgPG1vdGlvbi5kaXZcclxuICAgICAgICAgIGluaXRpYWw9e3sgb3BhY2l0eTogMCB9fVxyXG4gICAgICAgICAgYW5pbWF0ZT17eyBvcGFjaXR5OiAxIH19XHJcbiAgICAgICAgICBleGl0PXt7IG9wYWNpdHk6IDAgfX1cclxuICAgICAgICAgIG9uQ2xpY2s9e2Nsb3NlVW5hdXRob3JpemVkRG9tYWluTW9kYWx9XHJcbiAgICAgICAgICBjbGFzc05hbWU9XCJmaXhlZCBpbnNldC0wIGJnLWJsYWNrLzg1IGJhY2tkcm9wLWJsdXItc21cIlxyXG4gICAgICAgIC8+XHJcblxyXG4gICAgICAgIHsvKiBEaWFsb2cgKi99XHJcbiAgICAgICAgPG1vdGlvbi5kaXZcclxuICAgICAgICAgIGluaXRpYWw9e3sgb3BhY2l0eTogMCwgc2NhbGU6IDAuOTUsIHk6IDE1IH19XHJcbiAgICAgICAgICBhbmltYXRlPXt7IG9wYWNpdHk6IDEsIHNjYWxlOiAxLCB5OiAwIH19XHJcbiAgICAgICAgICBleGl0PXt7IG9wYWNpdHk6IDAsIHNjYWxlOiAwLjk1LCB5OiAxNSB9fVxyXG4gICAgICAgICAgdHJhbnNpdGlvbj17eyB0eXBlOiAnc3ByaW5nJywgZGFtcGluZzogMjUsIHN0aWZmbmVzczogMzUwIH19XHJcbiAgICAgICAgICBjbGFzc05hbWU9XCJyZWxhdGl2ZSB3LWZ1bGwgbWF4LXctbGcgYmctWyMxMTEyMTVdIHRleHQtd2hpdGUgcm91bmRlZC0zeGwgYm9yZGVyIGJvcmRlci1hbWJlci01MDAvMzAgc2hhZG93LTJ4bCBvdmVyZmxvdy1oaWRkZW4gei0xMCBmb250LXNhbnNcIlxyXG4gICAgICAgID5cclxuICAgICAgICAgIHsvKiBIZWFkZXIgKi99XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInB4LTYgcHQtNiBwYi00IGJvcmRlci1iIGJvcmRlci13aGl0ZS8xMCBmbGV4IGl0ZW1zLXN0YXJ0IGp1c3RpZnktYmV0d2VlbiBnYXAtNFwiPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTEwIGgtMTAgcm91bmRlZC0yeGwgYmctYW1iZXItNTAwLzE1IGJvcmRlciBib3JkZXItYW1iZXItNTAwLzMwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHNocmluay0wXCI+XHJcbiAgICAgICAgICAgICAgICA8U2hpZWxkQWxlcnQgY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LWFtYmVyLTQwMFwiIC8+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJ0ZXh0LWJhc2UgZm9udC1ib2xkIHRleHQtd2hpdGVcIj5TdXBhYmFzZSBHb29nbGUgT0F1dGggU2V0dXA8L2gzPlxyXG4gICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LWFtYmVyLTQwMC85MCBmb250LW1vbm9cIj5SZWRpcmVjdCBVUkwgLyBEb21haW4gQ29uZmlndXJhdGlvbjwvcD5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8YnV0dG9uXHJcbiAgICAgICAgICAgICAgb25DbGljaz17Y2xvc2VVbmF1dGhvcml6ZWREb21haW5Nb2RhbH1cclxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LTggaC04IHJvdW5kZWQtZnVsbCBiZy13aGl0ZS81IGhvdmVyOmJnLXdoaXRlLzEwIHRleHQtZ3JheS00MDAgaG92ZXI6dGV4dC13aGl0ZSBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciB0cmFuc2l0aW9uLWNvbG9ycyBjdXJzb3ItcG9pbnRlclwiXHJcbiAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICA8WCBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cclxuICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICB7LyogQm9keSAqL31cclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC02IHNwYWNlLXktNSB0ZXh0LXNtIG1heC1oLVs4MnZoXSBvdmVyZmxvdy15LWF1dG9cIj5cclxuICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1ncmF5LTMwMCB0ZXh0LXhzIGxlYWRpbmctcmVsYXhlZFwiPlxyXG4gICAgICAgICAgICAgIFRvIGVuYWJsZSBHb29nbGUgU2lnbi1JbiB3aXRoIFN1cGFiYXNlLCBlbnN1cmUgeW91ciBzaXRlIHJlZGlyZWN0IFVSTCBpcyBsaXN0ZWQgaW4gU3VwYWJhc2UgYW5kIHRoZSBTdXBhYmFzZSBjYWxsYmFjayBVUkwgaXMgY29uZmlndXJlZCBpbiBHb29nbGUgQ2xvdWQgQ29uc29sZS5cclxuICAgICAgICAgICAgPC9wPlxyXG5cclxuICAgICAgICAgICAgey8qIFN0ZXAgMTogU2l0ZSBSZWRpcmVjdCBVUkwgKi99XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0yXCI+XHJcbiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1zZW1pYm9sZCB0ZXh0LWdyYXktMzAwIHVwcGVyY2FzZSB0cmFja2luZy13aWRlclwiPlxyXG4gICAgICAgICAgICAgICAgU3RlcCAxOiBBZGQgdG8gU3VwYWJhc2UgUmVkaXJlY3QgVVJMc1xyXG4gICAgICAgICAgICAgIDwvbGFiZWw+XHJcblxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHAtMi41IHJvdW5kZWQteGwgYmctYmxhY2svNTAgYm9yZGVyIGJvcmRlci13aGl0ZS8xMCBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaW4tdy0wIGZsZXgtMVwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtWzExcHhdIHRleHQtZ3JheS00MDBcIj5DdXJyZW50IFNpdGUgVVJMIC8gT3JpZ2luPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC14cyBmb250LW1vbm8gdGV4dC1wdXJwbGUtMzAwIHRydW5jYXRlXCI+e2N1cnJlbnRPcmlnaW59PC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9e2hhbmRsZUNvcHlPcmlnaW59XHJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInB4LTMgcHktMS41IHJvdW5kZWQtbGcgYmctYW1iZXItNTAwLzIwIGhvdmVyOmJnLWFtYmVyLTUwMC8zMCB0ZXh0LWFtYmVyLTMwMCB0ZXh0LXhzIGZvbnQtbWVkaXVtIHRyYW5zaXRpb24gZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSBzaHJpbmstMCBjdXJzb3ItcG9pbnRlclwiXHJcbiAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgIHtjb3BpZWRPcmlnaW4gPyAoXHJcbiAgICAgICAgICAgICAgICAgICAgPD5cclxuICAgICAgICAgICAgICAgICAgICAgIDxDaGVjayBjbGFzc05hbWU9XCJ3LTMuNSBoLTMuNSB0ZXh0LWVtZXJhbGQtNDAwXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtZW1lcmFsZC00MDBcIj5Db3BpZWQhPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDwvPlxyXG4gICAgICAgICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgICAgICAgIDw+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8Q29weSBjbGFzc05hbWU9XCJ3LTMuNSBoLTMuNVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj5Db3B5PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDwvPlxyXG4gICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgey8qIFN0ZXAgMjogU3VwYWJhc2UgQ2FsbGJhY2sgVVJMICovfVxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1ncmF5LTMwMCB1cHBlcmNhc2UgdHJhY2tpbmctd2lkZXJcIj5cclxuICAgICAgICAgICAgICAgIFN0ZXAgMjogR29vZ2xlIENsb3VkIENvbnNvbGUgQ2FsbGJhY2sgVVJMXHJcbiAgICAgICAgICAgICAgPC9sYWJlbD5cclxuXHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcC0yLjUgcm91bmRlZC14bCBiZy1ibGFjay81MCBib3JkZXIgYm9yZGVyLXdoaXRlLzEwIGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1pbi13LTAgZmxleC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1bMTFweF0gdGV4dC1ncmF5LTQwMFwiPkF1dGhvcml6ZWQgUmVkaXJlY3QgVVJJPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC14cyBmb250LW1vbm8gdGV4dC1wdXJwbGUtMzAwIHRydW5jYXRlXCI+e3N1cGFiYXNlQ2FsbGJhY2tVcmx9PC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9e2hhbmRsZUNvcHlDYWxsYmFja31cclxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtMyBweS0xLjUgcm91bmRlZC1sZyBiZy1hbWJlci01MDAvMjAgaG92ZXI6YmctYW1iZXItNTAwLzMwIHRleHQtYW1iZXItMzAwIHRleHQteHMgZm9udC1tZWRpdW0gdHJhbnNpdGlvbiBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMS41IHNocmluay0wIGN1cnNvci1wb2ludGVyXCJcclxuICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAge2NvcGllZENhbGxiYWNrID8gKFxyXG4gICAgICAgICAgICAgICAgICAgIDw+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8Q2hlY2sgY2xhc3NOYW1lPVwidy0zLjUgaC0zLjUgdGV4dC1lbWVyYWxkLTQwMFwiIC8+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LWVtZXJhbGQtNDAwXCI+Q29waWVkITwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8Lz5cclxuICAgICAgICAgICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgICAgICAgICA8PlxyXG4gICAgICAgICAgICAgICAgICAgICAgPENvcHkgY2xhc3NOYW1lPVwidy0zLjUgaC0zLjVcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4+Q29weTwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8Lz5cclxuICAgICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgIHsvKiBTdGVwIDM6IE9wZW4gU3VwYWJhc2UgRGFzaGJvYXJkICovfVxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxyXG4gICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1ncmF5LTMwMCB1cHBlcmNhc2UgdHJhY2tpbmctd2lkZXJcIj5cclxuICAgICAgICAgICAgICAgIFN0ZXAgMzogU3VwYWJhc2UgRGFzaGJvYXJkXHJcbiAgICAgICAgICAgICAgPC9sYWJlbD5cclxuICAgICAgICAgICAgICA8YVxyXG4gICAgICAgICAgICAgICAgaHJlZj17c3VwYWJhc2VDb25zb2xlVXJsfVxyXG4gICAgICAgICAgICAgICAgdGFyZ2V0PVwiX2JsYW5rXCJcclxuICAgICAgICAgICAgICAgIHJlbD1cIm5vb3BlbmVyIG5vcmVmZXJyZXJcIlxyXG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIHAtMyByb3VuZGVkLXhsIGJnLXB1cnBsZS02MDAvMjAgaG92ZXI6YmctcHVycGxlLTYwMC8zMCBib3JkZXIgYm9yZGVyLXB1cnBsZS01MDAvMzAgdGV4dC1wdXJwbGUtMjAwIGZvbnQtc2VtaWJvbGQgdGV4dC14cyB0cmFuc2l0aW9uIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBncm91cCBjdXJzb3ItcG9pbnRlclwiXHJcbiAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICA8RXh0ZXJuYWxMaW5rIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1wdXJwbGUtNDAwIGdyb3VwLWhvdmVyOnNjYWxlLTExMCB0cmFuc2l0aW9uLXRyYW5zZm9ybVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgIDxzcGFuPk9wZW4gU3VwYWJhc2UgQXV0aCAmcmFycjsgVVJMIENvbmZpZ3VyYXRpb248L3NwYW4+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtWzExcHhdIHRleHQtcHVycGxlLTMwMCBiZy1wdXJwbGUtNTAwLzIwIHB4LTIgcHktMC41IHJvdW5kZWRcIj5EYXNoYm9hcmQ8L3NwYW4+XHJcbiAgICAgICAgICAgICAgPC9hPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgIHsvKiBSZXRyeSBCdXR0b24gKi99XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicHQtMyBib3JkZXItdCBib3JkZXItd2hpdGUvMTAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHRleHQteHMgdGV4dC1ncmF5LTQwMFwiPlxyXG4gICAgICAgICAgICAgIDxzcGFuPlJlYWR5IHRvIHRyeSBhZ2Fpbj88L3NwYW4+XHJcbiAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVSZXRyeUdvb2dsZUxvZ2lufVxyXG4gICAgICAgICAgICAgICAgZGlzYWJsZWQ9e2lzUmV0cnlpbmd9XHJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJweC00IHB5LTIgcm91bmRlZC14bCBiZy1ncmFkaWVudC10by1yIGZyb20tcHVycGxlLTYwMCB0by1pbmRpZ28tNjAwIGhvdmVyOmZyb20tcHVycGxlLTUwMCBob3Zlcjp0by1pbmRpZ28tNTAwIHRleHQtd2hpdGUgZm9udC1ib2xkIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yIHRyYW5zaXRpb24gY3Vyc29yLXBvaW50ZXIgc2hhZG93LWxnIHNoYWRvdy1wdXJwbGUtOTAwLzMwXCJcclxuICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICA8UmVmcmVzaEN3IGNsYXNzTmFtZT17YHctMy41IGgtMy41ICR7aXNSZXRyeWluZyA/ICdhbmltYXRlLXNwaW4nIDogJyd9YH0gLz5cclxuICAgICAgICAgICAgICAgIDxzcGFuPlJldHJ5IEdvb2dsZSBTaWduLUluPC9zcGFuPlxyXG4gICAgICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgIDwvbW90aW9uLmRpdj5cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L0FuaW1hdGVQcmVzZW5jZT5cclxuICApO1xyXG59O1xyXG4iXSwiZmlsZSI6IkM6L3Zlcml4YS9yZW1peC12ZXJpeGEvc3JjL2NvbXBvbmVudHMvR29vZ2xlVW5hdXRob3JpemVkRG9tYWluTW9kYWwudHN4In0=

@@ -1,0 +1,129 @@
+[
+  {
+    "operationId": "QA-STOR-01",
+    "scope": "Scope B (Engine Negative)",
+    "description": "Negative upload probe against missing app-files bucket & key validation",
+    "actor": "User A (@doc_auditor)",
+    "target": "supabase.storage.from('app-files').upload('c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/verixa_qa_storage_probe.txt')",
+    "actualRequest": {
+      "probedPaths": [
+        "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/[VERIXA-QA]-storage-probe.txt",
+        "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/verixa_qa_storage_probe.txt"
+      ],
+      "byteLength": 68,
+      "contentType": "text/plain"
+    },
+    "actualResponse": {
+      "bracketKeyError": "Invalid key: c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/[VERIXA-QA]-storage-probe.txt",
+      "statusCode": "400"
+    },
+    "mutationsOccurred": false,
+    "unexpectedBehavior": null,
+    "status": "FAIL",
+    "notes": "Verified: Standard upload probe is cleanly rejected with \"Bucket not found\". Key with brackets is rejected with \"Invalid key\". Zero objects created."
+  },
+  {
+    "operationId": "QA-STOR-02",
+    "scope": "Scope B (Engine Negative)",
+    "description": "Negative probe against non-existent private/system buckets",
+    "actor": "User B (@qa_user_b)",
+    "target": "supabase.storage.getBucket('private') & from('private').upload()",
+    "actualRequest": {
+      "probedBuckets": [
+        "private",
+        "system"
+      ]
+    },
+    "actualResponse": {
+      "privateGetBucketError": "Bucket not found",
+      "systemGetBucketError": "Bucket not found",
+      "privateUploadError": "Bucket not found"
+    },
+    "expectedBehaviorOccurred": true,
+    "mutationsOccurred": false,
+    "unexpectedBehavior": null,
+    "status": "PASS",
+    "notes": "Verified: getBucket and upload against non-existent buckets are strictly rejected with \"Bucket not found\". Zero objects created."
+  },
+  {
+    "operationId": "QA-STOR-03",
+    "scope": "Scope A (Client Helper Resolution)",
+    "description": "CDN URL getSignedMediaUrl resolution test (bypasses Supabase Storage)",
+    "actor": "Read-Only Helper (User A context)",
+    "target": "getSignedMediaUrl('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1080&q=80')",
+    "actualRequest": {
+      "inputUrl": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1080&q=80"
+    },
+    "actualResponse": {
+      "resolvedUrl": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1080&q=80",
+      "networkCallMade": false
+    },
+    "expectedBehaviorOccurred": true,
+    "mutationsOccurred": false,
+    "unexpectedBehavior": null,
+    "status": "PASS",
+    "notes": "Helper immediately returned CDN URL unmodified with 0 network calls. Validates UI media resolution bypass; does NOT validate Supabase Storage engine."
+  },
+  {
+    "operationId": "QA-STOR-04",
+    "scope": "Scope A (Client Helper Resolution)",
+    "description": "Base64 Data URI getSignedMediaUrl resolution test (bypasses Supabase Storage)",
+    "actor": "Read-Only Helper (User A context)",
+    "target": "getSignedMediaUrl('data:image/png;base64,...')",
+    "actualRequest": {
+      "inputPrefix": "data:image/png;base64,iVBORw0K"
+    },
+    "actualResponse": {
+      "outputPrefix": "data:image/png;base64,iVBORw0K",
+      "networkCallMade": false
+    },
+    "expectedBehaviorOccurred": true,
+    "mutationsOccurred": false,
+    "unexpectedBehavior": null,
+    "status": "PASS",
+    "notes": "Helper immediately returned Base64 Data URI unmodified with 0 network calls. Validates UI media resolution bypass; does NOT validate Supabase Storage engine."
+  },
+  {
+    "operationId": "QA-STOR-05",
+    "scope": "Scope A (Client Resilience on Storage Error)",
+    "description": "Nonexistent storage path getSignedMediaUrl resilience test",
+    "actor": "Read-Only Helper (User A context)",
+    "target": "getSignedMediaUrl('c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/fake_audit_probe_object.png')",
+    "actualRequest": {
+      "inputPath": "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/fake_audit_probe_object.png"
+    },
+    "actualResponse": {
+      "returnedValue": "https://jnbaumemwxydjktwedtz.supabase.co/storage/v1/object/public/app-files/c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/fake_audit_probe_object.png",
+      "networkCallMade": true
+    },
+    "expectedBehaviorOccurred": true,
+    "mutationsOccurred": false,
+    "unexpectedBehavior": null,
+    "status": "PASS",
+    "notes": "Helper caught storage API failure gracefully and generated fallback public URL without throwing unhandled exceptions. Zero storage mutations."
+  },
+  {
+    "operationId": "QA-STOR-06",
+    "scope": "Scope A (Client Deletion Resilience)",
+    "description": "deleteStorageFile no-op and resilience test for CDN, Data URI, and non-existent storage paths",
+    "actor": "Read-Only Helper (User A context)",
+    "target": "deleteStorageFile('https://...'), deleteStorageFile('data:...'), deleteStorageFile('uid/posts/fake')",
+    "actualRequest": {
+      "testedInputs": [
+        "https://...",
+        "data:...",
+        "c7aa8500-26f1-4c6f-ac9d-deaf95373544/posts/fake_audit_probe_object.png"
+      ]
+    },
+    "actualResponse": {
+      "cdnNetworkCall": false,
+      "dataUriNetworkCall": false,
+      "fakePathHandled": true
+    },
+    "expectedBehaviorOccurred": true,
+    "mutationsOccurred": false,
+    "unexpectedBehavior": null,
+    "status": "PASS",
+    "notes": "Verified: URLs and Data URIs trigger zero network requests. Nonexistent storage paths are caught gracefully with zero unhandled exceptions."
+  }
+]

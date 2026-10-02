@@ -41,6 +41,8 @@ const MainLayout: React.FC = () => {
     setCurrentPage,
     isAuthenticated,
     openUserProfile,
+    openScannerModal,
+    setBlockedCommentModal,
     activeCall,
     localStream,
     remoteStream,
@@ -52,6 +54,23 @@ const MainLayout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [directPostId, setDirectPostId] = useState<string | null>(null);
   const [directReelId, setDirectReelId] = useState<string | null>(null);
+  const [demoCall, setDemoCall] = useState<any>(null);
+
+  // Automation / Test helper hook
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__verixa = {
+        setCurrentPage,
+        setIsCreatePostOpen,
+        setDirectPostId,
+        setDirectReelId,
+        openUserProfile,
+        openScannerModal,
+        setBlockedCommentModal,
+        setDemoCall,
+      };
+    }
+  }, [setCurrentPage, openUserProfile, openScannerModal, setBlockedCommentModal]);
 
   // Deep linking and URL synchronization
   useEffect(() => {
@@ -262,12 +281,12 @@ const MainLayout: React.FC = () => {
       {directPostId && <PostDetailModal postId={directPostId} onClose={handleCloseDirectPost} />}
       <CreatePostModal isOpen={isCreatePostOpen} onClose={() => setIsCreatePostOpen(false)} />
       <CallModal
-        activeCall={activeCall}
+        activeCall={activeCall || demoCall}
         localStream={localStream}
         remoteStream={remoteStream}
         onAccept={acceptCall}
-        onReject={rejectCall}
-        onEnd={endCall}
+        onReject={() => { setDemoCall(null); rejectCall(); }}
+        onEnd={() => { setDemoCall(null); endCall(); }}
       />
       <AIScannerModal />
       <BlockedCommentModal />

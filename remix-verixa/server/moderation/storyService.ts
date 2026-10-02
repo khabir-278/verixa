@@ -75,7 +75,12 @@ try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       const realStories = parsed.filter(
-        (s) => !s.user_id?.includes('test') && s.user_id !== 'user_story_test' && s.user?.username !== 'alice_story'
+        (s) =>
+          !s.user_id?.includes('test') &&
+          s.user_id !== 'user_story_test' &&
+          s.user?.username !== 'alice_story' &&
+          s.user?.username !== 'gist12' &&
+          s.user_id !== '6f2053db-15e7-4cc6-9bc3-4e0d91046acb'
       );
       storiesMemoryBuffer.push(...realStories);
     }
@@ -87,7 +92,12 @@ try {
 function saveStoriesToFile() {
   try {
     const persistable = storiesMemoryBuffer.filter(
-      (s) => !s.user_id?.includes('test') && s.user_id !== 'user_story_test' && s.user?.username !== 'alice_story'
+      (s) =>
+        !s.user_id?.includes('test') &&
+        s.user_id !== 'user_story_test' &&
+        s.user?.username !== 'alice_story' &&
+        s.user?.username !== 'gist12' &&
+        s.user_id !== '6f2053db-15e7-4cc6-9bc3-4e0d91046acb'
     );
     fs.writeFileSync(STORIES_FILE, JSON.stringify(persistable, null, 2), 'utf-8');
   } catch (err) {
@@ -432,9 +442,13 @@ export class StoryService {
   }
 
   /**
-   * Toggles a like on a story by a user with database sync.
+   * Toggles or sets a like on a story by a user with database sync.
    */
-  async toggleLike(storyId: string, userId: string): Promise<{ success: boolean; isLiked: boolean; likesCount: number; likedBy: string[] }> {
+  async toggleLike(
+    storyId: string,
+    userId: string,
+    targetLiked?: boolean
+  ): Promise<{ success: boolean; isLiked: boolean; likesCount: number; likedBy: string[] }> {
     const story = storiesMemoryBuffer.find((s) => s.id === storyId);
     let isLiked = false;
     let likesCount = 0;
@@ -446,11 +460,12 @@ export class StoryService {
         story.liked_by = [];
       }
       const idx = story.liked_by.indexOf(userId);
-      if (idx >= 0) {
-        story.liked_by.splice(idx, 1);
+      const shouldLike = targetLiked !== undefined ? targetLiked : idx < 0;
+      if (!shouldLike) {
+        if (idx >= 0) story.liked_by.splice(idx, 1);
         isLiked = false;
       } else {
-        story.liked_by.push(userId);
+        if (idx < 0) story.liked_by.push(userId);
         isLiked = true;
       }
       story.likes_count = story.liked_by.length;
@@ -459,6 +474,8 @@ export class StoryService {
       likesCount = story.likes_count;
       likedBy = [...story.liked_by];
       saveStoriesToFile();
+    } else {
+      isLiked = targetLiked !== undefined ? targetLiked : true;
     }
 
     // 2. Sync with Supabase if user_id is a valid UUID
@@ -474,7 +491,9 @@ export class StoryService {
           .eq('user_id', userId)
           .maybeSingle();
 
-        if (existingLike) {
+        const shouldLike = targetLiked !== undefined ? targetLiked : !existingLike;
+
+        if (!shouldLike) {
           await sb.from('story_likes').delete().eq('story_id', storyId).eq('user_id', userId);
           isLiked = false;
         } else {

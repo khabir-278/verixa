@@ -1,0 +1,268 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/verixa/remix-verixa/src/pages/ContactPage.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f5065f8b"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport1_react from "/node_modules/.vite/deps/react.js?v=f5065f8b"; const useState = __vite__cjsImport1_react["useState"];
+import { useApp } from "/@fs/C:/verixa/remix-verixa/src/context/AppContext.tsx";
+import { Mail, Send, CheckCircle2, Clock, ArrowLeft } from "/node_modules/.vite/deps/lucide-react.js?v=f5065f8b";
+export const ContactPage = () => {
+  _s();
+  const { addToast, setCurrentPage, isAuthenticated } = useApp();
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!subject || !message) return;
+    setSubmitted(true);
+    addToast("success", "Ticket Dispatched", "AI Security support ticket created (#VRX-8291).");
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "max-w-3xl mx-auto px-4 py-10 space-y-8", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between border-b border-slate-800/80 pb-4", children: /* @__PURE__ */ jsxDEV(
+      "button",
+      {
+        onClick: () => setCurrentPage(isAuthenticated ? "home" : "landing"),
+        className: "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white text-xs font-semibold transition cursor-pointer",
+        children: [
+          /* @__PURE__ */ jsxDEV(ArrowLeft, { className: "w-4 h-4 text-purple-400" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+            lineNumber: 26,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { children: isAuthenticated ? "Back to Feed" : "Back to Welcome" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+            lineNumber: 27,
+            columnNumber: 11
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 22,
+        columnNumber: 9
+      },
+      this
+    ) }, void 0, false, {
+      fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+      lineNumber: 21,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "text-center space-y-2", children: [
+      /* @__PURE__ */ jsxDEV("h1", { className: "text-3xl font-extrabold text-white flex items-center justify-center gap-2", children: [
+        "Contact VERIXA Support ",
+        /* @__PURE__ */ jsxDEV(Mail, { className: "w-6 h-6 text-purple-400" }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+          lineNumber: 33,
+          columnNumber: 34
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 32,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-400", children: "Have questions or need assistance with AI moderation appeal? Reach out below." }, void 0, false, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 35,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+      lineNumber: 31,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "p-8 rounded-3xl bg-slate-900/80 border border-purple-500/20 backdrop-blur-xl shadow-2xl", children: submitted ? /* @__PURE__ */ jsxDEV("div", { className: "text-center py-8 space-y-3", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "p-3 rounded-full bg-emerald-500/20 text-emerald-400 w-fit mx-auto", children: /* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-8 h-8" }, void 0, false, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 44,
+        columnNumber: 15
+      }, this) }, void 0, false, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 43,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("h3", { className: "font-bold text-lg text-white", children: "Ticket Submitted to VERIXA Support" }, void 0, false, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 46,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-300", children: "Our automated system triaged your request. Typical response time is under 5 minutes." }, void 0, false, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 47,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => {
+            setSubmitted(false);
+            setSubject("");
+            setMessage("");
+          },
+          className: "px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs",
+          children: "Submit Another Inquiry"
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+          lineNumber: 50,
+          columnNumber: 13
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+      lineNumber: 42,
+      columnNumber: 9
+    }, this) : /* @__PURE__ */ jsxDEV("form", { onSubmit: handleSubmit, className: "space-y-4", children: [
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-slate-300 block mb-1", children: "Subject" }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+          lineNumber: 64,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "input",
+          {
+            type: "text",
+            value: subject,
+            onChange: (e) => setSubject(e.target.value),
+            placeholder: "e.g., Content Moderation Appeal",
+            className: "w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500",
+            required: true
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+            lineNumber: 65,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 63,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-slate-300 block mb-1", children: "Message Details" }, void 0, false, {
+          fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+          lineNumber: 76,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "textarea",
+          {
+            value: message,
+            onChange: (e) => setMessage(e.target.value),
+            placeholder: "Describe your request or appeal...",
+            rows: 4,
+            className: "w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500",
+            required: true
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+            lineNumber: 77,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 75,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between pt-2", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-1.5 text-slate-400 text-xs", children: [
+          /* @__PURE__ */ jsxDEV(Clock, { className: "w-4 h-4 text-purple-400" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+            lineNumber: 89,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { children: "AI Auto-Triage Active" }, void 0, false, {
+            fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+            lineNumber: 90,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+          lineNumber: 88,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            type: "submit",
+            className: "px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-900/30 flex items-center gap-2",
+            children: [
+              /* @__PURE__ */ jsxDEV(Send, { className: "w-4 h-4" }, void 0, false, {
+                fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+                lineNumber: 97,
+                columnNumber: 17
+              }, this),
+              " Send Ticket"
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+            lineNumber: 93,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+        lineNumber: 87,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+      lineNumber: 62,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+      lineNumber: 40,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/verixa/remix-verixa/src/pages/ContactPage.tsx",
+    lineNumber: 19,
+    columnNumber: 5
+  }, this);
+};
+_s(ContactPage, "7il56y65vuhl89QicDs4Jr4T6QQ=", false, function() {
+  return [useApp];
+});
+_c = ContactPage;
+var _c;
+$RefreshReg$(_c, "ContactPage");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/verixa/remix-verixa/src/pages/ContactPage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/verixa/remix-verixa/src/pages/ContactPage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/verixa/remix-verixa/src/pages/ContactPage.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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QTtBQUFBO0FBQUE7QUFBQTtBQUFBLFFBS0E7QUFBQSxXQVhGO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFZQTtBQUFBLFNBckNGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FzQ0EsS0E1REo7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQThEQTtBQUFBLE9BbkZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FvRkE7QUFFSjtBQUFFZCxHQXBHV0QsYUFBcUI7QUFBQSxVQUNzQk4sTUFBTTtBQUFBO0FBQUEsS0FEakRNO0FBQXFCLElBQUFnQjtBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsInVzZUFwcCIsIk1haWwiLCJTZW5kIiwiQ2hlY2tDaXJjbGUyIiwiQ2xvY2siLCJBcnJvd0xlZnQiLCJDb250YWN0UGFnZSIsIl9zIiwiYWRkVG9hc3QiLCJzZXRDdXJyZW50UGFnZSIsImlzQXV0aGVudGljYXRlZCIsInN1YmplY3QiLCJzZXRTdWJqZWN0IiwibWVzc2FnZSIsInNldE1lc3NhZ2UiLCJzdWJtaXR0ZWQiLCJzZXRTdWJtaXR0ZWQiLCJoYW5kbGVTdWJtaXQiLCJlIiwicHJldmVudERlZmF1bHQiLCJ0YXJnZXQiLCJ2YWx1ZSIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkNvbnRhY3RQYWdlLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XHJcbmltcG9ydCB7IHVzZUFwcCB9IGZyb20gJy4uL2NvbnRleHQvQXBwQ29udGV4dCc7XHJcbmltcG9ydCB7IE1haWwsIE1lc3NhZ2VTcXVhcmUsIFNlbmQsIFNoaWVsZENoZWNrLCBDaGVja0NpcmNsZTIsIENsb2NrLCBBcnJvd0xlZnQgfSBmcm9tICdsdWNpZGUtcmVhY3QnO1xyXG5cclxuZXhwb3J0IGNvbnN0IENvbnRhY3RQYWdlOiBSZWFjdC5GQyA9ICgpID0+IHtcclxuICBjb25zdCB7IGFkZFRvYXN0LCBzZXRDdXJyZW50UGFnZSwgaXNBdXRoZW50aWNhdGVkIH0gPSB1c2VBcHAoKTtcclxuICBjb25zdCBbc3ViamVjdCwgc2V0U3ViamVjdF0gPSB1c2VTdGF0ZSgnJyk7XHJcbiAgY29uc3QgW21lc3NhZ2UsIHNldE1lc3NhZ2VdID0gdXNlU3RhdGUoJycpO1xyXG4gIGNvbnN0IFtzdWJtaXR0ZWQsIHNldFN1Ym1pdHRlZF0gPSB1c2VTdGF0ZShmYWxzZSk7XHJcblxyXG4gIGNvbnN0IGhhbmRsZVN1Ym1pdCA9IChlOiBSZWFjdC5Gb3JtRXZlbnQpID0+IHtcclxuICAgIGUucHJldmVudERlZmF1bHQoKTtcclxuICAgIGlmICghc3ViamVjdCB8fCAhbWVzc2FnZSkgcmV0dXJuO1xyXG4gICAgc2V0U3VibWl0dGVkKHRydWUpO1xyXG4gICAgYWRkVG9hc3QoJ3N1Y2Nlc3MnLCAnVGlja2V0IERpc3BhdGNoZWQnLCAnQUkgU2VjdXJpdHkgc3VwcG9ydCB0aWNrZXQgY3JlYXRlZCAoI1ZSWC04MjkxKS4nKTtcclxuICB9O1xyXG5cclxuICByZXR1cm4gKFxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJtYXgtdy0zeGwgbXgtYXV0byBweC00IHB5LTEwIHNwYWNlLXktOFwiPlxyXG4gICAgICB7LyogVG9wIExlZnQgTmF2aWdhdGlvbiAqL31cclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gYm9yZGVyLWIgYm9yZGVyLXNsYXRlLTgwMC84MCBwYi00XCI+XHJcbiAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0Q3VycmVudFBhZ2UoaXNBdXRoZW50aWNhdGVkID8gJ2hvbWUnIDogJ2xhbmRpbmcnKX1cclxuICAgICAgICAgIGNsYXNzTmFtZT1cImlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBweC0zLjUgcHktMS41IHJvdW5kZWQteGwgYmctc2xhdGUtOTAwLzgwIGhvdmVyOmJnLXNsYXRlLTgwMCBib3JkZXIgYm9yZGVyLXNsYXRlLTgwMCBob3Zlcjpib3JkZXItcHVycGxlLTUwMC80MCB0ZXh0LXNsYXRlLTMwMCBob3Zlcjp0ZXh0LXdoaXRlIHRleHQteHMgZm9udC1zZW1pYm9sZCB0cmFuc2l0aW9uIGN1cnNvci1wb2ludGVyXCJcclxuICAgICAgICA+XHJcbiAgICAgICAgICA8QXJyb3dMZWZ0IGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1wdXJwbGUtNDAwXCIgLz5cclxuICAgICAgICAgIDxzcGFuPntpc0F1dGhlbnRpY2F0ZWQgPyAnQmFjayB0byBGZWVkJyA6ICdCYWNrIHRvIFdlbGNvbWUnfTwvc3Bhbj5cclxuICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtY2VudGVyIHNwYWNlLXktMlwiPlxyXG4gICAgICAgIDxoMSBjbGFzc05hbWU9XCJ0ZXh0LTN4bCBmb250LWV4dHJhYm9sZCB0ZXh0LXdoaXRlIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICBDb250YWN0IFZFUklYQSBTdXBwb3J0IDxNYWlsIGNsYXNzTmFtZT1cInctNiBoLTYgdGV4dC1wdXJwbGUtNDAwXCIgLz5cclxuICAgICAgICA8L2gxPlxyXG4gICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1zbGF0ZS00MDBcIj5cclxuICAgICAgICAgIEhhdmUgcXVlc3Rpb25zIG9yIG5lZWQgYXNzaXN0YW5jZSB3aXRoIEFJIG1vZGVyYXRpb24gYXBwZWFsPyBSZWFjaCBvdXQgYmVsb3cuXHJcbiAgICAgICAgPC9wPlxyXG4gICAgICA8L2Rpdj5cclxuXHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC04IHJvdW5kZWQtM3hsIGJnLXNsYXRlLTkwMC84MCBib3JkZXIgYm9yZGVyLXB1cnBsZS01MDAvMjAgYmFja2Ryb3AtYmx1ci14bCBzaGFkb3ctMnhsXCI+XHJcbiAgICAgICAge3N1Ym1pdHRlZCA/IChcclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXIgcHktOCBzcGFjZS15LTNcIj5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTMgcm91bmRlZC1mdWxsIGJnLWVtZXJhbGQtNTAwLzIwIHRleHQtZW1lcmFsZC00MDAgdy1maXQgbXgtYXV0b1wiPlxyXG4gICAgICAgICAgICAgIDxDaGVja0NpcmNsZTIgY2xhc3NOYW1lPVwidy04IGgtOFwiIC8+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwiZm9udC1ib2xkIHRleHQtbGcgdGV4dC13aGl0ZVwiPlRpY2tldCBTdWJtaXR0ZWQgdG8gVkVSSVhBIFN1cHBvcnQ8L2gzPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtc2xhdGUtMzAwXCI+XHJcbiAgICAgICAgICAgICAgT3VyIGF1dG9tYXRlZCBzeXN0ZW0gdHJpYWdlZCB5b3VyIHJlcXVlc3QuIFR5cGljYWwgcmVzcG9uc2UgdGltZSBpcyB1bmRlciA1IG1pbnV0ZXMuXHJcbiAgICAgICAgICAgIDwvcD5cclxuICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHtcclxuICAgICAgICAgICAgICAgIHNldFN1Ym1pdHRlZChmYWxzZSk7XHJcbiAgICAgICAgICAgICAgICBzZXRTdWJqZWN0KCcnKTtcclxuICAgICAgICAgICAgICAgIHNldE1lc3NhZ2UoJycpO1xyXG4gICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtNCBweS0yIHJvdW5kZWQteGwgYmctcHVycGxlLTYwMCB0ZXh0LXdoaXRlIGZvbnQtYm9sZCB0ZXh0LXhzXCJcclxuICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgIFN1Ym1pdCBBbm90aGVyIElucXVpcnlcclxuICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICApIDogKFxyXG4gICAgICAgICAgPGZvcm0gb25TdWJtaXQ9e2hhbmRsZVN1Ym1pdH0gY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgIDxkaXY+XHJcbiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTMwMCBibG9jayBtYi0xXCI+U3ViamVjdDwvbGFiZWw+XHJcbiAgICAgICAgICAgICAgPGlucHV0XHJcbiAgICAgICAgICAgICAgICB0eXBlPVwidGV4dFwiXHJcbiAgICAgICAgICAgICAgICB2YWx1ZT17c3ViamVjdH1cclxuICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0U3ViamVjdChlLnRhcmdldC52YWx1ZSl9XHJcbiAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cImUuZy4sIENvbnRlbnQgTW9kZXJhdGlvbiBBcHBlYWxcIlxyXG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIGJnLXNsYXRlLTk1MCBib3JkZXIgYm9yZGVyLXNsYXRlLTgwMCByb3VuZGVkLXhsIHB4LTQgcHktMi41IHRleHQteHMgdGV4dC1zbGF0ZS0xMDAgZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOmJvcmRlci1wdXJwbGUtNTAwXCJcclxuICAgICAgICAgICAgICAgIHJlcXVpcmVkXHJcbiAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1zbGF0ZS0zMDAgYmxvY2sgbWItMVwiPk1lc3NhZ2UgRGV0YWlsczwvbGFiZWw+XHJcbiAgICAgICAgICAgICAgPHRleHRhcmVhXHJcbiAgICAgICAgICAgICAgICB2YWx1ZT17bWVzc2FnZX1cclxuICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0TWVzc2FnZShlLnRhcmdldC52YWx1ZSl9XHJcbiAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cIkRlc2NyaWJlIHlvdXIgcmVxdWVzdCBvciBhcHBlYWwuLi5cIlxyXG4gICAgICAgICAgICAgICAgcm93cz17NH1cclxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBiZy1zbGF0ZS05NTAgYm9yZGVyIGJvcmRlci1zbGF0ZS04MDAgcm91bmRlZC14bCBwLTMuNSB0ZXh0LXhzIHRleHQtc2xhdGUtMTAwIGZvY3VzOm91dGxpbmUtbm9uZSBmb2N1czpib3JkZXItcHVycGxlLTUwMFwiXHJcbiAgICAgICAgICAgICAgICByZXF1aXJlZFxyXG4gICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcHQtMlwiPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSB0ZXh0LXNsYXRlLTQwMCB0ZXh0LXhzXCI+XHJcbiAgICAgICAgICAgICAgICA8Q2xvY2sgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LXB1cnBsZS00MDBcIiAvPlxyXG4gICAgICAgICAgICAgICAgPHNwYW4+QUkgQXV0by1UcmlhZ2UgQWN0aXZlPC9zcGFuPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICA8YnV0dG9uXHJcbiAgICAgICAgICAgICAgICB0eXBlPVwic3VibWl0XCJcclxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInB4LTYgcHktMi41IHJvdW5kZWQteGwgYmctcHVycGxlLTYwMCBob3ZlcjpiZy1wdXJwbGUtNTAwIHRleHQtd2hpdGUgZm9udC1ib2xkIHRleHQteHMgc2hhZG93LW1kIHNoYWRvdy1wdXJwbGUtOTAwLzMwIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCJcclxuICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICA8U2VuZCBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz4gU2VuZCBUaWNrZXRcclxuICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L2Zvcm0+XHJcbiAgICAgICAgKX1cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L2Rpdj5cclxuICApO1xyXG59O1xyXG4iXSwiZmlsZSI6IkM6L3Zlcml4YS9yZW1peC12ZXJpeGEvc3JjL3BhZ2VzL0NvbnRhY3RQYWdlLnRzeCJ9

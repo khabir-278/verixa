@@ -1160,7 +1160,7 @@ app.get("/api/stories", async (req, res) => {
           const userIds = Array.from(new Set(dbStories.map((s: any) => s.user_id).filter(Boolean)));
           let profileMap: Record<string, any> = {};
           if (userIds.length > 0) {
-            const { data: profiles } = await sb.from('profiles').select('id, name, username, avatar_url').in('id', userIds);
+            const { data: profiles } = await sb.from('profiles').select('id, name, username, avatar').in('id', userIds);
             if (profiles) {
               profiles.forEach((p: any) => { profileMap[p.id] = p; });
             }
@@ -1180,20 +1180,36 @@ app.get("/api/stories", async (req, res) => {
             });
           }
 
+          const isUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           dbStoriesList = dbStories.map((s: any) => {
             const p = profileMap[s.user_id];
             const likedBy = likesMap[s.id] || [];
             const viewedBy = Array.isArray(s.viewed_by) ? s.viewed_by : [];
             const isVideo = s.media_type === 'video' || (s.media_url && s.media_url.includes('.mp4'));
-            const safeAvatar = p?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p?.name || p?.username || 'User')}&background=4285F4&color=fff&size=256&bold=true`;
+
+            let authorUsername = p?.username || '';
+            let authorName = p?.name || '';
+            if (!authorUsername || isUuidPattern.test(authorUsername)) {
+              authorUsername = authorName && !isUuidPattern.test(authorName)
+                ? authorName.toLowerCase().replace(/[^a-z0-9_]/g, '')
+                : `user_${s.user_id.slice(0, 6)}`;
+            }
+            if (!authorName || isUuidPattern.test(authorName)) {
+              authorName = authorUsername.startsWith('user_') ? `User ${s.user_id.slice(0, 6)}` : authorUsername;
+            }
+
+            const rawAvatar = p?.avatar;
+            const safeAvatar = (rawAvatar && !rawAvatar.includes('unsplash.com'))
+              ? rawAvatar
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName || authorUsername)}&background=4285F4&color=fff&size=256&bold=true`;
 
             return {
               id: s.id,
               user_id: s.user_id,
               user: {
                 id: s.user_id,
-                name: p?.name || p?.username || 'User',
-                username: p?.username || 'user',
+                name: authorName,
+                username: authorUsername,
                 avatar: safeAvatar,
               },
               media_url: s.media_url,
@@ -1349,7 +1365,8 @@ app.post("/api/stories/:id/like", async (req, res) => {
   try {
     const storyId = req.params.id;
     const userId = req.body.userId || "user_guest";
-    const result = await storyService.toggleLike(storyId, userId);
+    const targetLiked = typeof req.body.targetLiked === 'boolean' ? req.body.targetLiked : undefined;
+    const result = await storyService.toggleLike(storyId, userId, targetLiked);
     return res.json(result);
   } catch (err: any) {
     console.error("Story like error:", err);
@@ -1449,29 +1466,46 @@ app.get("/api/stories/:id/insights", async (req, res) => {
     let viewers: any[] = [];
     let likers: any[] = [];
     const allUserIds = Array.from(new Set([...viewedBy, ...likedBy].filter(Boolean)));
+    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+    const map: Record<string, any> = {};
+
     if (sb && allUserIds.length > 0) {
       try {
         const { data: profiles } = await sb
           .from('profiles')
-          .select('id, name, username, avatar_url')
+          .select('id, name, username, avatar')
           .in('id', allUserIds);
-        const map: Record<string, any> = {};
         if (profiles) {
           profiles.forEach((p: any) => {
+            const cleanUsername = p.username && !isUuid(p.username)
+              ? p.username
+              : (p.name && !isUuid(p.name) ? p.name.toLowerCase().replace(/[^a-z0-9_]/g, '') : `user_${p.id.slice(0, 6)}`);
+            const cleanName = p.name && !isUuid(p.name) ? p.name : cleanUsername;
             map[p.id] = {
               id: p.id,
-              name: p.name || p.username || 'User',
-              username: p.username || 'user',
-              avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
+              name: cleanName,
+              username: cleanUsername,
+              avatar: p.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=4285F4&color=fff&size=256&bold=true`,
             };
           });
         }
-        viewers = viewedBy.map((uid) => map[uid] || { id: uid, name: `User ${uid.slice(0, 6)}`, username: `user_${uid.slice(0, 6)}`, avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true` });
-        likers = likedBy.map((uid) => map[uid] || { id: uid, name: `User ${uid.slice(0, 6)}`, username: `user_${uid.slice(0, 6)}`, avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true` });
       } catch {
         // non-blocking fallback
       }
     }
+
+    viewers = viewedBy.map((uid) => map[uid] || {
+      id: uid,
+      name: `User ${uid.slice(0, 6)}`,
+      username: `user_${uid.slice(0, 6)}`,
+      avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true`
+    });
+    likers = likedBy.map((uid) => map[uid] || {
+      id: uid,
+      name: `User ${uid.slice(0, 6)}`,
+      username: `user_${uid.slice(0, 6)}`,
+      avatar: `https://ui-avatars.com/api/?name=User&background=4285F4&color=fff&size=256&bold=true`
+    });
 
     return res.json({
       success: true,
