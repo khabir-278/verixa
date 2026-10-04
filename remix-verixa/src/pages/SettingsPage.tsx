@@ -228,19 +228,6 @@ export const SettingsPage: React.FC = () => {
                       className="w-5 h-5 rounded bg-slate-900 border-slate-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
                     />
                   </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
-                    <div>
-                      <span className="font-bold text-white block">Blur Sensitive & NSFW Content</span>
-                      <span className="text-gray-400">Automatically apply blur overlays to media flagged as potentially graphic.</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.blurSensitiveMedia ?? false}
-                      onChange={(e) => updateSettings({ blurSensitiveMedia: e.target.checked })}
-                      className="w-5 h-5 rounded bg-slate-900 border-slate-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -445,11 +432,14 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
-                    onClick={() => updateSettings({ darkMode: true })}
-                    className={`p-4 rounded-2xl border text-left flex items-center justify-between transition ${
+                    onClick={() => {
+                      updateSettings({ darkMode: true });
+                      addToast('info', 'Theme Preference', 'VERIXA Dark Cyber mode activated.');
+                    }}
+                    className={`p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer ${
                       settings.darkMode
                         ? 'bg-purple-950/60 border-purple-500 text-white shadow-lg ring-2 ring-purple-500/40'
-                        : 'bg-slate-950/60 border-slate-800 text-gray-400'
+                        : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:bg-slate-900/60'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -465,12 +455,12 @@ export const SettingsPage: React.FC = () => {
                   <button
                     onClick={() => {
                       updateSettings({ darkMode: false });
-                      addToast('info', 'Theme Preference', 'Light theme set (Dark theme recommended).');
+                      addToast('info', 'Theme Preference', 'Clean Light Canvas mode activated.');
                     }}
-                    className={`p-4 rounded-2xl border text-left flex items-center justify-between transition ${
+                    className={`p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer ${
                       !settings.darkMode
                         ? 'bg-purple-950/60 border-purple-500 text-white shadow-lg ring-2 ring-purple-500/40'
-                        : 'bg-slate-950/60 border-slate-800 text-gray-400'
+                        : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:bg-slate-900/60'
                     }`}
                   >
                     <div className="flex items-center gap-3">

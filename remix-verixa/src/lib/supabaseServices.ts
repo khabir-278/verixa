@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { User, Post, Comment, Notification, ChatMessage, RecommendationExplainability, Reel } from '../types';
+import { User, Post, Comment, Notification, ChatMessage, RecommendationExplainability, Reel, MessageType, ChatMessageReplyPreview } from '../types';
 
 // ================= STORAGE HELPERS & SIGNED URL RESOLVER ================= //
 
@@ -14,37 +14,44 @@ export async function getSignedMediaUrl(
   const trimmed = pathOrUrl.trim();
   if (!trimmed) return '';
 
-  // Return direct URL if already an absolute external URL or blob URL
-  if (
+  let bucketName = 'app-files';
+  let objectPath = trimmed;
+
+  // 1. If it's a Supabase storage URL (signed or public), extract the clean object path to re-sign fresh
+  if (trimmed.includes('/storage/v1/object/')) {
+    const match = trimmed.match(/\/storage\/v1\/object\/(?:sign|public)\/([^/?#]+)\/([^?#]+)/);
+    if (match) {
+      bucketName = match[1];
+      objectPath = decodeURIComponent(match[2]);
+    }
+  } else if (
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
     trimmed.startsWith('blob:') ||
     trimmed.startsWith('data:')
   ) {
+    // Non-Supabase external URL (e.g. external CDN, blob)
     return trimmed;
+  } else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
+    const parts = trimmed.split(':');
+    bucketName = parts[0];
+    objectPath = parts.slice(1).join(':');
   }
 
-  // Check cache (buffer of 120s before expiry)
-  const cached = signedUrlCache.get(trimmed);
+  // 2. Check in-memory cache for the object path (with 120s safety buffer before expiry)
+  const cacheKey = `${bucketName}:${objectPath}`;
+  const cached = signedUrlCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now() + 120_000) {
     return cached.url;
   }
 
   try {
-    let bucketName = 'app-files';
-    let objectPath = trimmed;
-    if (trimmed.includes(':') && !trimmed.startsWith('http')) {
-      const parts = trimmed.split(':');
-      bucketName = parts[0];
-      objectPath = parts.slice(1).join(':');
-    }
-
     const { data, error } = await supabase.storage
       .from(bucketName)
       .createSignedUrl(objectPath, expiresIn);
 
     if (error || !data?.signedUrl) {
-      // Fallback: Check if bucket is configured as public
+      // Fallback: Check if public URL exists
       const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(objectPath);
       if (publicData?.publicUrl) {
         return publicData.publicUrl;
@@ -53,7 +60,7 @@ export async function getSignedMediaUrl(
       return trimmed;
     }
 
-    signedUrlCache.set(trimmed, {
+    signedUrlCache.set(cacheKey, {
       url: data.signedUrl,
       expiresAt: Date.now() + expiresIn * 1000,
     });
@@ -1890,13 +1897,26 @@ export async function toggleSavePost(
 
 // ================= DIRECT MESSAGING ================= //
 
+export interface SendMessageOptions {
+  mediaName?: string;
+  mediaSize?: number;
+  messageType?: MessageType;
+  replyToMessageId?: string;
+  replyTo?: ChatMessageReplyPreview;
+  isForwarded?: boolean;
+  forwardedFromMessageId?: string;
+  recipientId?: string;
+  optimisticMediaUrl?: string;
+}
+
 export async function sendMessage(
   senderId: string,
   receiverId: string,
   text: string,
   mediaUrl?: string,
   isVoice?: boolean,
-  voiceDuration?: number | string
+  voiceDuration?: number | string,
+  options?: SendMessageOptions
 ): Promise<string> {
   const convId = [senderId, receiverId].sort().join('_');
   const messageId = crypto.randomUUID();
@@ -1914,19 +1934,43 @@ export async function sendMessage(
     voice_duration: voiceDuration ? (typeof voiceDuration === 'string' ? parseFloat(voiceDuration) : voiceDuration) : null,
     status: 'sent',
     created_at: new Date().toISOString(),
+    reply_to_message_id: options?.replyToMessageId || null,
+    is_forwarded: !!options?.isForwarded,
+    forwarded_from_message_id: options?.forwardedFromMessageId || null,
+    message_type: options?.messageType || (isVoice ? 'audio' : mediaUrl ? 'image' : 'text'),
+    media_name: options?.mediaName || null,
+    media_size: options?.mediaSize || null,
+    reactions: {},
   };
 
   const { error } = await supabase.from('messages').insert(fullPayload);
 
   if (error) {
-    // If optional columns do not exist yet in DB schema, fallback to basic insert
+    // If optional columns do not exist yet in DB schema, fallback to basic insert with embedded metadata
     if (error.message && (error.message.includes('column') || error.message.includes('schema') || error.message.includes('status'))) {
+      const metaObj: Record<string, any> = {};
+      if (options?.replyToMessageId) metaObj.replyToMessageId = options.replyToMessageId;
+      if (options?.replyTo) metaObj.replyTo = options.replyTo;
+      if (options?.isForwarded) metaObj.isForwarded = true;
+      if (options?.forwardedFromMessageId) metaObj.forwardedFromMessageId = options.forwardedFromMessageId;
+      if (options?.messageType) metaObj.messageType = options.messageType;
+      if (options?.mediaName) metaObj.mediaName = options.mediaName;
+      if (options?.mediaSize) metaObj.mediaSize = options.mediaSize;
+      if (voiceDuration) {
+        metaObj.voiceDuration = typeof voiceDuration === 'string' ? parseFloat(voiceDuration) : voiceDuration;
+      }
+
+      const rawText = text || (isVoice ? '🎙️ Voice message' : '');
+      const storedText = Object.keys(metaObj).length > 0
+        ? JSON.stringify({ _v_meta: metaObj, text: rawText })
+        : rawText;
+
       const basicPayload: any = {
         id: messageId,
         conversation_id: convId,
         sender_id: senderId,
         receiver_id: receiverId,
-        text: text || (isVoice ? '🎙️ Voice message' : ''),
+        text: storedText,
         media_url: mediaUrl || null,
         is_ai_verified: true,
         created_at: new Date().toISOString(),
@@ -1942,6 +1986,158 @@ export async function sendMessage(
     throw new Error(`Failed to send message: ${error.message}`);
   }
   return messageId;
+}
+
+export async function updateMessageText(
+  messageId: string,
+  senderId: string,
+  newText: string
+): Promise<void> {
+  const { data: row } = await supabase
+    .from('messages')
+    .select('text')
+    .eq('id', messageId)
+    .eq('sender_id', senderId)
+    .single();
+
+  let embeddedMeta: any = null;
+  if (row?.text && row.text.startsWith('{"_v_meta":')) {
+    try {
+      embeddedMeta = JSON.parse(row.text)._v_meta;
+    } catch {}
+  }
+
+  const nowIso = new Date().toISOString();
+  if (embeddedMeta) {
+    embeddedMeta.editedAt = nowIso;
+    const packed = JSON.stringify({ _v_meta: embeddedMeta, text: newText });
+    await supabase.from('messages').update({ text: packed }).eq('id', messageId).eq('sender_id', senderId);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('messages')
+    .update({
+      text: newText,
+      edited_at: nowIso,
+    })
+    .eq('id', messageId)
+    .eq('sender_id', senderId);
+
+  if (error) {
+    if (error.message.includes('column') || error.message.includes('edited_at')) {
+      // Fallback: update text only if edited_at column is not present
+      await supabase
+        .from('messages')
+        .update({ text: newText })
+        .eq('id', messageId)
+        .eq('sender_id', senderId);
+      return;
+    }
+    throw new Error(`Failed to edit message: ${error.message}`);
+  }
+}
+
+export async function deleteMessageSoft(
+  messageId: string,
+  senderId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('messages')
+    .update({
+      text: 'This message was deleted',
+      deleted_at: new Date().toISOString(),
+      media_url: null,
+      is_voice: false,
+    })
+    .eq('id', messageId)
+    .eq('sender_id', senderId);
+
+  if (error) {
+    if (error.message.includes('column') || error.message.includes('deleted_at')) {
+      // Fallback if deleted_at column does not exist yet: clear text and media
+      await supabase
+        .from('messages')
+        .update({
+          text: 'This message was deleted',
+          media_url: null,
+          is_voice: false,
+        })
+        .eq('id', messageId)
+        .eq('sender_id', senderId);
+      return;
+    }
+    throw new Error(`Failed to delete message: ${error.message}`);
+  }
+}
+
+export async function deleteMessagePermanent(
+  messageId: string,
+  senderId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .eq('id', messageId)
+    .eq('sender_id', senderId);
+
+  if (error) {
+    throw new Error(`Failed to permanently delete message: ${error.message}`);
+  }
+}
+
+export async function toggleMessageReaction(
+  messageId: string,
+  userId: string,
+  emoji: string
+): Promise<Record<string, string>> {
+  try {
+    const { data: row } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('id', messageId)
+      .single();
+
+    if (!row) return {};
+
+    let currentReactions: Record<string, string> = {};
+    let embeddedMeta: any = null;
+    let rowText = row.text || '';
+
+    if (rowText.startsWith('{"_v_meta":')) {
+      try {
+        const parsed = JSON.parse(rowText);
+        embeddedMeta = parsed._v_meta;
+        rowText = parsed.text || '';
+        currentReactions = { ...(embeddedMeta?.reactions || {}) };
+      } catch {}
+    } else if (row.reactions && typeof row.reactions === 'object') {
+      currentReactions = { ...row.reactions };
+    }
+
+    if (currentReactions[userId] === emoji) {
+      delete currentReactions[userId];
+    } else {
+      currentReactions[userId] = emoji;
+    }
+
+    const { error: updateErr } = await supabase
+      .from('messages')
+      .update({ reactions: currentReactions })
+      .eq('id', messageId);
+
+    if (updateErr) {
+      // Fallback: embed into _v_meta
+      const newMeta = { ...(embeddedMeta || {}), reactions: currentReactions };
+      const packed = JSON.stringify({ _v_meta: newMeta, text: rowText });
+      await supabase.from('messages').update({ text: packed }).eq('id', messageId);
+    }
+
+    return currentReactions;
+  } catch (err: any) {
+    console.warn('Reaction toggle notice:', err.message);
+    return {};
+  }
 }
 
 export async function markMessagesAsDelivered(recipientId: string): Promise<void> {
@@ -2015,26 +2211,85 @@ export function subscribeMessages(
         .order('created_at', { ascending: true });
 
       if (data && isSubscribed) {
-        // Asynchronously resolve any signed media URLs
+        // Asynchronously resolve signed media URLs and reply previews
         const mappedPromises = data.map(async (row) => {
           let resolvedMedia = row.media_url || undefined;
-          if (resolvedMedia && !resolvedMedia.startsWith('http') && !resolvedMedia.startsWith('blob:') && !resolvedMedia.startsWith('data:')) {
+          if (resolvedMedia) {
             resolvedMedia = await getSignedMediaUrl(resolvedMedia);
           }
+
+          let rowText = row.text || '';
+          let embeddedMeta: any = null;
+          if (rowText.startsWith('{"_v_meta":')) {
+            try {
+              const parsed = JSON.parse(rowText);
+              embeddedMeta = parsed._v_meta;
+              rowText = parsed.text || '';
+            } catch (e) {
+              // fallback
+            }
+          }
+
+          const effectiveReplyToId = row.reply_to_message_id || embeddedMeta?.replyToMessageId;
+          const effectiveIsForwarded = !!row.is_forwarded || !!embeddedMeta?.isForwarded;
+          const effectiveForwardedFrom = row.forwarded_from_message_id || embeddedMeta?.forwardedFromMessageId;
+          const effectiveMessageType = row.message_type || embeddedMeta?.messageType || (row.is_voice ? 'audio' : resolvedMedia ? 'image' : 'text');
+          const effectiveMediaName = row.media_name || embeddedMeta?.mediaName;
+          const effectiveMediaSize = row.media_size || embeddedMeta?.mediaSize;
+          const effectiveReactions = (row.reactions as Record<string, string>) || embeddedMeta?.reactions || {};
+          const effectiveEditedAt = row.edited_at || embeddedMeta?.editedAt;
+          const effectiveDeletedAt = row.deleted_at || embeddedMeta?.deletedAt || (rowText === 'This message was deleted' ? (row.created_at || new Date().toISOString()) : undefined);
+
+          // Reply preview resolution
+          let replyPreview: ChatMessageReplyPreview | undefined = embeddedMeta?.replyTo;
+          if (!replyPreview && effectiveReplyToId) {
+            const parentRow = data.find((r) => r.id === effectiveReplyToId);
+            if (parentRow) {
+              let parentText = parentRow.text || '';
+              if (parentText.startsWith('{"_v_meta":')) {
+                try { parentText = JSON.parse(parentText).text || ''; } catch {}
+              }
+              const isParentDeleted = !!parentRow.deleted_at || parentText === 'This message was deleted';
+              replyPreview = {
+                id: parentRow.id,
+                senderId: parentRow.sender_id,
+                text: isParentDeleted ? 'Original message unavailable' : (parentText || (parentRow.is_voice ? '🎙️ Voice note' : 'Media attachment')),
+                isVoice: parentRow.is_voice,
+                mediaUrl: parentRow.media_url,
+              };
+            } else {
+              replyPreview = {
+                id: effectiveReplyToId,
+                senderId: '',
+                text: 'Original message unavailable',
+              };
+            }
+          }
+
           const msg: ChatMessage = {
             id: row.id,
             senderId: row.sender_id,
             receiverId: row.receiver_id,
-            text: row.text,
+            text: effectiveDeletedAt ? 'This message was deleted' : rowText,
             timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
             isAIVerified: row.is_ai_verified ?? true,
-            mediaUrl: resolvedMedia,
-            isVoice: row.is_voice ?? (row.media_url?.includes('/audio/') || false),
-            voiceDuration: row.voice_duration || undefined,
+            mediaUrl: effectiveDeletedAt ? undefined : resolvedMedia,
+            mediaName: effectiveMediaName || undefined,
+            mediaSize: effectiveMediaSize || undefined,
+            messageType: effectiveMessageType,
+            isVoice: effectiveDeletedAt ? false : (row.is_voice ?? (row.media_url?.includes('/audio/') || false)),
+            voiceDuration: row.voice_duration || embeddedMeta?.voiceDuration || undefined,
             status: (row.status as any) || 'sent',
             delivered_at: row.delivered_at || undefined,
             read_at: row.read_at || undefined,
             created_at: row.created_at || undefined,
+            replyToMessageId: effectiveReplyToId || undefined,
+            replyTo: replyPreview,
+            isForwarded: effectiveIsForwarded,
+            forwardedFromMessageId: effectiveForwardedFrom || undefined,
+            editedAt: effectiveEditedAt || undefined,
+            deletedAt: effectiveDeletedAt || undefined,
+            reactions: effectiveReactions,
           };
           return msg;
         });

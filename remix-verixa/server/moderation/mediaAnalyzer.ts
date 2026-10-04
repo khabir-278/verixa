@@ -10,6 +10,7 @@
  */
 
 import { GoogleGenAI, Type } from '@google/genai';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   ContentType,
   AnalysisResult,
@@ -33,8 +34,14 @@ import path from 'path';
 dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
 
+function getSupabaseClient(): SupabaseClient {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://jnbaumemwxydjktwedtz.supabase.co';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2';
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
 const MEDIA_MODEL_NAME = 'gemini-3.1-flash-lite';
-const FALLBACK_MEDIA_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash'];
+const FALLBACK_MEDIA_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
 const MODEL_VERSION = '2026.1';
 
 /**
@@ -62,8 +69,20 @@ function getGeminiClient(): GoogleGenAI | null {
   }
 }
 
+function guessMimeType(pathOrUrl: string, fallback: string = 'image/jpeg'): string {
+  const clean = pathOrUrl.split('?')[0].toLowerCase();
+  if (clean.endsWith('.png')) return 'image/png';
+  if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+  if (clean.endsWith('.webp')) return 'image/webp';
+  if (clean.endsWith('.gif')) return 'image/gif';
+  if (clean.endsWith('.mp4')) return 'video/mp4';
+  if (clean.endsWith('.webm')) return 'video/webm';
+  if (clean.endsWith('.mov')) return 'video/quicktime';
+  return fallback;
+}
+
 /**
- * Resolves media content (URL or base64 data URL) to base64 and mime type
+ * Resolves media content (URL, storage path, or base64 data URL) to base64 and mime type
  */
 export async function resolveMediaPayload(
   content: string,
@@ -71,6 +90,7 @@ export async function resolveMediaPayload(
 ): Promise<{ base64Data: string; mimeType: string } | null> {
   if (!content) return null;
 
+  // 1. Data URL
   if (content.startsWith('data:')) {
     const match = content.match(/^data:([^;]+);base64,(.+)$/);
     if (match) {
@@ -78,28 +98,68 @@ export async function resolveMediaPayload(
     }
   }
 
-  // Raw base64 string
-  if (!content.startsWith('http') && /^[A-Za-z0-9+/=]+$/.test(content.slice(0, 100))) {
-    return {
-      mimeType: declaredMime || 'image/jpeg',
-      base64Data: content,
-    };
-  }
-
-  // Remote URL fetch
+  // 2. Remote URL fetch (HTTP / HTTPS)
   if (content.startsWith('http://') || content.startsWith('https://')) {
     try {
       const res = await fetch(content);
       if (res.ok) {
         const buf = await res.arrayBuffer();
+        const headerType = res.headers.get('content-type');
+        const effectiveType = (headerType && headerType !== 'application/octet-stream')
+          ? headerType
+          : (declaredMime || guessMimeType(content, 'image/jpeg'));
         return {
-          mimeType: res.headers.get('content-type') || declaredMime || 'image/jpeg',
+          mimeType: effectiveType,
           base64Data: Buffer.from(buf).toString('base64'),
         };
+      } else {
+        console.warn('[resolveMediaPayload] Fetch returned status:', res.status, content.split('?')[0]);
       }
-    } catch (err) {
-      console.warn('Could not fetch remote media URL for analysis:', err);
+    } catch (err: any) {
+      console.warn('[resolveMediaPayload] Could not fetch remote media URL:', err?.message);
     }
+  }
+
+  // 3. Supabase Storage Path (e.g. "userId/messages/..." or "userId/chat_media/...")
+  if (content.includes('/') && !content.startsWith('http') && !content.startsWith('data:')) {
+    try {
+      const cleanPath = content.replace(/^app-files[:/]/, '').trim();
+      const sb = getSupabaseClient();
+      const { data, error } = await sb.storage.from('app-files').download(cleanPath);
+      if (!error && data) {
+        const arrayBuf = await data.arrayBuffer();
+        const effectiveType = (data.type && data.type !== 'application/octet-stream')
+          ? data.type
+          : (declaredMime || guessMimeType(cleanPath, 'image/jpeg'));
+        return {
+          mimeType: effectiveType,
+          base64Data: Buffer.from(arrayBuf).toString('base64'),
+        };
+      }
+
+      // Fallback: create fresh signed URL
+      const { data: signData } = await sb.storage.from('app-files').createSignedUrl(cleanPath, 300);
+      if (signData?.signedUrl) {
+        const res = await fetch(signData.signedUrl);
+        if (res.ok) {
+          const buf = await res.arrayBuffer();
+          return {
+            mimeType: declaredMime || guessMimeType(cleanPath, 'image/jpeg'),
+            base64Data: Buffer.from(buf).toString('base64'),
+          };
+        }
+      }
+    } catch (err: any) {
+      console.warn('[resolveMediaPayload] Storage resolution error:', err?.message);
+    }
+  }
+
+  // 4. Raw base64 string
+  if (!content.startsWith('http') && /^[A-Za-z0-9+/=]+$/.test(content.slice(0, 100))) {
+    return {
+      mimeType: declaredMime || 'image/jpeg',
+      base64Data: content,
+    };
   }
 
   return null;
@@ -184,7 +244,7 @@ Claim deepfake indicators ONLY if genuine synthetic anomalies are visually appar
 
   for (const modelCandidate of FALLBACK_MEDIA_MODELS) {
     try {
-      const timeoutMs = 12000;
+      const timeoutMs = 20000;
       const apiCall = ai.models.generateContent({
         model: modelCandidate,
         contents: {

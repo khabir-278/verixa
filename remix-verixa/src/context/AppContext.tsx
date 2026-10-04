@@ -35,6 +35,11 @@ import {
   markNotificationsAsReadInSupabase,
   toggleSavePost,
   sendMessage as sendSupabaseMessage,
+  updateMessageText,
+  deleteMessageSoft,
+  deleteMessagePermanent as deleteSupabaseMessagePermanent,
+  toggleMessageReaction,
+  SendMessageOptions,
   subscribeMessages as subscribeSupabaseMessages,
   subscribeIncomingMessages,
   getRecentIncomingMessages,
@@ -147,8 +152,13 @@ interface AppContextType {
     text: string,
     mediaUrl?: string,
     isVoice?: boolean,
-    voiceDuration?: number | string
+    voiceDuration?: number | string,
+    options?: SendMessageOptions
   ) => Promise<void>;
+  editMessage: (messageId: string, newText: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+  deleteMessagePermanent: (messageId: string) => Promise<void>;
+  reactToMessage: (messageId: string, emoji: string) => Promise<void>;
   unreadChatSenderIds: Set<string>;
   unreadChatSenders: Record<string, { count: number; lastText: string; lastTime: string }>;
   totalUnreadMessagesCount: number;
@@ -1085,8 +1095,8 @@ function formatStoryRelativeTime(dateString?: string): string {
 
   // Real-time chat messages listener for active conversation
   useEffect(() => {
+    setMessages([]);
     if (!currentUser?.id || !activeChatUser?.id) {
-      setMessages([]);
       return;
     }
     markConversationAsRead(currentUser.id, activeChatUser.id);
@@ -2530,34 +2540,50 @@ function formatStoryRelativeTime(dateString?: string): string {
     text: string,
     mediaUrl?: string,
     isVoice?: boolean,
-    voiceDuration?: number | string
+    voiceDuration?: number | string,
+    options?: SendMessageOptions
   ) => {
     if (!currentUser?.id) {
       addToast('warning', 'Sign In Required', 'Please sign in to send direct messages.');
       return;
     }
 
-    if (!activeChatUser?.id) {
+    const targetReceiverId = options?.recipientId || activeChatUser?.id;
+    if (!targetReceiverId) {
       addToast('warning', 'No Contact Selected', 'Please select a conversation partner.');
       return;
     }
 
+    const isCurrentChat = activeChatUser?.id === targetReceiverId;
     const tempId = `msg_${Date.now()}`;
+    const optimisticMediaUrl = options?.optimisticMediaUrl || mediaUrl;
+    const nowIso = new Date().toISOString();
     const optimisticMsg: ChatMessage = {
       id: tempId,
       senderId: currentUser.id,
-      receiverId: activeChatUser.id,
+      receiverId: targetReceiverId,
       text: text || (isVoice ? '🎙️ Voice message' : ''),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      created_at: nowIso,
       isAIVerified: true,
-      mediaUrl,
+      mediaUrl: optimisticMediaUrl,
+      mediaName: options?.mediaName,
+      mediaSize: options?.mediaSize,
+      messageType: options?.messageType || (isVoice ? 'audio' : mediaUrl ? 'image' : 'text'),
       isVoice: !!isVoice,
       voiceDuration,
       status: 'sent',
+      replyToMessageId: options?.replyToMessageId,
+      replyTo: options?.replyTo,
+      isForwarded: options?.isForwarded,
+      forwardedFromMessageId: options?.forwardedFromMessageId,
+      reactions: {},
     };
 
-    // Optimistic UI append
-    setMessages((prev) => [...prev, optimisticMsg]);
+    // Optimistic UI append only if viewing the conversation we sent to
+    if (isCurrentChat) {
+      setMessages((prev) => [...prev, optimisticMsg]);
+    }
 
     try {
       // 1. Moderate DM Text through Centralized Gateway (skip for voice if text empty)
@@ -2570,14 +2596,15 @@ function formatStoryRelativeTime(dateString?: string): string {
             content_type: 'dm_text',
             context: 'direct message',
             user_id: currentUser.id,
-            target_id: activeChatUser.id,
+            target_id: targetReceiverId,
           }),
         });
         const modData = await modRes.json();
 
         if (!modData.allowed || modData.decision === 'BLOCK' || modData.decision === 'QUARANTINE') {
-          // Rollback immediately
-          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          if (isCurrentChat) {
+            setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          }
           setStats((prev) => ({ ...prev, toxicBlocked: prev.toxicBlocked + 1 }));
 
           setBlockedCommentModal({
@@ -2592,48 +2619,129 @@ function formatStoryRelativeTime(dateString?: string): string {
             languageDetected: modData.language,
           });
 
-          addToast('error', 'Message Blocked', modData.reason || 'Message violated VERIXA safety policy.');
-          return;
+          const blockedErr = modData.reason || 'Message violated VERIXA safety policy.';
+          addToast('error', 'Message Blocked', blockedErr);
+          throw new Error(blockedErr);
         }
       }
 
-      // 2. Moderate Message Media if present
-      if (mediaUrl) {
+      // 2. Moderate Message Media if present (Visual AI for images/videos/GIFs; voice notes are encrypted voice audio)
+      if (mediaUrl && !isVoice && options?.messageType !== 'audio' && options?.messageType !== 'file') {
+        const signedScanUrl = await getSignedMediaUrl(mediaUrl, 3600);
         const mediaModRes = await fetch('/api/moderation/gateway', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            content: mediaUrl,
-            content_type: isVoice ? 'dm_audio' : 'dm_media',
-            context: isVoice ? 'voice message audio' : 'direct message media attachment',
+            content: signedScanUrl || mediaUrl,
+            storage_path: mediaUrl,
+            content_type: options?.messageType === 'video' ? 'video' : options?.messageType === 'gif' ? 'gif' : 'dm_media',
+            mime_type: options?.messageType === 'video' ? 'video/mp4' : options?.messageType === 'gif' ? 'image/gif' : 'image/jpeg',
+            context: 'direct message media attachment',
             user_id: currentUser.id,
-            target_id: activeChatUser.id,
+            target_id: targetReceiverId,
           }),
         });
         const mediaModData = await mediaModRes.json();
 
         if (!mediaModData.allowed || mediaModData.decision === 'BLOCK' || mediaModData.decision === 'QUARANTINE') {
-          setMessages((prev) => prev.filter((m) => m.id !== tempId));
-          addToast('error', 'Media Blocked', mediaModData.reason || 'Message media violated safety guidelines.');
-          return;
+          if (isCurrentChat) {
+            setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          }
+          const userFacingReason = mediaModData.decision === 'BLOCK'
+            ? (mediaModData.reason || 'Media blocked: This media did not pass Verixa\'s safety check.')
+            : (mediaModData.reason || 'Media is under review: We couldn\'t complete the safety inspection yet.');
+          addToast('error', 'Media Blocked', userFacingReason);
+          throw new Error(userFacingReason);
         }
       }
 
       const realMsgId = await sendSupabaseMessage(
         currentUser.id,
-        activeChatUser.id,
+        targetReceiverId,
         text,
         mediaUrl,
         isVoice,
-        voiceDuration
+        voiceDuration,
+        options
       );
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? { ...m, id: realMsgId } : m))
-      );
+      if (isCurrentChat) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? { ...m, id: realMsgId, mediaUrl: optimisticMediaUrl, created_at: m.created_at || nowIso }
+              : m
+          )
+        );
+      }
     } catch (err: any) {
-      // Rollback on failure
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      addToast('error', 'Message Failed', err.message || 'Could not deliver message. Rolled back.');
+      if (isCurrentChat) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
+      throw err;
+    }
+  };
+
+  const editMessage = async (messageId: string, newText: string) => {
+    if (!currentUser?.id) return;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, text: newText, editedAt: new Date().toISOString() } : m
+      )
+    );
+    try {
+      await updateMessageText(messageId, currentUser.id, newText);
+      addToast('success', 'Message Edited', 'Message updated successfully.');
+    } catch (err: any) {
+      addToast('error', 'Edit Failed', err.message || 'Could not edit message.');
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!currentUser?.id) return;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, text: 'This message was deleted', deletedAt: new Date().toISOString(), mediaUrl: undefined, isVoice: false }
+          : m
+      )
+    );
+    try {
+      await deleteMessageSoft(messageId, currentUser.id);
+      addToast('info', 'Message Deleted', 'Message removed from conversation.');
+    } catch (err: any) {
+      addToast('error', 'Delete Failed', err.message || 'Could not delete message.');
+    }
+  };
+
+  const deleteMessagePermanent = async (messageId: string) => {
+    if (!currentUser?.id) return;
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    try {
+      await deleteSupabaseMessagePermanent(messageId, currentUser.id);
+      addToast('info', 'Message Deleted', 'Message permanently removed from chat.');
+    } catch (err: any) {
+      addToast('error', 'Delete Failed', err.message || 'Could not permanently delete message.');
+    }
+  };
+
+  const reactToMessage = async (messageId: string, emoji: string) => {
+    if (!currentUser?.id) return;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const currentReactions = { ...(m.reactions || {}) };
+        if (currentReactions[currentUser.id] === emoji) {
+          delete currentReactions[currentUser.id];
+        } else {
+          currentReactions[currentUser.id] = emoji;
+        }
+        return { ...m, reactions: currentReactions };
+      })
+    );
+    try {
+      await toggleMessageReaction(messageId, currentUser.id, emoji);
+    } catch (err: any) {
+      console.warn('Reaction update notice:', err.message);
     }
   };
 
@@ -2671,6 +2779,31 @@ function formatStoryRelativeTime(dateString?: string): string {
       markSingleNotificationAsReadInApi(currentUser.id, notifId);
     }
   };
+
+  // Synchronize visual theme mode with DOM attributes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (settings.darkMode) {
+      document.documentElement.removeAttribute('data-theme-mode');
+      document.documentElement.removeAttribute('data-theme-accent');
+      document.documentElement.classList.remove('theme-light');
+      document.documentElement.classList.add('theme-dark');
+      document.body.removeAttribute('data-theme-mode');
+      document.body.removeAttribute('data-theme-accent');
+      document.body.classList.remove('theme-light');
+      document.body.classList.add('theme-dark');
+    } else {
+      document.documentElement.setAttribute('data-theme-mode', 'light');
+      document.documentElement.removeAttribute('data-theme-accent');
+      document.documentElement.classList.remove('theme-dark');
+      document.documentElement.classList.add('theme-light');
+      document.body.setAttribute('data-theme-mode', 'light');
+      document.body.removeAttribute('data-theme-accent');
+      document.body.classList.remove('theme-dark');
+      document.body.classList.add('theme-light');
+    }
+  }, [settings.darkMode]);
 
   // Settings
   const updateSettings = (newSettings: Partial<UserSettings>) => {
@@ -2753,6 +2886,10 @@ function formatStoryRelativeTime(dateString?: string): string {
         messages,
         isMessagesLoading,
         sendMessage,
+        editMessage,
+        deleteMessage,
+        deleteMessagePermanent,
+        reactToMessage,
         unreadChatSenderIds,
         unreadChatSenders,
         totalUnreadMessagesCount,

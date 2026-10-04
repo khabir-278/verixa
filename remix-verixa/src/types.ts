@@ -123,6 +123,17 @@ export interface Notification {
   detail?: string;
 }
 
+export type MessageType = 'text' | 'image' | 'video' | 'audio' | 'file' | 'gif';
+
+export interface ChatMessageReplyPreview {
+  id: string;
+  senderId: string;
+  senderName?: string;
+  text: string;
+  isVoice?: boolean;
+  mediaUrl?: string;
+}
+
 export interface ChatMessage {
   id: string;
   senderId: string;
@@ -131,12 +142,22 @@ export interface ChatMessage {
   timestamp: string;
   isAIVerified: boolean;
   mediaUrl?: string;
+  mediaName?: string;
+  mediaSize?: number;
+  messageType?: MessageType;
   isVoice?: boolean;
   voiceDuration?: number | string;
   status?: 'sent' | 'delivered' | 'read';
   delivered_at?: string;
   read_at?: string;
   created_at?: string;
+  replyToMessageId?: string;
+  replyTo?: ChatMessageReplyPreview;
+  isForwarded?: boolean;
+  forwardedFromMessageId?: string;
+  editedAt?: string;
+  deletedAt?: string;
+  reactions?: Record<string, string>; // { [userId]: emoji }
 }
 
 export type CallType = 'audio' | 'video';

@@ -2,19 +2,16 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   ShieldCheck,
-  Search,
   Bell,
   MessageSquare,
   PlusSquare,
   Sparkles,
   Menu,
-  X,
   User,
   LogOut,
   Sliders,
   HelpCircle,
   Flame,
-  ScanEye,
   ArrowLeft,
 } from 'lucide-react';
 import { PageView } from '../types';
@@ -33,9 +30,6 @@ export const Navbar: React.FC<{
     totalUnreadMessagesCount,
     isAuthenticated,
     logout,
-    openScannerModal,
-    exploreSearchQuery,
-    setExploreSearchQuery,
     openUserProfile,
   } = useApp();
 
@@ -44,13 +38,6 @@ export const Navbar: React.FC<{
   const isPublicView =
     ['login', 'signup', 'landing', 'verify-email', 'about', 'privacy', 'terms', 'help', 'contact', 'ai-architecture'].includes(currentPage) ||
     (!isAuthenticated && (currentPage === 'ai-dashboard' || (currentPage as string) === 'ai_dashboard'));
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (currentPage !== 'explore') {
-      setCurrentPage('explore');
-    }
-  };
 
   return (
     <header className="fixed top-0 z-40 w-full bg-black/40 backdrop-blur-md border-b border-white/10 px-4 lg:px-6 h-16 flex items-center justify-between transition-all">
@@ -98,56 +85,8 @@ export const Navbar: React.FC<{
           </button>
         </div>
 
-        {/* Search Bar with AI Smart Suggestions */}
-        {!isPublicView && (
-          <form
-            onSubmit={handleSearchSubmit}
-            className="hidden md:flex flex-1 max-w-md relative items-center mx-8"
-          >
-            <Search className="w-4 h-4 absolute left-4 text-gray-500" />
-            <input
-              type="text"
-              value={exploreSearchQuery}
-              onChange={(e) => setExploreSearchQuery(e.target.value)}
-              placeholder="Search secure feeds, topics, AI trust badges..."
-              className="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-10 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 transition-colors"
-            />
-            {exploreSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setExploreSearchQuery('')}
-                className="absolute right-4 text-gray-500 hover:text-gray-300"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </form>
-        )}
-
         {/* Right Actions & Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Quick AI Scanner Launcher */}
-          {!isPublicView && (
-            <button
-              onClick={() => openScannerModal('image')}
-              title="Scan Media with AI"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-blue-400 text-xs font-semibold transition"
-            >
-              <ScanEye className="w-4 h-4 text-blue-400" />
-              <span>AI Scanner</span>
-            </button>
-          )}
-
-          {/* AI Shield Status Badge */}
-          {!isPublicView && (
-            <button
-              onClick={() => setCurrentPage('settings')}
-              className="hidden xl:flex items-center gap-1.5 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[11px] font-bold text-green-400 hover:bg-green-500/20 transition"
-            >
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="uppercase tracking-widest text-[10px]">AI Verified Safe</span>
-            </button>
-          )}
 
           {isAuthenticated ? (
             <>

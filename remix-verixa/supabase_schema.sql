@@ -1476,5 +1476,35 @@ begin
   end;
 end $$;
 
+-- ====================================================================
+-- MESSAGING UPGRADE MIGRATION: ACTIONS, ATTACHMENTS & REACTIONS
+-- Table: public.messages
+-- ====================================================================
+
+alter table if exists public.messages
+  add column if not exists reply_to_message_id uuid references public.messages(id) on delete set null,
+  add column if not exists is_forwarded boolean default false,
+  add column if not exists forwarded_from_message_id uuid references public.messages(id) on delete set null,
+  add column if not exists message_type text default 'text',
+  add column if not exists media_name text,
+  add column if not exists media_size bigint,
+  add column if not exists edited_at timestamp with time zone,
+  add column if not exists deleted_at timestamp with time zone,
+  add column if not exists reactions jsonb default '{}'::jsonb;
+
+create index if not exists idx_messages_reply_to on public.messages(reply_to_message_id);
+create index if not exists idx_messages_created_at on public.messages(created_at);
+
+-- RLS: Allow message author to edit their own message text and soft delete
+drop policy if exists "Users can update their own messages" on public.messages;
+create policy "Users can update their own messages" on public.messages
+  for update using (auth.uid() = sender_id)
+  with check (auth.uid() = sender_id);
+
+-- RLS: Allow conversation participants (sender or receiver) to react and update delivery status
+drop policy if exists "Users can update message delivery/read/reactions" on public.messages;
+create policy "Users can update message delivery/read/reactions" on public.messages
+  for update using (auth.uid() = receiver_id or auth.uid() = sender_id);
+
 
 

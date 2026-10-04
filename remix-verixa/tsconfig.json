@@ -26,6 +26,7 @@
   "exclude": [
     "node_modules",
     "dist",
+    "scratch",
     "src/lib/firebase.ts",
     "src/lib/firestoreServices.ts"
   ]

@@ -6,7 +6,6 @@ import {
   Film,
   MessageSquare,
   Bell,
-  User,
   Settings,
   Info,
   Mail,
@@ -56,7 +55,6 @@ export const Sidebar: React.FC<{
     },
     { id: 'sentinel-ai', label: 'Sentinel AI Chatbot', icon: <Bot className="w-5 h-5 text-purple-400" /> },
     { id: 'ai-dashboard', label: 'AI Dashboard', icon: <Sparkles className="w-5 h-5 text-amber-400" /> },
-    { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
     { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
   ];
 

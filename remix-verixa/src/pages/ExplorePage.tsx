@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Search,
@@ -24,12 +24,6 @@ import {
   Maximize,
   Minimize,
   Music,
-  Flame,
-  Clock,
-  Shuffle,
-  LayoutGrid,
-  Grid,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { scanPrivacyInText } from '../lib/privacyScanner';
@@ -263,24 +257,17 @@ export const ExplorePage: React.FC = () => {
   const [reelCommentInputs, setReelCommentInputs] = useState<{ [reelId: string]: string }>({});
   const [submittingReelCommentId, setSubmittingReelCommentId] = useState<string | null>(null);
 
-  // Explore dynamic sorting, shuffle seed, and visual layout mode
-  const [exploreSortOrder, setExploreSortOrder] = useState<'trending' | 'curated' | 'latest' | 'popular'>('trending');
-  const [shuffleSeed, setShuffleSeed] = useState<number>(0);
-  const [gridViewMode, setGridViewMode] = useState<'mosaic' | 'feed'>('mosaic');
+  // Explore shuffle seed and visual layout mode (default MOSAIC)
+  const [shuffleSeed, setShuffleSeed] = useState<number>(() => Math.floor(Math.random() * 1000000) + 1);
+  const [gridViewMode] = useState<'mosaic' | 'feed'>('mosaic');
 
-  // Explore categories (replaces "Videos" with "Reels")
-  const categories = [
-    { label: 'All', icon: Sparkles },
-    { label: 'Reels', icon: Film },
-    { label: 'Photos', icon: ImageIcon },
-    { label: 'Thoughts', icon: Quote },
-    { label: 'Technology', icon: null },
-    { label: 'Gaming', icon: null },
-    { label: 'Sports', icon: null },
-    { label: 'Travel', icon: null },
-    { label: 'Music', icon: null },
-    { label: 'Photography', icon: null },
-  ];
+  // Automatically shuffle feed every time Explore page is opened
+  useEffect(() => {
+    setShuffleSeed(Math.floor(Math.random() * 1000000) + 1);
+    if (selectedExploreCategory !== 'All') {
+      setSelectedExploreCategory('All');
+    }
+  }, []);
 
   // Feed item discriminator for Pinterest / Instagram Explore masonry
   type ExploreFeedItem =
@@ -422,51 +409,17 @@ export const ExplorePage: React.FC = () => {
       allItems = combined;
     }
 
-    // Apply User's Selected Sort Order
-    if (exploreSortOrder === 'latest') {
-      allItems.sort((a, b) => getTimestampValue(b) - getTimestampValue(a));
-    } else if (exploreSortOrder === 'popular') {
-      allItems.sort((a, b) => {
-        const likesA = a.type === 'post' ? a.post.likes || 0 : a.reel.likes || 0;
-        const likesB = b.type === 'post' ? b.post.likes || 0 : b.reel.likes || 0;
-        return likesB - likesA;
-      });
-    } else if (exploreSortOrder === 'curated' || shuffleSeed > 0) {
-      // Curated discovery shuffle based on seed
-      const seeded = [...allItems];
-      for (let i = seeded.length - 1; i > 0; i--) {
-        const item = seeded[i];
-        const id = item.type === 'post' ? item.post.id : item.reel.id;
-        const j = Math.abs(pseudoHash(shuffleSeed + i * 31, id)) % (i + 1);
-        [seeded[i], seeded[j]] = [seeded[j], seeded[i]];
-      }
-      return seeded;
-    } else {
-      // Default: 'trending' - Ranked by engagement with creator diversity to prevent clustering
-      allItems.sort((a, b) => getEngagementScore(b) - getEngagementScore(a));
-
-      const diversified: ExploreFeedItem[] = [];
-      const pool = [...allItems];
-      let lastAuthor = '';
-
-      while (pool.length > 0) {
-        let foundIdx = pool.findIndex((item) => {
-          const author = item.type === 'post' ? item.post.user?.id : item.reel.user?.id;
-          return author !== lastAuthor;
-        });
-
-        if (foundIdx === -1) foundIdx = 0;
-
-        const [picked] = pool.splice(foundIdx, 1);
-        diversified.push(picked);
-        lastAuthor = (picked.type === 'post' ? picked.post.user?.id : picked.reel.user?.id) || '';
-      }
-
-      allItems = diversified;
+    // Automatically shuffle explore feed items dynamically for fresh discovery
+    const seeded = [...allItems];
+    let currentSeed = shuffleSeed;
+    for (let i = seeded.length - 1; i > 0; i--) {
+      currentSeed = (currentSeed * 9301 + 49297) % 233280;
+      const rnd = currentSeed / 233280;
+      const j = Math.floor(rnd * (i + 1));
+      [seeded[i], seeded[j]] = [seeded[j], seeded[i]];
     }
-
-    return allItems;
-  }, [posts, reels, selectedExploreCategory, exploreSearchQuery, exploreSortOrder, shuffleSeed]);
+    return seeded;
+  }, [posts, reels, selectedExploreCategory, exploreSearchQuery, shuffleSeed]);
 
   // Keep modal post & reel in sync with real-time state
   const modalPost = useMemo(() => {
@@ -813,140 +766,36 @@ export const ExplorePage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       {/* Search & Header */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
-              Explore <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
-            </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Curated verified safe media, stories & ideas powered by VERIXA AI content classifiers.
-            </p>
-          </div>
-
-          {/* Search bar */}
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-            <input
-              type="text"
-              value={exploreSearchQuery}
-              onChange={(e) => setExploreSearchQuery(e.target.value)}
-              placeholder="Search posts, creators, tags..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-900/90 border border-purple-500/20 rounded-full text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition shadow-inner"
-            />
-            {exploreSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setExploreSearchQuery('')}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-white p-0.5 rounded-full"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+        <div className="shrink-0">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
+            Explore <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Curated verified safe media, stories & ideas powered by VERIXA AI content classifiers.
+          </p>
         </div>
 
-        {/* Categories Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 pt-1">
-          {categories.map((cat) => {
-            const active = selectedExploreCategory === cat.label;
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.label}
-                onClick={() => setSelectedExploreCategory(cat.label)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                  active
-                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 text-white shadow-lg shadow-purple-900/40 ring-1 ring-purple-400 scale-[1.02]'
-                    : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-700'
-                }`}
-              >
-                {Icon && <Icon className="w-3.5 h-3.5" />}
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Explore Toolbar: Dynamic Sort, Shuffle, & Layout View Mode */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/60 text-xs">
-          {/* Sort Selector */}
-          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
-              <SlidersHorizontal className="w-3 h-3" /> Order:
-            </span>
-            {[
-              { id: 'trending', label: 'Trending', icon: Flame },
-              { id: 'curated', label: 'Curated', icon: Sparkles },
-              { id: 'latest', label: 'Latest', icon: Clock },
-              { id: 'popular', label: 'Popular', icon: Heart },
-            ].map((sort) => {
-              const active = exploreSortOrder === sort.id;
-              const SortIcon = sort.icon;
-              return (
-                <button
-                  key={sort.id}
-                  type="button"
-                  onClick={() => setExploreSortOrder(sort.id as any)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                    active
-                      ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-sm shadow-purple-900/30 ring-1 ring-purple-400/40'
-                      : 'bg-slate-900/70 text-slate-400 border border-slate-800/80 hover:bg-slate-800 hover:text-slate-200'
-                  }`}
-                >
-                  <SortIcon className={`w-3 h-3 ${active ? 'text-purple-400' : 'text-slate-500'}`} />
-                  <span>{sort.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right Tools: Shuffle & Grid Mode Toggle */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            {/* Shuffle Button */}
+        {/* Search bar - Expanded width */}
+        <div className="relative w-full md:max-w-xl lg:max-w-2xl">
+          <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400" />
+          <input
+            type="text"
+            value={exploreSearchQuery}
+            onChange={(e) => setExploreSearchQuery(e.target.value)}
+            placeholder="Search posts, creators, tags..."
+            className="w-full pl-11 pr-10 py-2.5 bg-slate-900/90 border border-purple-500/25 rounded-full text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition shadow-inner"
+          />
+          {exploreSearchQuery && (
             <button
               type="button"
-              onClick={() => {
-                setShuffleSeed((s) => s + 1);
-                addToast('info', 'Feed Shuffled', 'Loaded a fresh discovery order.');
-              }}
-              className="px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:border-purple-500/40 hover:bg-slate-800 transition cursor-pointer flex items-center gap-1.5 text-xs font-medium active:scale-95 shadow-inner"
-              title="Reshuffle feed items for fresh discovery"
+              onClick={() => setExploreSearchQuery('')}
+              className="absolute right-3.5 top-2.5 text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition"
+              title="Clear search"
             >
-              <Shuffle className="w-3.5 h-3.5 text-purple-400 transition-transform active:rotate-180" />
-              <span className="hidden sm:inline">Shuffle</span>
+              <X className="w-4 h-4" />
             </button>
-
-            {/* View Mode Toggle (Mosaic vs Cards) */}
-            <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-full p-0.5 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setGridViewMode('mosaic')}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                  gridViewMode === 'mosaic'
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-                title="Visual Mosaic Grid (Instagram / TikTok Explore style)"
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mosaic</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setGridViewMode('feed')}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                  gridViewMode === 'feed'
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-                title="Card Feed (Expanded view with inline comments on demand)"
-              >
-                <Grid className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Cards</span>
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -960,7 +809,7 @@ export const ExplorePage: React.FC = () => {
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             {exploreSearchQuery
               ? `No posts or reels matched your search for "${exploreSearchQuery}". Try another keyword or clear the search.`
-              : `No content currently available in category "${selectedExploreCategory}".`}
+              : 'No content currently available in the feed.'}
           </p>
         </div>
       ) : gridViewMode === 'mosaic' ? (
