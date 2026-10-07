@@ -1,5 +1,14 @@
 [
   {
+    "id": "inte_1791385099082_h2sro",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "post_id": "9dcecc5e-1d8c-438f-9d56-b6302f62114e",
+    "interaction_type": "comment",
+    "dwell_time_ms": 0,
+    "metadata": {},
+    "created_at": "2026-10-07T14:58:19.082Z"
+  },
+  {
     "id": "inte_1790685217900_wuk4c",
     "user_id": "user_telemetry_1790685217900",
     "post_id": "post_telemetry_1790685217900",

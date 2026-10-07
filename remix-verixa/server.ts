@@ -829,7 +829,7 @@ function savePostLikesToFile() {
   }
 }
 
-function getServerSupabase() {
+function getServerSupabase(authHeader?: string) {
   const sbUrl =
     process.env.VITE_SUPABASE_URL ||
     process.env.SUPABASE_URL ||
@@ -841,7 +841,11 @@ function getServerSupabase() {
     'sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2';
   if (!sbUrl || !sbKey) return null;
   try {
-    return createClient(sbUrl, sbKey, { auth: { persistSession: false } });
+    const options: any = { auth: { persistSession: false } };
+    if (authHeader && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      options.global = { headers: { Authorization: authHeader } };
+    }
+    return createClient(sbUrl, sbKey, options);
   } catch {
     return null;
   }
@@ -1027,6 +1031,175 @@ app.get("/api/posts/liked/:userId", async (req, res) => {
   } catch (err: any) {
     console.error("Fetch liked posts error:", err);
     return res.status(500).json({ error: "Failed to retrieve liked posts." });
+  }
+});
+
+/**
+ * Follow / Unfollow User Endpoint
+ * Safely inserts or deletes follows in Supabase with service privileges,
+ * updates follower/following counts on profiles, and triggers real notifications.
+ */
+app.post("/api/users/:targetUserId/follow", async (req, res) => {
+  try {
+    const { targetUserId } = req.params;
+    const { followerId, targetFollowing } = req.body;
+
+    if (!followerId || !targetUserId) {
+      return res.status(400).json({ error: "followerId and targetUserId are required" });
+    }
+    if (followerId === targetUserId) {
+      return res.status(400).json({ error: "Cannot follow yourself" });
+    }
+
+    const sb = getServerSupabase(req.headers.authorization);
+    let shouldFollow: boolean;
+
+    if (sb) {
+      if (targetFollowing !== undefined) {
+        shouldFollow = Boolean(targetFollowing);
+      } else {
+        const { data } = await sb
+          .from("follows")
+          .select("id")
+          .eq("follower_id", followerId)
+          .eq("following_id", targetUserId)
+          .maybeSingle();
+        shouldFollow = !data;
+      }
+
+      if (shouldFollow) {
+        await sb.from("follows").upsert(
+          {
+            follower_id: followerId,
+            following_id: targetUserId,
+            created_at: new Date().toISOString(),
+          },
+          { onConflict: "follower_id,following_id" }
+        );
+
+        // Send in-app notification
+        try {
+          await sb.from("notifications").insert({
+            user_id: targetUserId,
+            actor_id: followerId,
+            type: "follow",
+            title: "New Follower",
+            content: "started following you.",
+            read: false,
+            created_at: new Date().toISOString(),
+          });
+        } catch (notifErr) {
+          console.warn("Notice: could not dispatch follow notification:", notifErr);
+        }
+      } else {
+        await sb
+          .from("follows")
+          .delete()
+          .eq("follower_id", followerId)
+          .eq("following_id", targetUserId);
+      }
+
+      // Sync counts on both profiles
+      let followersCount = 0;
+      let followingCount = 0;
+      try {
+        const [{ count: fCount }, { count: fingCount }] = await Promise.all([
+          sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", targetUserId),
+          sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", followerId),
+        ]);
+        followersCount = fCount ?? 0;
+        followingCount = fingCount ?? 0;
+
+        await Promise.all([
+          sb.from("profiles").update({ followers_count: followersCount }).eq("id", targetUserId),
+          sb.from("profiles").update({ following_count: followingCount }).eq("id", followerId),
+        ]);
+      } catch (countErr) {
+        console.warn("Notice: could not update profile counts:", countErr);
+      }
+
+      return res.json({
+        success: true,
+        following: shouldFollow,
+        targetFollowersCount: followersCount,
+        actorFollowingCount: followingCount,
+      });
+    }
+
+    return res.json({ success: true, following: Boolean(targetFollowing) });
+  } catch (err: any) {
+    console.error("Follow endpoint error:", err);
+    return res.status(500).json({ error: err.message || "Failed to process follow" });
+  }
+});
+
+app.get("/api/users/:id/followers", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const sb = getServerSupabase();
+    if (!sb) return res.json({ followers: [] });
+
+    const { data, error } = await sb
+      .from("follows")
+      .select(`
+        follower_id,
+        profiles:follower_id (
+          id,
+          username,
+          name,
+          avatar,
+          bio,
+          verified,
+          ai_trust_badge,
+          safety_score,
+          followers_count,
+          following_count,
+          posts_count,
+          role
+        )
+      `)
+      .eq("following_id", userId);
+
+    if (error || !data) return res.json({ followers: [] });
+    const followers = data.filter((r: any) => r.profiles).map((r: any) => r.profiles);
+    return res.json({ followers });
+  } catch (err: any) {
+    return res.json({ followers: [] });
+  }
+});
+
+app.get("/api/users/:id/following", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const sb = getServerSupabase();
+    if (!sb) return res.json({ following: [] });
+
+    const { data, error } = await sb
+      .from("follows")
+      .select(`
+        following_id,
+        profiles:following_id (
+          id,
+          username,
+          name,
+          avatar,
+          bio,
+          verified,
+          ai_trust_badge,
+          safety_score,
+          followers_count,
+          following_count,
+          posts_count,
+          role
+        )
+      `)
+      .eq("follower_id", userId);
+
+    if (error || !data) return res.json({ following: [] });
+    const following = data.filter((r: any) => r.profiles).map((r: any) => r.profiles);
+    return res.json({ following });
+  } catch (err: any) {
+    return res.json({ following: [] });
   }
 });
 

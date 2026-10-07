@@ -2085,7 +2085,7 @@ function formatStoryRelativeTime(dateString?: string): string {
     const wasFollowing = followingUserIds.has(targetUserId);
     const nextFollowing = !wasFollowing;
 
-    // Optimistic update
+    // Optimistic update of following IDs
     setFollowingUserIds((prev) => {
       const next = new Set(prev);
       if (nextFollowing) next.add(targetUserId);
@@ -2093,10 +2093,20 @@ function formatStoryRelativeTime(dateString?: string): string {
       return next;
     });
 
+    // Optimistic update of current user following count
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      const count = prev.followingCount ?? 0;
+      return {
+        ...prev,
+        followingCount: Math.max(0, count + (nextFollowing ? 1 : -1)),
+      };
+    });
+
     try {
-      await toggleFollowUser(currentUser.id, targetUserId);
+      await toggleFollowUser(currentUser.id, targetUserId, nextFollowing);
       addToast(
-        'info',
+        'success',
         nextFollowing ? 'Following User' : 'Unfollowed User',
         nextFollowing ? 'You are now following this creator.' : 'You have unfollowed this creator.'
       );
@@ -2107,6 +2117,14 @@ function formatStoryRelativeTime(dateString?: string): string {
         if (wasFollowing) next.add(targetUserId);
         else next.delete(targetUserId);
         return next;
+      });
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        const count = prev.followingCount ?? 0;
+        return {
+          ...prev,
+          followingCount: Math.max(0, count + (wasFollowing ? 1 : -1)),
+        };
       });
       addToast('error', 'Follow Failed', err.message || 'Could not update follow status.');
     }

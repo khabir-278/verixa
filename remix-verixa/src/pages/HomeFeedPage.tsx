@@ -1289,7 +1289,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
 
             return (
               <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/92 backdrop-blur-xl transition-all select-none"
+                className="story-viewer-backdrop fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/92 backdrop-blur-xl transition-all select-none"
                 onClick={() => {
                   setActiveStoryGroup(null);
                   setActiveStoryIndex(0);
@@ -1330,7 +1330,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
 
                 {/* Main Story Container - Enlarged, modern 9:16 vertical styling */}
                 <div
-                  className="relative w-full max-w-lg md:max-w-xl h-[85vh] max-h-[850px] bg-slate-950 border border-slate-700/60 rounded-[32px] overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col justify-between"
+                  className="story-viewer-card relative w-full max-w-lg md:max-w-xl h-[85vh] max-h-[850px] bg-slate-950 border border-slate-700/60 rounded-[32px] overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col justify-between"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Ambient Blurred Background Glow */}
@@ -1368,7 +1368,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                   </div>
 
                   {/* Top Header Bar */}
-                  <div className="relative z-20 px-4 py-2 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+                  <div className="story-viewer-header relative z-20 px-4 py-2 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent">
                     <div
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1466,7 +1466,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                   </div>
 
                   {/* Media Content Display with side click tap-zones */}
-                  <div className="relative flex-1 w-full bg-black flex items-center justify-center overflow-hidden">
+                  <div className="story-viewer-media relative flex-1 w-full bg-black flex items-center justify-center overflow-hidden">
                     {/* Left Tap Zone (Click left 35% of story to go prev) */}
                     <div
                       className="absolute inset-y-0 left-0 w-[35%] z-10 cursor-pointer"
@@ -1524,7 +1524,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                   {/* Bottom Story Controls Footer */}
                   {isStoryOwner ? (
                     /* Self Story Creator Controls (Interactive Activity pill) */
-                    <div className="relative z-20 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/90 to-transparent flex items-center justify-between">
+                    <div className="story-viewer-footer relative z-20 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/90 to-transparent flex items-center justify-between">
                       {/* Interactive Views & Likes Activity Pill */}
                       <button
                         type="button"
@@ -1532,7 +1532,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                           e.stopPropagation();
                           handleOpenStoryViewers(liveCurrentStory);
                         }}
-                        className="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/15 text-white font-mono shadow-sm transition cursor-pointer group"
+                        className="story-activity-pill flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/15 text-white font-mono shadow-sm transition cursor-pointer group"
                         title="Click to view full viewers list & insights"
                       >
                         <div className="flex items-center gap-1.5 text-cyan-400">
@@ -1549,7 +1549,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                     </div>
                   ) : (
                     /* Other User's Story: Quick Reaction Emojis, Reply Input & Like Button */
-                    <div className="relative z-20 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/80 to-transparent space-y-2.5">
+                    <div className="story-viewer-footer relative z-20 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/80 to-transparent space-y-2.5">
                       {/* Quick Reaction Emojis & Meta Row */}
                       <div className="flex items-center justify-between gap-2 px-1">
                         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
@@ -1883,11 +1883,11 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
       {/* Story Viewers & Insights Modal */}
       {storyViewersModalStory && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 select-none"
+          className="story-insights-backdrop fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 select-none"
           onClick={() => setStoryViewersModalStory(null)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            className="story-insights-card bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}

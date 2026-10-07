@@ -1,5 +1,532 @@
 [
   {
+    "analysis_id": "mod_img_1791385278383_nbcqy2l",
+    "content_id": "0da93a6e-5ac6-4336-9b77-244a8065fd65",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:01:49.553Z",
+      "analyzed_at": "2026-10-07T15:01:49.553Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+    "content_hash": "2cfb1893ba3be57c41bc5f1491cf952063c680c8e3398a9cf74e17e109de0ce7",
+    "content_length": 113923,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4AA...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T15:01:49.553Z"
+  },
+  {
+    "analysis_id": "mod_1791385247513_egzn50a",
+    "content_id": "mod_1791385247513_egzn50a",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:00:50.934Z",
+      "analyzed_at": "2026-10-07T15:00:50.934Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "content_hash": "fc613b4dfd6736a7bd268c8a0e74ed0d1c04a959f59dd74ef2874983fd443fc9",
+    "content_length": 6,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 6 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T15:00:50.934Z"
+  },
+  {
+    "analysis_id": "mod_1791385230041_fqwgryu",
+    "content_id": "mod_1791385230041_fqwgryu",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:00:35.075Z",
+      "analyzed_at": "2026-10-07T15:00:35.075Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "content_hash": "fc613b4dfd6736a7bd268c8a0e74ed0d1c04a959f59dd74ef2874983fd443fc9",
+    "content_length": 6,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 6 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T15:00:35.075Z"
+  },
+  {
+    "analysis_id": "mod_img_1791385184570_ykrdb4e",
+    "content_id": "f037e264-3612-4365-a291-05b99fc6cfce",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:00:14.214Z",
+      "analyzed_at": "2026-10-07T15:00:14.214Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+    "content_hash": "2cfb1893ba3be57c41bc5f1491cf952063c680c8e3398a9cf74e17e109de0ce7",
+    "content_length": 113923,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4AA...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T15:00:14.214Z"
+  },
+  {
+    "analysis_id": "mod_1791385095525_ipm67xy",
+    "content_id": "mod_1791385095525_ipm67xy",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:58:17.826Z",
+      "analyzed_at": "2026-10-07T14:58:17.826Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The content is a positive and constructive comment with no signs of toxicity, harassment, or policy violations.",
+    "content_hash": "770e607624d689265ca6c44884d0807d9b054d23c473c106c72be9de08b7376c",
+    "content_length": 4,
+    "snippet_redacted": "good",
+    "language": "English",
+    "created_at": "2026-10-07T14:58:17.826Z"
+  },
+  {
+    "analysis_id": "mod_1791385071445_lwi192m",
+    "content_id": "mod_1791385071445_lwi192m",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:57:57.281Z",
+      "analyzed_at": "2026-10-07T14:57:57.281Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "content_hash": "770e607624d689265ca6c44884d0807d9b054d23c473c106c72be9de08b7376c",
+    "content_length": 4,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 4 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T14:57:57.281Z"
+  },
+  {
+    "analysis_id": "mod_1791385050742_u28jp2u",
+    "content_id": "mod_1791385050742_u28jp2u",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:57:35.601Z",
+      "analyzed_at": "2026-10-07T14:57:35.601Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "content_hash": "4580760440f033a33154639f1af83966f927942b18a266e61757618e2fe92ca8",
+    "content_length": 3,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 3 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T14:57:35.601Z"
+  },
+  {
+    "analysis_id": "mod_img_1791384955190_hebpzgl",
+    "content_id": "c3dbb773-c021-4967-847a-c7d8dbbbf51a",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:57:15.224Z",
+      "analyzed_at": "2026-10-07T14:57:15.224Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+    "content_hash": "050e12cf9dd593c941a8772fd40278e2ec4d2351d7c6afeaac57b7a0e15659a2",
+    "content_length": 3091431,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4QD...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T14:57:15.224Z"
+  },
+  {
+    "analysis_id": "mod_1791385016539_velcjyn",
+    "content_id": "mod_1791385016539_velcjyn",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:57:01.967Z",
+      "analyzed_at": "2026-10-07T14:57:01.967Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "content_hash": "ccb0904a51036313265aac78f22f535fb5c37a10ee435e07f08a5e6e899893a9",
+    "content_length": 6,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 6 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T14:57:01.967Z"
+  },
+  {
+    "analysis_id": "mod_img_1791384900092_wv2lckf",
+    "content_id": "e92e6214-b16d-42a8-8939-1b1026174ba5",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:55:30.574Z",
+      "analyzed_at": "2026-10-07T14:55:30.574Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+    "content_hash": "9f41ec220f2cdc9b5f270fae92dbd36037d53bfabcc092b18b75662ae7d3280c",
+    "content_length": 61103,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4AA...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T14:55:30.574Z"
+  },
+  {
+    "analysis_id": "mod_img_1791384859666_fcrl2ob",
+    "content_id": "5bbbb922-7995-443b-ada7-f6920fb73716",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:54:41.715Z",
+      "analyzed_at": "2026-10-07T14:54:41.715Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+    "content_hash": "2cfb1893ba3be57c41bc5f1491cf952063c680c8e3398a9cf74e17e109de0ce7",
+    "content_length": 113923,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4AA...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T14:54:41.715Z"
+  },
+  {
+    "analysis_id": "mod_img_1791384825350_vw7v7ae",
+    "content_id": "034c7ce1-b2e3-4926-93bb-59db4c7ef092",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "MEDIA_SCAN_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:54:08.802Z",
+      "analyzed_at": "2026-10-07T14:54:08.802Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI visual moderation service unavailable. Content placed in quarantine for safety review.",
+    "content_hash": "2cfb1893ba3be57c41bc5f1491cf952063c680c8e3398a9cf74e17e109de0ce7",
+    "content_length": 113923,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4AA...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T14:54:08.802Z"
+  },
+  {
+    "analysis_id": "mod_img_1791382930785_0jvlt5g",
+    "content_id": "72011e61-844e-43f1-8898-63b39544ce08",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "0:00 Voice message",
+      "overall_risk": 0,
+      "risk": 0
+    },
+    "labels": [
+      "interface element",
+      "UI",
+      "audio message"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:22:28.880Z",
+      "analyzed_at": "2026-10-07T14:22:28.880Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The image is a standard user interface element representing a voice message, which contains no offensive or harmful content.",
+    "content_hash": "623281476a39237665e5d948b6d922649a7fed7c41d8a366211778c267ca2cb8",
+    "content_length": 29898,
+    "snippet_redacted": "[base64_media data:image/png;base64,iVBORw0K...]",
+    "language": "Visual",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "username": "jashu_2426",
+    "created_at": "2026-10-07T14:22:28.880Z"
+  },
+  {
+    "analysis_id": "mod_img_1791382532397_uo0k700",
+    "content_id": "f541455e-a0d4-4407-992e-c91383556900",
+    "content_type": "story",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "H Hem Istemsetty Calling... Encrypted Audio Call Connecting... Peer-to-Peer",
+      "overall_risk": 0,
+      "risk": 0
+    },
+    "labels": [
+      "Benign communication interface"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T14:15:41.765Z",
+      "analyzed_at": "2026-10-07T14:15:41.765Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The image is a standard UI screenshot of an encrypted voice calling application. There is no offensive, harmful, or synthetic content detected.",
+    "content_hash": "7ae67175b91d30623cafec8cb5a0c797370ecefb2e9c98b416fd6d026b99bd6c",
+    "content_length": 94934,
+    "snippet_redacted": "[base64_media data:image/png;base64,iVBORw0K...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T14:15:41.765Z"
+  },
+  {
+    "analysis_id": "mod_1791368733944_cjlxtvs",
+    "content_id": "cf3813f0-7404-4293-977a-5f8d5db8985c",
+    "content_type": "dm_text",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T10:25:35.661Z",
+      "analyzed_at": "2026-10-07T10:25:35.661Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The content represents a placeholder for a voice message, which contains no offensive, harmful, or prohibited material.",
+    "content_hash": "91168c78916a1544005c22c48fee14e8b85f6fb9807c8da4a00b0fdbac95dde2",
+    "content_length": 17,
+    "snippet_redacted": "🎙️ Voice message",
+    "language": "English",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "target_id": "cf3813f0-7404-4293-977a-5f8d5db8985c",
+    "created_at": "2026-10-07T10:25:35.661Z"
+  },
+  {
     "analysis_id": "mod_img_1791140203834_p0dam9i",
     "content_id": "mod_img_1791140203834_p0dam9i",
     "content_type": "cover_photo",

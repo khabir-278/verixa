@@ -1,5 +1,85 @@
 [
   {
+    "id": "notif_1791385099092_4db8cc73",
+    "recipient_id": "00a2e805-4617-4d5d-abaf-8ece372f4712",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "comment",
+    "message": "commented on your post: \"good\"",
+    "post_id": "9dcecc5e-1d8c-438f-9d56-b6302f62114e",
+    "detail": "good",
+    "read": false,
+    "created_at": "2026-10-07T14:58:19.093Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "khabir",
+      "name": "syed hameed",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1791383364345_d7e14289",
+    "recipient_id": "00a2e805-4617-4d5d-abaf-8ece372f4712",
+    "sender_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "type": "follow",
+    "message": "started following you",
+    "post_id": null,
+    "detail": null,
+    "read": false,
+    "created_at": "2026-10-07T14:29:24.345Z",
+    "sender": {
+      "id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+      "username": "User",
+      "name": "User",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIYd0D-jEH5XoEWZEw0XIfSRjoHDqefllK3EYQmv1zpAHMpII-TjA=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1791383356728_8aad9f86",
+    "recipient_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "sender_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "type": "follow",
+    "message": "started following you",
+    "post_id": null,
+    "detail": null,
+    "read": false,
+    "created_at": "2026-10-07T14:29:16.728Z",
+    "sender": {
+      "id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+      "username": "User",
+      "name": "User",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIYd0D-jEH5XoEWZEw0XIfSRjoHDqefllK3EYQmv1zpAHMpII-TjA=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
+    "id": "notif_1791382330130_272ed468",
+    "recipient_id": "00a2e805-4617-4d5d-abaf-8ece372f4712",
+    "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "type": "follow",
+    "message": "started following you",
+    "post_id": null,
+    "detail": null,
+    "read": false,
+    "created_at": "2026-10-07T14:12:10.132Z",
+    "sender": {
+      "id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+      "username": "User",
+      "name": "User",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKbfwI9PT1jmN-i_bwkmpmiCewZpuhtWXnZqkS-PjYXL7Jn8g8=s96-c",
+      "verified": true,
+      "ai_trust_badge": "Verified Human",
+      "safety_score": 100
+    }
+  },
+  {
     "id": "notif_1790175144253_6c62a4a0",
     "recipient_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
     "sender_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",

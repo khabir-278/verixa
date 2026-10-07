@@ -39,6 +39,8 @@ import {
   getUserProfile,
   updateUserProfile,
   toggleFollowUser,
+  getUserFollowers,
+  getUserFollowing,
   toggleSavePost,
   createReport,
   uploadProfilePicture,
@@ -64,6 +66,9 @@ export const ProfilePage: React.FC = () => {
     openUserProfile,
     setActiveChatUser,
     setCurrentPage,
+    followUser,
+    isUserFollowing,
+    followingUserIds,
   } = useApp();
 
   // Determine if viewing own profile or another user
@@ -140,6 +145,8 @@ export const ProfilePage: React.FC = () => {
   // Search filter inside followers/following modal
   const [modalSearchQuery, setModalSearchQuery] = useState<string>('');
   const [supabaseProfiles, setSupabaseProfiles] = useState<User[]>([]);
+  const [modalFollowUsers, setModalFollowUsers] = useState<User[]>([]);
+  const [isLoadingModalFollowUsers, setIsLoadingModalFollowUsers] = useState<boolean>(false);
 
   // Behavioral Safety Intelligence & AI Guardian State
   const [reputationLedger, setReputationLedger] = useState<any[]>([]);
@@ -343,6 +350,50 @@ export const ProfilePage: React.FC = () => {
     }
   }, [currentUser, isOwnProfile]);
 
+  // Synchronize isFollowing status with global context
+  useEffect(() => {
+    if (displayedUser?.id) {
+      setIsFollowing(isUserFollowing(displayedUser.id));
+    }
+  }, [followingUserIds, displayedUser?.id, isUserFollowing]);
+
+  // Load modal followers / following list dynamically when modal opens
+  useEffect(() => {
+    let isMounted = true;
+    if (showFollowersModal && displayedUser?.id) {
+      setIsLoadingModalFollowUsers(true);
+      getUserFollowers(displayedUser.id)
+        .then((users) => {
+          if (isMounted) setModalFollowUsers(users);
+        })
+        .catch((err) => {
+          console.warn('Error loading followers:', err);
+          if (isMounted) setModalFollowUsers([]);
+        })
+        .finally(() => {
+          if (isMounted) setIsLoadingModalFollowUsers(false);
+        });
+    } else if (showFollowingModal && displayedUser?.id) {
+      setIsLoadingModalFollowUsers(true);
+      getUserFollowing(displayedUser.id)
+        .then((users) => {
+          if (isMounted) setModalFollowUsers(users);
+        })
+        .catch((err) => {
+          console.warn('Error loading following:', err);
+          if (isMounted) setModalFollowUsers([]);
+        })
+        .finally(() => {
+          if (isMounted) setIsLoadingModalFollowUsers(false);
+        });
+    } else if (!showFollowersModal && !showFollowingModal) {
+      setModalFollowUsers([]);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [showFollowersModal, showFollowingModal, displayedUser?.id]);
+
   if (!displayedUser && isLoadingProfile) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 flex flex-col items-center justify-center space-y-4">
@@ -393,24 +444,56 @@ export const ProfilePage: React.FC = () => {
   // Calculate total engagement / likes count
   const totalLikes = userPosts.reduce((acc, p) => acc + (p.likes || 0), 0);
 
-  // Handle Follow Toggle
+  // Handle Follow Toggle from profile header
   const handleToggleFollow = async () => {
     if (!currentUser) {
       addToast('warning', 'Authentication Required', 'Please log in to follow users.');
       return;
     }
-    const newStatus = !isFollowing;
-    setIsFollowing(newStatus);
-    setFollowersCount((prev) => (newStatus ? prev + 1 : Math.max(0, prev - 1)));
-
-    if (newStatus) {
-      addToast('success', 'Following User', `You are now following @${displayedUser.username}`);
-    } else {
-      addToast('info', 'Unfollowed User', `You unfollowed @${displayedUser.username}`);
+    if (!displayedUser?.id) return;
+    if (currentUser.id === displayedUser.id) {
+      addToast('warning', 'Invalid Action', 'You cannot follow yourself.');
+      return;
     }
 
-    if (displayedUser.id && currentUser.id) {
-      await toggleFollowUser(currentUser.id, displayedUser.id);
+    const wasFollowing = isFollowing;
+    const willFollow = !wasFollowing;
+
+    // Optimistically update displayed followers count
+    setFollowersCount((prev) => (willFollow ? prev + 1 : Math.max(0, prev - 1)));
+
+    try {
+      await followUser(displayedUser.id);
+    } catch {
+      // Revert on failure
+      setFollowersCount((prev) => (wasFollowing ? prev + 1 : Math.max(0, prev - 1)));
+    }
+  };
+
+  // Handle follow / unfollow toggle from within the followers/following modal
+  const handleModalFollowToggle = async (usr: User) => {
+    if (!currentUser) {
+      addToast('warning', 'Authentication Required', 'Please log in to follow users.');
+      return;
+    }
+    if (usr.id === currentUser.id) return;
+
+    const willFollow = !isUserFollowing(usr.id);
+
+    try {
+      await followUser(usr.id);
+
+      // If we followed/unfollowed displayedUser themselves:
+      if (displayedUser && usr.id === displayedUser.id) {
+        setFollowersCount((prev) => (willFollow ? prev + 1 : Math.max(0, prev - 1)));
+      }
+
+      // If we are viewing our own "Following" modal and unfollowed someone:
+      if (isOwnProfile && showFollowingModal && !willFollow) {
+        setFollowingCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (err: any) {
+      console.warn('Modal follow toggle error:', err);
     }
   };
 
@@ -715,11 +798,10 @@ export const ProfilePage: React.FC = () => {
   };
 
   // Filter users for followers/following list modals
-  const activeUserPool = supabaseProfiles;
-  const sampleFollowList = activeUserPool.filter(
+  const filteredModalUsers = modalFollowUsers.filter(
     (u) =>
-      u.name.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
-      u.username.toLowerCase().includes(modalSearchQuery.toLowerCase())
+      (u.name || '').toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
+      (u.username || '').toLowerCase().includes(modalSearchQuery.toLowerCase())
   );
 
   return (
@@ -1482,8 +1564,9 @@ export const ProfilePage: React.FC = () => {
                   onClick={() => {
                     setShowFollowersModal(false);
                     setShowFollowingModal(false);
+                    setModalSearchQuery('');
                   }}
-                  className="p-1.5 rounded-xl bg-slate-800 text-slate-400"
+                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1494,7 +1577,7 @@ export const ProfilePage: React.FC = () => {
                 <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder={showFollowersModal ? "Search followers..." : "Search following..."}
                   value={modalSearchQuery}
                   onChange={(e) => setModalSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-purple-500"
@@ -1502,43 +1585,82 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Users List */}
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {sampleFollowList.map((usr) => (
-                  <div
-                    key={usr.id}
-                    className="flex items-center justify-between p-2 rounded-2xl bg-slate-950/50 hover:bg-slate-800/50 transition border border-slate-800/50"
-                  >
-                    <div
-                      onClick={() => {
-                        openUserProfile(usr);
-                        setShowFollowersModal(false);
-                        setShowFollowingModal(false);
-                      }}
-                      className="flex items-center gap-3 cursor-pointer"
-                    >
-                      <img
-                        src={usr.avatar}
-                        alt={usr.name}
-                        className="w-10 h-10 rounded-full object-cover border border-purple-500/30"
-                      />
-                      <div>
-                        <h4 className="text-xs font-bold text-white hover:text-purple-400">
-                          {usr.name}
-                        </h4>
-                        <p className="text-[11px] text-purple-300">@{usr.username}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        addToast('info', 'Follow Status Updated', `Updated status for @${usr.username}`);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px]"
-                    >
-                      {usr.isFollowing ? 'Following' : 'Follow'}
-                    </button>
+              <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                {isLoadingModalFollowUsers ? (
+                  <div className="py-8 flex flex-col items-center justify-center space-y-2">
+                    <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+                    <p className="text-xs text-slate-400">Loading {showFollowersModal ? 'followers' : 'following'}...</p>
                   </div>
-                ))}
+                ) : filteredModalUsers.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs space-y-1">
+                    <p className="font-semibold text-slate-300">
+                      {modalSearchQuery
+                        ? 'No matching users found.'
+                        : showFollowersModal
+                        ? 'No followers yet.'
+                        : 'Not following anyone yet.'}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      {modalSearchQuery ? 'Try another search term.' : 'Connect and discover people on VERIXA!'}
+                    </p>
+                  </div>
+                ) : (
+                  filteredModalUsers.map((usr) => {
+                    const isSelf = currentUser?.id === usr.id;
+                    const isFollowedByMe = isUserFollowing(usr.id);
+
+                    return (
+                      <div
+                        key={usr.id}
+                        className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/60 hover:bg-slate-800/60 transition border border-slate-800/60"
+                      >
+                        <div
+                          onClick={() => {
+                            openUserProfile(usr.id);
+                            setShowFollowersModal(false);
+                            setShowFollowingModal(false);
+                            setModalSearchQuery('');
+                          }}
+                          className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0 mr-3"
+                        >
+                          <img
+                            src={usr.avatar}
+                            alt={usr.name}
+                            className="w-10 h-10 rounded-full object-cover border border-purple-500/30 group-hover:border-purple-400 transition flex-shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="text-xs font-bold text-white group-hover:text-purple-400 transition truncate">
+                                {usr.name}
+                              </h4>
+                              {usr.verified && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-purple-300 truncate">@{usr.username}</p>
+                          </div>
+                        </div>
+
+                        {isSelf ? (
+                          <span className="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 font-semibold text-[11px] flex-shrink-0">
+                            You
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleModalFollowToggle(usr)}
+                            className={`px-3.5 py-1.5 rounded-xl font-bold text-[11px] transition duration-200 flex-shrink-0 ${
+                              isFollowedByMe
+                                ? 'bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 text-slate-300 border border-slate-700'
+                                : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md shadow-purple-500/20'
+                            }`}
+                          >
+                            {isFollowedByMe ? 'Following' : 'Follow'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </motion.div>
           </div>
@@ -2431,8 +2553,8 @@ export const ProfilePage: React.FC = () => {
 
       {/* Active Profile Story Modal */}
       {showStoryModal && profileActiveStories.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-xl animate-in fade-in">
-          <div className="relative w-full max-w-sm h-[80vh] max-h-[680px] bg-slate-950 rounded-3xl overflow-hidden border border-purple-500/30 shadow-2xl flex flex-col">
+        <div className="story-viewer-backdrop fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-xl animate-in fade-in">
+          <div className="story-viewer-card relative w-full max-w-sm h-[80vh] max-h-[680px] bg-slate-950 rounded-3xl overflow-hidden border border-purple-500/30 shadow-2xl flex flex-col">
             {/* Progress indicator bars */}
             <div className="absolute top-3 inset-x-3 z-30 flex gap-1.5">
               {profileActiveStories.map((_, idx) => (
@@ -2481,7 +2603,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {/* Story Media Viewer */}
-            <div className="relative flex-1 bg-black flex items-center justify-center">
+            <div className="story-viewer-media relative flex-1 bg-black flex items-center justify-center">
               {profileActiveStories[activeStoryIdx]?.type === 'video' ||
               profileActiveStories[activeStoryIdx]?.mediaType === 'video' ||
               profileActiveStories[activeStoryIdx]?.mediaUrl?.includes('.mp4') ? (

@@ -218,6 +218,17 @@ export async function getUserProfile(uid: string): Promise<User | null> {
       return null;
     }
 
+    let realFollowersCount = data.followers_count ?? 0;
+    let realFollowingCount = data.following_count ?? 0;
+    try {
+      const [{ count: fCount }, { count: fingCount }] = await Promise.all([
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', data.id),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', data.id),
+      ]);
+      if (typeof fCount === 'number') realFollowersCount = fCount;
+      if (typeof fingCount === 'number') realFollowingCount = fingCount;
+    } catch {}
+
     const finalAvatar = getSafeAvatar(data.avatar, data.name || data.username, data.id);
     const mapped: User = {
       id: data.id,
@@ -229,8 +240,8 @@ export async function getUserProfile(uid: string): Promise<User | null> {
       verified: data.verified ?? true,
       aiTrustBadge: data.ai_trust_badge || 'Verified Human',
       safetyScore: data.safety_score ?? 100,
-      followersCount: data.followers_count ?? 0,
-      followingCount: data.following_count ?? 0,
+      followersCount: realFollowersCount,
+      followingCount: realFollowingCount,
       postsCount: data.posts_count ?? 0,
       role: data.role || 'Member',
       joinedDate: data.created_at ? new Date(data.created_at).toLocaleDateString() : 'Joined Recently',
@@ -1366,11 +1377,32 @@ export function subscribeReelComments(
 export async function checkIsFollowing(followerId: string, followingId: string): Promise<boolean> {
   if (!followerId || !followingId || followerId === followingId) return false;
   try {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let resolvedFollowerId = followerId;
+    let resolvedFollowingId = followingId;
+
+    if (!uuidRegex.test(resolvedFollowerId)) {
+      const { data: fProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${followerId},username.eq.${followerId.toLowerCase()}`)
+        .maybeSingle();
+      if (fProfile?.id) resolvedFollowerId = fProfile.id;
+    }
+    if (!uuidRegex.test(resolvedFollowingId)) {
+      const { data: fingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${followingId},username.eq.${followingId.toLowerCase()}`)
+        .maybeSingle();
+      if (fingProfile?.id) resolvedFollowingId = fingProfile.id;
+    }
+
     const { data } = await supabase
       .from('follows')
       .select('id')
-      .eq('follower_id', followerId)
-      .eq('following_id', followingId)
+      .eq('follower_id', resolvedFollowerId)
+      .eq('following_id', resolvedFollowingId)
       .maybeSingle();
     return !!data;
   } catch {
@@ -1380,6 +1412,45 @@ export async function checkIsFollowing(followerId: string, followingId: string):
 
 export async function getUserFollowers(userId: string): Promise<User[]> {
   try {
+    if (!userId) return [];
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let targetId = userId;
+    if (!uuidRegex.test(targetId)) {
+      const { data: p } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${targetId},username.eq.${targetId.toLowerCase()}`)
+        .maybeSingle();
+      if (p?.id) targetId = p.id;
+    }
+
+    // Try backend server endpoint first
+    try {
+      const res = await fetch(`/api/users/${targetId}/followers`);
+      if (res.ok) {
+        const body = await res.json();
+        if (body && Array.isArray(body.followers) && body.followers.length > 0) {
+          const mapped: User[] = body.followers.map((p: any) => ({
+            id: p.id,
+            username: p.username || 'user',
+            name: p.name || p.username || 'Member',
+            avatar: getSafeAvatar(p.avatar, p.name || p.username, p.id),
+            bio: p.bio || '',
+            verified: p.verified ?? true,
+            aiTrustBadge: p.ai_trust_badge || 'Verified Human',
+            safetyScore: p.safety_score ?? 100,
+            followersCount: p.followers_count ?? 0,
+            followingCount: p.following_count ?? 0,
+            postsCount: p.posts_count ?? 0,
+            role: p.role || 'Member',
+            joinedDate: '',
+          }));
+          return await Promise.all(mapped.map((u) => resolveUserProfileSignedUrls(u)));
+        }
+      }
+    } catch {}
+
+    // Fallback directly to Supabase client
     const { data, error } = await supabase
       .from('follows')
       .select(`
@@ -1399,7 +1470,7 @@ export async function getUserFollowers(userId: string): Promise<User[]> {
           role
         )
       `)
-      .eq('following_id', userId);
+      .eq('following_id', targetId);
 
     if (error || !data) return [];
     const users: User[] = data
@@ -1408,7 +1479,7 @@ export async function getUserFollowers(userId: string): Promise<User[]> {
         id: row.profiles.id,
         username: row.profiles.username || 'user',
         name: row.profiles.name || row.profiles.username || 'Member',
-        avatar: row.profiles.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+        avatar: getSafeAvatar(row.profiles.avatar, row.profiles.name || row.profiles.username, row.profiles.id),
         bio: row.profiles.bio || '',
         verified: row.profiles.verified ?? true,
         aiTrustBadge: row.profiles.ai_trust_badge || 'Verified Human',
@@ -1428,6 +1499,45 @@ export async function getUserFollowers(userId: string): Promise<User[]> {
 
 export async function getUserFollowing(userId: string): Promise<User[]> {
   try {
+    if (!userId) return [];
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let targetId = userId;
+    if (!uuidRegex.test(targetId)) {
+      const { data: p } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${targetId},username.eq.${targetId.toLowerCase()}`)
+        .maybeSingle();
+      if (p?.id) targetId = p.id;
+    }
+
+    // Try backend server endpoint first
+    try {
+      const res = await fetch(`/api/users/${targetId}/following`);
+      if (res.ok) {
+        const body = await res.json();
+        if (body && Array.isArray(body.following) && body.following.length > 0) {
+          const mapped: User[] = body.following.map((p: any) => ({
+            id: p.id,
+            username: p.username || 'user',
+            name: p.name || p.username || 'Member',
+            avatar: getSafeAvatar(p.avatar, p.name || p.username, p.id),
+            bio: p.bio || '',
+            verified: p.verified ?? true,
+            aiTrustBadge: p.ai_trust_badge || 'Verified Human',
+            safetyScore: p.safety_score ?? 100,
+            followersCount: p.followers_count ?? 0,
+            followingCount: p.following_count ?? 0,
+            postsCount: p.posts_count ?? 0,
+            role: p.role || 'Member',
+            joinedDate: '',
+          }));
+          return await Promise.all(mapped.map((u) => resolveUserProfileSignedUrls(u)));
+        }
+      }
+    } catch {}
+
+    // Fallback directly to Supabase client
     const { data, error } = await supabase
       .from('follows')
       .select(`
@@ -1447,7 +1557,7 @@ export async function getUserFollowing(userId: string): Promise<User[]> {
           role
         )
       `)
-      .eq('follower_id', userId);
+      .eq('follower_id', targetId);
 
     if (error || !data) return [];
     const users: User[] = data
@@ -1456,7 +1566,7 @@ export async function getUserFollowing(userId: string): Promise<User[]> {
         id: row.profiles.id,
         username: row.profiles.username || 'user',
         name: row.profiles.name || row.profiles.username || 'Member',
-        avatar: row.profiles.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+        avatar: getSafeAvatar(row.profiles.avatar, row.profiles.name || row.profiles.username, row.profiles.id),
         bio: row.profiles.bio || '',
         verified: row.profiles.verified ?? true,
         aiTrustBadge: row.profiles.ai_trust_badge || 'Verified Human',
@@ -1483,41 +1593,104 @@ export async function toggleFollowUser(
     throw new Error('You cannot follow yourself.');
   }
 
-  let shouldFollow: boolean;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let resolvedFollowerId = followerId;
+  let resolvedFollowingId = followingId;
 
+  if (!uuidRegex.test(resolvedFollowerId)) {
+    const { data: fProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .or(`id.eq.${followerId},username.eq.${followerId.toLowerCase()}`)
+      .maybeSingle();
+    if (fProfile?.id) resolvedFollowerId = fProfile.id;
+  }
+  if (!uuidRegex.test(resolvedFollowingId)) {
+    const { data: fingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .or(`id.eq.${followingId},username.eq.${followingId.toLowerCase()}`)
+      .maybeSingle();
+    if (fingProfile?.id) resolvedFollowingId = fingProfile.id;
+  }
+
+  if (resolvedFollowerId === resolvedFollowingId) {
+    throw new Error('You cannot follow yourself.');
+  }
+
+  let shouldFollow: boolean;
   if (targetFollowing !== undefined) {
     shouldFollow = targetFollowing;
   } else {
     const { data } = await supabase
       .from('follows')
       .select('id')
-      .eq('follower_id', followerId)
-      .eq('following_id', followingId)
+      .eq('follower_id', resolvedFollowerId)
+      .eq('following_id', resolvedFollowingId)
       .maybeSingle();
     shouldFollow = !data;
   }
 
+  let success = false;
+
+  // 1. Attempt direct Supabase client operation (authenticated session)
   if (!shouldFollow) {
-    // Unfollow: delete row. Note: following_count and followers_count updated automatically by DB trigger (on_follow_added_or_removed)
-    const { error } = await supabase.from('follows').delete().eq('follower_id', followerId).eq('following_id', followingId);
-    if (error) {
-      console.error('Supabase unfollow error:', error.message);
-      throw new Error(`Failed to unfollow user: ${error.message}`);
+    const { error } = await supabase
+      .from('follows')
+      .delete()
+      .eq('follower_id', resolvedFollowerId)
+      .eq('following_id', resolvedFollowingId);
+    if (!error) {
+      success = true;
     }
-    return false;
   } else {
-    // Follow: insert row. Note: following_count and followers_count updated automatically by DB trigger (on_follow_added_or_removed)
-    const { error } = await supabase.from('follows').upsert({
-      follower_id: followerId,
-      following_id: followingId,
-      created_at: new Date().toISOString(),
-    }, { onConflict: 'follower_id,following_id' });
-    if (error) {
-      console.error('Supabase follow error:', error.message);
-      throw new Error(`Failed to follow user: ${error.message}`);
+    const { error } = await supabase.from('follows').upsert(
+      {
+        follower_id: resolvedFollowerId,
+        following_id: resolvedFollowingId,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: 'follower_id,following_id' }
+    );
+    if (!error) {
+      success = true;
+      createNotification({
+        recipientId: resolvedFollowingId,
+        senderId: resolvedFollowerId,
+        type: 'follow',
+        message: 'started following you',
+      }).catch(() => {});
     }
-    return true;
   }
+
+  // 2. If client-side failed (e.g. RLS limitation), route through server endpoint
+  if (!success) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (sessionData?.session?.access_token) {
+        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+      }
+
+      const res = await fetch(`/api/users/${resolvedFollowingId}/follow`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          followerId: resolvedFollowerId,
+          targetFollowing: shouldFollow,
+        }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        return Boolean(result.following);
+      }
+    } catch (apiErr) {
+      console.warn('Server follow fallback notice:', apiErr);
+    }
+  }
+
+  return shouldFollow;
 }
 
 // ================= NOTIFICATIONS ================= //
