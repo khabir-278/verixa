@@ -1442,7 +1442,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                           e.stopPropagation();
                           setIsStoryMenuOpen((prev) => !prev);
                         }}
-                        className={`p-2 rounded-full transition shadow-lg cursor-pointer ${
+                        className={`story-header-options-btn p-2 rounded-full transition shadow-lg cursor-pointer ${
                           isStoryMenuOpen
                             ? 'bg-purple-600 text-white border border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.5)]'
                             : 'bg-black/50 hover:bg-black/80 text-slate-300 hover:text-white border border-white/10 hover:border-white/30'
@@ -1457,7 +1457,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                           setActiveStoryGroup(null);
                           setActiveStoryIndex(0);
                         }}
-                        className="p-2 rounded-full bg-black/50 hover:bg-black/80 text-slate-300 hover:text-white border border-white/10 hover:border-white/30 transition shadow-lg cursor-pointer"
+                        className="story-header-close-btn p-2 rounded-full bg-black/50 hover:bg-black/80 text-slate-300 hover:text-white border border-white/10 hover:border-white/30 transition shadow-lg cursor-pointer"
                         title="Close Story Viewer (Esc)"
                       >
                         ✕
@@ -1692,7 +1692,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
 
                             await likeStory(liveCurrentStory.id, activeStoryGroup.userId, userName, nextLiked);
                           }}
-                          className={`w-10 h-10 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all duration-200 active:scale-90 shadow-xl cursor-pointer shrink-0 ${
+                          className={`story-footer-like-btn w-10 h-10 rounded-full backdrop-blur-xl border flex items-center justify-center transition-all duration-200 active:scale-90 shadow-xl cursor-pointer shrink-0 ${
                             isLiked
                               ? 'bg-rose-500/25 border-rose-500/70 text-rose-300 hover:bg-rose-500/35 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
                               : 'bg-black/70 border-white/20 text-slate-300 hover:text-white hover:border-white/40'
@@ -1715,7 +1715,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                   <AnimatePresence>
                     {isStoryMenuOpen && (
                       <div
-                        className="absolute inset-0 z-40 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-150"
+                        className="story-options-backdrop absolute inset-0 z-40 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-150"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsStoryMenuOpen(false);
@@ -1727,7 +1727,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                           exit={{ opacity: 0, y: 30, scale: 0.95 }}
                           transition={{ duration: 0.18 }}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-full max-w-sm bg-slate-900/95 border border-slate-700/80 rounded-3xl p-4 shadow-2xl backdrop-blur-2xl space-y-2.5"
+                          className="story-options-modal w-full max-w-sm bg-slate-900/95 border border-slate-700/80 rounded-3xl p-4 shadow-2xl backdrop-blur-2xl space-y-2.5"
                         >
                           {/* Menu Header */}
                           <div className="flex items-center justify-between pb-2 border-b border-slate-800 px-1">
@@ -1756,15 +1756,15 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                                   setIsStoryMenuOpen(false);
                                   handleOpenStoryViewers(liveCurrentStory);
                                 }}
-                                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-purple-500/30 transition group text-left cursor-pointer"
+                                className="story-options-item w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-purple-500/30 transition group text-left cursor-pointer"
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center group-hover:bg-purple-500/30 transition shrink-0">
                                     <Users className="w-4 h-4" />
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-semibold text-white group-hover:text-purple-300 transition">Viewers & Insights</p>
-                                    <p className="text-[11px] text-slate-400 truncate">{viewsCount} views • {likesCount} likes</p>
+                                    <p className="story-option-title text-xs font-semibold text-white group-hover:text-purple-300 transition">Viewers & Insights</p>
+                                    <p className="story-option-desc text-[11px] text-slate-400 truncate">{viewsCount} views • {likesCount} likes</p>
                                   </div>
                                 </div>
                                 <Eye className="w-4 h-4 text-cyan-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
@@ -1778,15 +1778,15 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                                 setIsStoryMenuOpen(false);
                                 handleShareStory(liveCurrentStory);
                               }}
-                              className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-blue-500/30 transition group text-left cursor-pointer"
+                              className="story-options-item w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-blue-500/30 transition group text-left cursor-pointer"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center group-hover:bg-blue-500/30 transition shrink-0">
                                   <Share2 className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="text-xs font-semibold text-white group-hover:text-blue-300 transition">Share Story</p>
-                                  <p className="text-[11px] text-slate-400 truncate">Copy link to clipboard</p>
+                                  <p className="story-option-title text-xs font-semibold text-white group-hover:text-blue-300 transition">Share Story</p>
+                                  <p className="story-option-desc text-[11px] text-slate-400 truncate">Copy link to clipboard</p>
                                 </div>
                               </div>
                             </button>
@@ -1798,15 +1798,15 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                                 setIsStoryMenuOpen(false);
                                 handleDownloadStoryMedia(storyMedia, isVideo);
                               }}
-                              className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-emerald-500/30 transition group text-left cursor-pointer"
+                              className="story-options-item w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/5 hover:border-emerald-500/30 transition group text-left cursor-pointer"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center group-hover:bg-emerald-500/30 transition shrink-0">
                                   <Download className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="text-xs font-semibold text-white group-hover:text-emerald-300 transition">Save Media</p>
-                                  <p className="text-[11px] text-slate-400 truncate">Download {isVideo ? 'video' : 'photo'} to your device</p>
+                                  <p className="story-option-title text-xs font-semibold text-white group-hover:text-emerald-300 transition">Save Media</p>
+                                  <p className="story-option-desc text-[11px] text-slate-400 truncate">Download {isVideo ? 'video' : 'photo'} to your device</p>
                                 </div>
                               </div>
                             </button>
@@ -1820,7 +1820,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                                   handleDeleteCurrentStory(liveCurrentStory.id);
                                 }}
                                 disabled={isDeletingStory}
-                                className="w-full flex items-center justify-between p-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-[0.98] border border-rose-500/25 hover:border-rose-500/40 transition group text-left cursor-pointer"
+                                className="story-options-item story-options-danger w-full flex items-center justify-between p-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-[0.98] border border-rose-500/25 hover:border-rose-500/40 transition group text-left cursor-pointer"
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center group-hover:bg-rose-500/30 transition shrink-0">
@@ -1831,8 +1831,8 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                                     )}
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-semibold text-rose-300 group-hover:text-rose-200 transition">Delete Story</p>
-                                    <p className="text-[11px] text-rose-400/80 truncate">Permanently remove this story</p>
+                                    <p className="story-option-title text-xs font-semibold text-rose-300 group-hover:text-rose-200 transition">Delete Story</p>
+                                    <p className="story-option-desc text-[11px] text-rose-400/80 truncate">Permanently remove this story</p>
                                   </div>
                                 </div>
                               </button>
@@ -1846,15 +1846,15 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                                   setIsStoryMenuOpen(false);
                                   addToast('info', 'Report Submitted', 'Thank you. This story has been flagged for moderation review.');
                                 }}
-                                className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] border border-amber-500/25 transition group text-left cursor-pointer"
+                                className="story-options-item story-options-warning w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] border border-amber-500/25 transition group text-left cursor-pointer"
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:bg-amber-500/30 transition shrink-0">
                                     <Shield className="w-4 h-4" />
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-semibold text-amber-300">Report Story</p>
-                                    <p className="text-[11px] text-amber-400/80">Flag content to safety team</p>
+                                    <p className="story-option-title text-xs font-semibold text-amber-300">Report Story</p>
+                                    <p className="story-option-desc text-[11px] text-amber-400/80">Flag content to safety team</p>
                                   </div>
                                 </div>
                               </button>
@@ -1866,7 +1866,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
                             <button
                               type="button"
                               onClick={() => setIsStoryMenuOpen(false)}
-                              className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                              className="story-options-cancel w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition cursor-pointer"
                             >
                               Cancel
                             </button>

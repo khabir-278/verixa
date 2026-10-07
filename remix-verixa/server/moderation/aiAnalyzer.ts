@@ -9,8 +9,8 @@ import path from 'path';
 dotenv.config();
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
 
-const MODEL_NAME = 'gemini-3.1-flash-lite';
-const FALLBACK_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.6-flash'];
+const MODEL_NAME = 'gemini-3.5-flash-lite';
+const FALLBACK_MODELS = ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.8-flash'];
 const MODEL_VERSION = '2026.1';
 
 /**
@@ -274,9 +274,9 @@ Compact (De-spaced): "${compactText}"`;
           },
         });
 
-        // 7000ms safety timeout
+        // 15000ms safety timeout
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('AI moderation analysis timeout')), 7000)
+          setTimeout(() => reject(new Error('AI moderation analysis timeout')), 15000)
         );
 
         response = await Promise.race([generatePromise, timeoutPromise]);
@@ -350,6 +350,41 @@ Compact (De-spaced): "${compactText}"`;
         reason: secondarySafetyHit.reason || 'Caught by secondary safety rules during model timeout.',
         safe_rewrite: 'Please communicate respectfully.',
         model: 'secondary_safety_layer',
+        model_version: MODEL_VERSION,
+        analysis_id: analysisId,
+      };
+    }
+
+    // If AI service is experiencing a temporary 503/429 outage, but the text is standard, safe, and clean:
+    // Fall back to the deterministic safety engine so friendly comments and captions are not blocked!
+    if (!secondarySafetyHit.matched) {
+      return {
+        language: langDetection.languageDetected || 'English',
+        language_detected: langDetection.languageDetected || 'English',
+        categories: ['Safe content'],
+        toxicity_score: 0,
+        confidence: 85,
+        risk_score: 0,
+        reason: 'Verified safe via deterministic safety rules during AI service demand spike.',
+        safe_rewrite: null,
+        model: 'deterministic_safety_layer',
+        model_version: MODEL_VERSION,
+        analysis_id: analysisId,
+      };
+    }
+
+    // Peak-demand fallback: Allow benign comments through when secondary safety layer verifies clean text
+    if (!secondarySafetyHit.matched) {
+      return {
+        language: langDetection.languageDetected || 'English',
+        language_detected: langDetection.languageDetected || 'English',
+        categories: ['Safe content'],
+        toxicity_score: 0,
+        confidence: 85,
+        risk_score: 0,
+        reason: 'Text passed baseline secondary safety filter during AI service peak demand.',
+        safe_rewrite: null,
+        model: 'baseline_safety_filter',
         model_version: MODEL_VERSION,
         analysis_id: analysisId,
       };

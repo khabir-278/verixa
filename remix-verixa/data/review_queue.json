@@ -1353,5 +1353,22 @@
     "claimed_by": null,
     "created_at": "2026-10-07T15:01:50.042Z",
     "updated_at": "2026-10-07T15:01:50.042Z"
+  },
+  {
+    "id": "rev_1791388111151_ocsqs",
+    "item_type": "quarantine",
+    "reference_id": "mod_1791388082535_6ja1ejg",
+    "analysis_id": "mod_1791388082535_6ja1ejg",
+    "content_id": "mod_1791388082535_6ja1ejg",
+    "content_type": "comment",
+    "user_id": "anonymous",
+    "priority": "HIGH",
+    "risk_score": 50,
+    "category": "QUARANTINE: AI_ANALYSIS_ERROR",
+    "content_snippet": "This looks amazing!",
+    "status": "PENDING",
+    "claimed_by": null,
+    "created_at": "2026-10-07T15:48:31.151Z",
+    "updated_at": "2026-10-07T15:48:31.151Z"
   }
 ]

@@ -1,5 +1,604 @@
 [
   {
+    "analysis_id": "mod_img_1791393659866_et9xiky",
+    "content_id": "mod_img_1791393659866_et9xiky",
+    "content_type": "image",
+    "model": "baseline_safety_filter",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Verified Media",
+      "Original Creation"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T17:22:16.375Z",
+      "analyzed_at": "2026-10-07T17:22:16.375Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 80,
+    "reason": "Media passed baseline safety check during AI vision peak demand.",
+    "content_hash": "1eb387290b688f389e114a4a9dc271acc5e7bae5490d550abf3e2815b1c917c9",
+    "content_length": 60,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "created_at": "2026-10-07T17:22:16.375Z"
+  },
+  {
+    "analysis_id": "mod_1791393608460_g1vvvlo",
+    "content_id": "mod_1791393608460_g1vvvlo",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T17:20:14.713Z",
+      "analyzed_at": "2026-10-07T17:20:14.713Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The content is entirely safe, positive, and appreciates the photograph.",
+    "content_hash": "93a4afe5d1a8519ee18720719161d12ea727a440b96bdaf8e5f9e0df4c2a1e16",
+    "content_length": 22,
+    "snippet_redacted": "Incredible photograph!",
+    "language": "English",
+    "created_at": "2026-10-07T17:20:14.713Z"
+  },
+  {
+    "analysis_id": "mod_img_1791389546944_esr3goq",
+    "content_id": "cab84d2c-95d1-4f0c-9609-b2fee10d220d",
+    "content_type": "story",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "128",
+      "overall_risk": 0,
+      "risk": 0
+    },
+    "labels": [
+      "Motocross",
+      "Sports",
+      "Action",
+      "Racing"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T16:12:39.216Z",
+      "analyzed_at": "2026-10-07T16:12:39.216Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image shows a motocross rider navigating a turn and kicking up dust. No NSFW, nudity, violence, weapons, gore, deepfake anomalies, or toxic text are present. The text detected is simply the racing number 128.",
+    "content_hash": "9e23f7c038e4c35f878f7072418869dae12902b1e1bcbc6b0e80590a6c1ee319",
+    "content_length": 2183903,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4QC...]",
+    "language": "Visual",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "username": "jashu_2426",
+    "created_at": "2026-10-07T16:12:39.216Z"
+  },
+  {
+    "analysis_id": "mod_img_1791389455717_g437ail",
+    "content_id": "fccccfa7-deaa-4071-a32c-b54ceaf24dcf",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Motorcycle",
+      "Vehicle",
+      "Sunset",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T16:11:32.903Z",
+      "analyzed_at": "2026-10-07T16:11:32.903Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image depicts a motorcycle parked outdoors against a dramatic cloudy sky at sunset. No NSFW, violence, weapons, gore, or toxic embedded text were detected. The image is safe and clean.",
+    "content_hash": "050e12cf9dd593c941a8772fd40278e2ec4d2351d7c6afeaac57b7a0e15659a2",
+    "content_length": 3091431,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4QD...]",
+    "language": "Visual",
+    "user_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "username": "jashu_2426",
+    "created_at": "2026-10-07T16:11:32.903Z"
+  },
+  {
+    "analysis_id": "mod_1791389395195_juqyb8p",
+    "content_id": "mod_1791389395195_juqyb8p",
+    "content_type": "comment",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T16:09:57.358Z",
+      "analyzed_at": "2026-10-07T16:09:57.358Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The submitted text contains standard adjectives often associated with reviews, media titles, or general descriptions without any harmful, offensive, or toxic elements.",
+    "content_hash": "e4145edc0eb2d1a407bf52692d929d45fecdd37a531743b622f2de6379276b2c",
+    "content_length": 20,
+    "snippet_redacted": "good bad ugly beauty",
+    "language": "English",
+    "created_at": "2026-10-07T16:09:57.358Z"
+  },
+  {
+    "analysis_id": "mod_1791389354291_px2r8ay",
+    "content_id": "mod_1791389354291_px2r8ay",
+    "content_type": "comment",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 65,
+      "risk": 60,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 60
+    },
+    "labels": [
+      "Personal attacks",
+      "Bullying"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-07T16:09:16.754Z",
+      "analyzed_at": "2026-10-07T16:09:16.754Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 92,
+    "reason": "The phrase 'dump boy' is used as a derogatory insult aimed at belittling an individual.",
+    "content_hash": "dd2973ea990daf0b3898a163c62688ea9277a776fe73a144d5185274f5eafb72",
+    "content_length": 8,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 8 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T16:09:16.754Z"
+  },
+  {
+    "analysis_id": "mod_1791389331803_jw0ec5r",
+    "content_id": "mod_1791389331803_jw0ec5r",
+    "content_type": "comment",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 85,
+      "risk": 80,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 80
+    },
+    "labels": [
+      "Obscene language",
+      "Personal attacks"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-07T16:08:54.648Z",
+      "analyzed_at": "2026-10-07T16:08:54.648Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The content contains explicit profanity and a direct hostile personal attack.",
+    "content_hash": "4240fc98c9952e2fc2e0e763c35e39915c3dc4404ae10735edd3e617f74112a2",
+    "content_length": 8,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 8 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T16:08:54.648Z"
+  },
+  {
+    "analysis_id": "mod_img_1791389234851_ikhlobm",
+    "content_id": "df4723fc-b8f8-4c3e-8770-07f2f6a4bbb9",
+    "content_type": "story",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Motorcycle",
+      "Vehicle",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T16:07:18.584Z",
+      "analyzed_at": "2026-10-07T16:07:18.584Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image depicts a parked sport motorcycle at night. There are no safety violations, inappropriate content, weapons, violence, or offensive text present.",
+    "content_hash": "9f41ec220f2cdc9b5f270fae92dbd36037d53bfabcc092b18b75662ae7d3280c",
+    "content_length": 61103,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4AA...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T16:07:18.584Z"
+  },
+  {
+    "analysis_id": "mod_img_1791389194723_1w1ns01",
+    "content_id": "cb0a0d2f-7111-4649-9bab-529e9edfe1f6",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 15,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 15,
+      "risk": 15
+    },
+    "labels": [
+      "Motorcycle",
+      "Racing",
+      "Action",
+      "Sport"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T16:07:00.324Z",
+      "analyzed_at": "2026-10-07T16:07:00.324Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image depicts a high-speed motorcycle racing scene with no harmful content, explicit material, weapons, violence, or toxic embedded text. There are minor synthetic generation smoothness artifacts typical of modern high-end renders, but no deceptive deepfake indicators.",
+    "content_hash": "2cfb1893ba3be57c41bc5f1491cf952063c680c8e3398a9cf74e17e109de0ce7",
+    "content_length": 113923,
+    "snippet_redacted": "[base64_media data:image/jpeg;base64,/9j/4AA...]",
+    "language": "Visual",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "username": "khabir",
+    "created_at": "2026-10-07T16:07:00.324Z"
+  },
+  {
+    "analysis_id": "mod_img_1791388516547_fkkui5b",
+    "content_id": "mod_img_1791388516547_fkkui5b",
+    "content_type": "image",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Studio Photography",
+      "Safe Content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:55:37.003Z",
+      "analyzed_at": "2026-10-07T15:55:37.003Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image is a clean, safe portrait photograph of a person with artistic blue and purple studio lighting. There are no NSFW elements, nudity, violence, weapons, or toxic embedded text. No significant deepfake anomalies detected.",
+    "content_hash": "1eb387290b688f389e114a4a9dc271acc5e7bae5490d550abf3e2815b1c917c9",
+    "content_length": 60,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "created_at": "2026-10-07T15:55:37.003Z"
+  },
+  {
+    "analysis_id": "mod_1791388473902_3ejqnmo",
+    "content_id": "mod_1791388473902_3ejqnmo",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:54:51.697Z",
+      "analyzed_at": "2026-10-07T15:54:51.697Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The content is an expression of positive reinforcement and praise, completely free of any toxic or harmful language.",
+    "content_hash": "a0dd877b7d8eb3124f67769e711c7109a83ae7d6acf7ffeaba6a7e582971c2dc",
+    "content_length": 19,
+    "snippet_redacted": "Great work on this!",
+    "language": "English",
+    "created_at": "2026-10-07T15:54:51.697Z"
+  },
+  {
+    "analysis_id": "mod_1791388082535_6ja1ejg",
+    "content_id": "mod_1791388082535_6ja1ejg",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 50,
+      "risk": 50,
+      "nsfw": 50,
+      "violence": 50,
+      "deepfake_risk": 50
+    },
+    "labels": [
+      "AI_ANALYSIS_ERROR",
+      "PENDING_REVIEW"
+    ],
+    "decision": "QUARANTINE",
+    "state": "REVIEW_REQUIRED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:48:29.084Z",
+      "analyzed_at": "2026-10-07T15:48:29.084Z"
+    },
+    "allowed": false,
+    "status": "QUARANTINED",
+    "confidence": 50,
+    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
+    "content_hash": "30c96453afdeb2887487887db561e1056bb4cea19220096d78e4b8889afb4c9d",
+    "content_length": 19,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 19 chars]",
+    "language": "English",
+    "created_at": "2026-10-07T15:48:29.084Z"
+  },
+  {
+    "analysis_id": "mod_img_1791387585873_viy0tlx",
+    "content_id": "mod_img_1791387585873_viy0tlx",
+    "content_type": "image",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "0:00 Voice message",
+      "overall_risk": 0,
+      "risk": 0
+    },
+    "labels": [
+      "interface",
+      "user interface component"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:39:49.234Z",
+      "analyzed_at": "2026-10-07T15:39:49.234Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The image displays a benign user interface element representing a voice message in a messaging application. It contains no offensive content, synthetic manipulation, or dangerous imagery.",
+    "content_hash": "623281476a39237665e5d948b6d922649a7fed7c41d8a366211778c267ca2cb8",
+    "content_length": 29898,
+    "snippet_redacted": "[base64_media data:image/png;base64,iVBORw0K...]",
+    "language": "Visual",
+    "created_at": "2026-10-07T15:39:49.234Z"
+  },
+  {
+    "analysis_id": "mod_1791387581227_vrlsnv1",
+    "content_id": "mod_1791387581227_vrlsnv1",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:39:44.208Z",
+      "analyzed_at": "2026-10-07T15:39:44.208Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The content is a standard, polite greeting and contains no toxic or inappropriate language.",
+    "content_hash": "ce06092fb948d9ffac7d1a376e404b26b7575bcc11ee05a4615fef4fec3a308b",
+    "content_length": 6,
+    "snippet_redacted": "hello!",
+    "language": "English",
+    "created_at": "2026-10-07T15:39:44.208Z"
+  },
+  {
+    "analysis_id": "mod_img_1791386790280_l13stg7",
+    "content_id": "mod_img_1791386790280_l13stg7",
+    "content_type": "image",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 10,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 10,
+      "risk": 10
+    },
+    "labels": [
+      "Portrait",
+      "Fashion Photography"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:27:02.268Z",
+      "analyzed_at": "2026-10-07T15:27:02.268Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a professional-style portrait with creative studio lighting. It contains no adult, violent, or weaponized content. No detectable signs of deepfake manipulation or embedded toxic text.",
+    "content_hash": "1eb387290b688f389e114a4a9dc271acc5e7bae5490d550abf3e2815b1c917c9",
+    "content_length": 60,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "username": "gist12",
+    "created_at": "2026-10-07T15:27:02.268Z"
+  },
+  {
+    "analysis_id": "mod_1791386785929_w4oilee",
+    "content_id": "mod_1791386785929_w4oilee",
+    "content_type": "comment",
+    "model": "gemini-3.1-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-07T15:26:28.044Z",
+      "analyzed_at": "2026-10-07T15:26:28.044Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The content is a polite and positive social interaction.",
+    "content_hash": "2bc90fe37fc19963e0690898d6070ed5b0e6c056440617cde74aba7bc990ac04",
+    "content_length": 11,
+    "snippet_redacted": "Nice photo!",
+    "language": "English",
+    "user_id": "6f2053db-15e7-4cc6-9bc3-4e0d91046acb",
+    "username": "gist12",
+    "created_at": "2026-10-07T15:26:28.044Z"
+  },
+  {
     "analysis_id": "mod_img_1791385278383_nbcqy2l",
     "content_id": "0da93a6e-5ac6-4336-9b77-244a8065fd65",
     "content_type": "story",

@@ -807,18 +807,18 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-6 text-slate-100">
       {/* ================= PROFILE HEADER CARD ================= */}
-      <div className="relative rounded-3xl overflow-hidden bg-slate-900/80 border border-purple-500/20 backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.12)]">
+      <div className="profile-header-card relative rounded-3xl overflow-hidden bg-slate-900/80 border border-purple-500/20 backdrop-blur-xl shadow-[0_0_50px_rgba(147,51,234,0.12)]">
         {/* Cover Photo */}
-        <div className="relative h-44 sm:h-64 w-full bg-slate-950 overflow-hidden">
+        <div className="profile-cover-banner relative h-44 sm:h-64 w-full bg-slate-950 overflow-hidden">
           <img
             src={
               displayedUser.cover ||
               'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80'
             }
             alt="Cover"
-            className="w-full h-full object-cover opacity-80"
+            className="profile-cover-img w-full h-full object-cover opacity-80"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+          <div className="profile-cover-gradient absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
 
           {/* Top Right Quick Badges */}
           <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -833,7 +833,7 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Header Main Body */}
-        <div className="px-5 sm:px-8 pb-6 relative -mt-16 sm:-mt-20">
+        <div className="profile-header-body px-5 sm:px-8 pb-6 relative -mt-16 sm:-mt-20">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             {/* Avatar & Identifiers */}
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
@@ -878,9 +878,9 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* User Names & Badges */}
-              <div className="space-y-1.5">
+              <div className="profile-user-details space-y-1.5">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  <h1 className="profile-user-name text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                     {displayedUser.displayName || displayedUser.name}
                   </h1>
                   {displayedUser.verified && (
@@ -892,7 +892,7 @@ export const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs">
-                  <span className="text-purple-300 font-semibold">@{displayedUser.username}</span>
+                  <span className="profile-user-handle text-purple-300 font-semibold">@{displayedUser.username}</span>
                   <span className="text-slate-600">•</span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium text-[11px]" title="Verified Human">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />

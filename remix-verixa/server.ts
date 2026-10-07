@@ -3117,6 +3117,7 @@ async function startServer() {
             "**/tests/**",
             "**/*.log",
             "**/scratch/**",
+            "**/server/**",
           ],
         },
       },

@@ -349,20 +349,56 @@ input:-webkit-autofill:active {
   color: #0f172a !important;
 }
 
-/* 9. PROFILE PAGE HEADER (FIX FOR NAME BLENDING INTO COVER PHOTO) */
-[data-theme-mode="light"] .h-44 .bg-gradient-to-t,
-[data-theme-mode="light"] .sm\:h-64 .bg-gradient-to-t,
-[data-theme-mode="light"] .relative.h-44 .bg-gradient-to-t,
-[data-theme-mode="light"] .relative.sm\:h-64 .bg-gradient-to-t {
-  background-image: linear-gradient(to top, #ffffff 40%, rgba(255, 255, 255, 0.95) 75%, rgba(255, 255, 255, 0.5) 90%, transparent) !important;
+/* 9. PROFILE PAGE HEADER (NATURAL COVER BANNER & HIGH-CONTRAST DETAILS) */
+/* Keep cover banner natural and vibrant without any white gradient layer */
+[data-theme-mode="light"] .profile-cover-img {
+  opacity: 1 !important;
+}
+[data-theme-mode="light"] .profile-cover-gradient {
+  display: none !important;
 }
 
-/* Top right safety score badge on profile cover */
-[data-theme-mode="light"] .inline-flex.rounded-full.bg-slate-900\/80.border-emerald-500\/40 {
+/* Card Surface & Header Body */
+[data-theme-mode="light"] .profile-header-card {
   background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 0 1px 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Profile Picture Avatar */
+[data-theme-mode="light"] .profile-header-card img.rounded-full {
+  border-color: #ffffff !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* User Names & Identifiers (Clear dark text with optimal spacing) */
+[data-theme-mode="light"] .profile-user-details {
+  padding-top: 1.25rem !important;
+}
+[data-theme-mode="light"] .profile-user-name {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+[data-theme-mode="light"] .profile-user-handle {
+  color: #7e22ce !important;
+  font-weight: 600 !important;
+}
+[data-theme-mode="light"] .profile-header-body p {
+  color: #334155 !important;
+}
+
+/* Top right safety score badge on profile cover (Frosted light pill) */
+[data-theme-mode="light"] .profile-cover-banner button,
+[data-theme-mode="light"] .inline-flex.rounded-full.bg-slate-900\/80.border-emerald-500\/40 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
   border-color: #10b981 !important;
   color: #047857 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
+[data-theme-mode="light"] .profile-cover-banner button *,
 [data-theme-mode="light"] .inline-flex.rounded-full.bg-slate-900\/80.border-emerald-500\/40 * {
   color: #047857 !important;
 }
@@ -794,14 +830,31 @@ input:-webkit-autofill:active {
 [data-theme-mode="light"] .story-viewer-header span {
   color: #64748b !important;
 }
-[data-theme-mode="light"] .story-viewer-header button {
+[data-theme-mode="light"] .story-viewer-header button,
+[data-theme-mode="light"] .story-header-options-btn,
+[data-theme-mode="light"] .story-header-close-btn {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
 }
-[data-theme-mode="light"] .story-viewer-header button:hover {
+[data-theme-mode="light"] .story-viewer-header button svg,
+[data-theme-mode="light"] .story-header-options-btn svg {
+  color: #0f172a !important;
+  stroke: #0f172a !important;
+}
+[data-theme-mode="light"] .story-viewer-header button:hover,
+[data-theme-mode="light"] .story-header-options-btn:hover,
+[data-theme-mode="light"] .story-header-close-btn:hover {
   background-color: #e2e8f0 !important;
   color: #0f172a !important;
+}
+[data-theme-mode="light"] .story-header-options-btn.bg-purple-600 {
+  background-color: #9333ea !important;
+  border-color: #a855f7 !important;
+}
+[data-theme-mode="light"] .story-header-options-btn.bg-purple-600 svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 /* Bottom footer gradient */
@@ -824,8 +877,14 @@ input:-webkit-autofill:active {
 [data-theme-mode="light"] .story-activity-pill .text-cyan-400 {
   color: #0284c7 !important;
 }
-[data-theme-mode="light"] .story-activity-pill .text-cyan-400 svg {
+[data-theme-mode="light"] .story-activity-pill .text-cyan-400 svg,
+[data-theme-mode="light"] .story-activity-pill svg.lucide-eye {
   color: #0284c7 !important;
+  stroke: #0284c7 !important;
+  fill: none !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 [data-theme-mode="light"] .story-activity-pill .text-cyan-400 span {
   color: #0f172a !important;
@@ -886,44 +945,136 @@ input:-webkit-autofill:active {
   color: #94a3b8 !important;
 }
 
+/* Story Footer Icon-Only Like Button */
+[data-theme-mode="light"] .story-footer-like-btn,
 [data-theme-mode="light"] .story-viewer-footer button[title="Like story"] {
   background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  color: #475569 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
 }
+[data-theme-mode="light"] .story-footer-like-btn svg,
 [data-theme-mode="light"] .story-viewer-footer button[title="Like story"] svg {
   color: #64748b !important;
+  stroke: #64748b !important;
+  fill: none !important;
 }
+[data-theme-mode="light"] .story-footer-like-btn:hover,
+[data-theme-mode="light"] .story-viewer-footer button[title="Like story"]:hover {
+  background-color: #f8fafc !important;
+  border-color: #f43f5e !important;
+}
+[data-theme-mode="light"] .story-footer-like-btn:hover svg,
+[data-theme-mode="light"] .story-viewer-footer button[title="Like story"]:hover svg {
+  color: #e11d48 !important;
+  stroke: #e11d48 !important;
+}
+[data-theme-mode="light"] .story-footer-like-btn.bg-rose-500\/25,
 [data-theme-mode="light"] .story-viewer-footer button[title="Unlike story"] {
   background-color: #ffe4e6 !important;
   border: 1.5px solid #fda4af !important;
   box-shadow: 0 0 15px rgba(244, 63, 94, 0.3) !important;
 }
+[data-theme-mode="light"] .story-footer-like-btn.bg-rose-500\/25 svg,
 [data-theme-mode="light"] .story-viewer-footer button[title="Unlike story"] svg {
   color: #e11d48 !important;
   fill: #e11d48 !important;
+  stroke: #e11d48 !important;
 }
 
-/* Story Options 3-dots Menu */
+/* STORY OPTIONS 3-DOTS OVERLAY & MENU (Full Contrast Light Mode) */
+[data-theme-mode="light"] .story-options-backdrop {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+}
+[data-theme-mode="light"] .story-options-modal,
 [data-theme-mode="light"] .story-viewer-card .bg-slate-900\/95 {
   background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
 }
-[data-theme-mode="light"] .story-viewer-card .bg-slate-900\/95 h4 {
+[data-theme-mode="light"] .story-options-modal * {
+  color: inherit;
+}
+[data-theme-mode="light"] .story-options-modal h4 {
   color: #0f172a !important;
 }
-[data-theme-mode="light"] .story-viewer-card .bg-slate-900\/95 button[class*="bg-slate-800"] {
+[data-theme-mode="light"] .story-options-modal .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+[data-theme-mode="light"] .story-options-modal button svg.lucide-x {
+  color: #64748b !important;
+  stroke: #64748b !important;
+}
+[data-theme-mode="light"] .story-options-modal button:hover svg.lucide-x {
+  color: #0f172a !important;
+  stroke: #0f172a !important;
+}
+
+/* Option Items (Viewers & Insights, Share, Save Media) */
+[data-theme-mode="light"] .story-options-modal .story-options-item {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-item:hover {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-item .story-option-title,
+[data-theme-mode="light"] .story-options-modal .story-options-item p.font-semibold {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-item .story-option-desc,
+[data-theme-mode="light"] .story-options-modal .story-options-item p.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Delete Story Danger Option */
+[data-theme-mode="light"] .story-options-modal .story-options-danger {
+  background-color: #fff1f2 !important;
+  border: 1px solid #fecdd3 !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-danger:hover {
+  background-color: #ffe4e6 !important;
+  border-color: #fda4af !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-danger .story-option-title {
+  color: #e11d48 !important;
+  font-weight: 700 !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-danger .story-option-desc {
+  color: #be123c !important;
+}
+
+/* Report Story Warning Option */
+[data-theme-mode="light"] .story-options-modal .story-options-warning {
+  background-color: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-warning:hover {
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-warning .story-option-title {
+  color: #b45309 !important;
+  font-weight: 700 !important;
+}
+[data-theme-mode="light"] .story-options-modal .story-options-warning .story-option-desc {
+  color: #92400e !important;
+}
+
+/* Cancel Button */
+[data-theme-mode="light"] .story-options-modal .story-options-cancel {
   background-color: #f8fafc !important;
   border: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
 }
-[data-theme-mode="light"] .story-viewer-card .bg-slate-900\/95 button[class*="bg-slate-800"] * {
-  color: #0f172a !important;
-}
-[data-theme-mode="light"] .story-viewer-card .bg-slate-900\/95 button[class*="bg-slate-800"]:hover {
+[data-theme-mode="light"] .story-options-modal .story-options-cancel:hover {
   background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 /* STORY VIEWERS & INSIGHTS MODAL */
