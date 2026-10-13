@@ -7,6 +7,10 @@
 
 BEGIN;
 
+-- Set explicit timeouts to prevent indefinite deadlocks with concurrent transactions
+SET LOCAL lock_timeout = '15s';
+SET LOCAL statement_timeout = '120s';
+
 -- ============================================================================
 -- 1. SCHEMA RECONCILIATION (NON-DESTRUCTIVE ADDITIONS FOR LIVE TABLES)
 -- ============================================================================
@@ -654,8 +658,24 @@ CREATE TRIGGER trg_enforce_message_update_security
 -- ============================================================================
 -- Fixes SQL-09: Dynamically drops any pre-existing permissive policies on the
 -- target public tables (from supabase_schema.sql or dashboard ad-hoc edits)
--- so no residual `USING (true)` or `auth.uid() IS NULL` policy can OR-bypass
--- the hardened policies below.
+-- Acquire exclusive locks atomically upfront in sorted OID order.
+-- This prevents circular wait deadlocks (40P01) with live PostgREST queries.
+LOCK TABLE
+  public.blocked_users,
+  public.profiles,
+  public.posts,
+  public.reels,
+  public.stories,
+  public.story_likes,
+  public.likes,
+  public.post_likes,
+  public.comments,
+  public.follows,
+  public.messages,
+  public.notifications,
+  public.saved_posts
+IN ACCESS EXCLUSIVE MODE;
+
 DO $$
 DECLARE
   r RECORD;
