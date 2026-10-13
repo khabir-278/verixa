@@ -78,6 +78,8 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     addToast,
     openUserProfile,
     followingUserIds,
+    isUserBlocked,
+    restrictedUserIds,
   } = useApp();
 
   const [commentInputs, setCommentInputs] = useState<{ [postId: string]: string }>({});
@@ -264,6 +266,10 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     authorName?: string
   ) => {
     if (!reactionText || !reactionText.trim() || isSendingReaction) return;
+    if (isUserBlocked(authorId)) {
+      addToast('warning', 'Action Unavailable', 'You cannot interact with this story.');
+      return;
+    }
     setIsSendingReaction(true);
     const chosenText = reactionText.trim();
     setFloatingReaction(chosenText);
@@ -314,7 +320,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     setLikedUsers([]);
     try {
       const users = await fetchPostLikedUsers(postId);
-      setLikedUsers(users);
+      setLikedUsers(users.filter((u) => !isUserBlocked(u.id)));
     } catch (err) {
       console.error('Failed to load liked users:', err);
     } finally {
@@ -322,21 +328,28 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     }
   };
 
-  // Derive displayed posts based on active feed tab
+  // Derive displayed posts based on active feed tab and mutual block status
   const displayedPosts = React.useMemo(() => {
+    const visiblePosts = posts
+      .filter((p) => !isUserBlocked(p.user?.id))
+      .map((p) => ({
+        ...p,
+        comments: (p.comments || []).filter((c) => !isUserBlocked(c.user?.id)),
+      }));
+
     if (feedMode === 'following') {
-      return posts.filter((p) => followingUserIds.has(p.user.id));
+      return visiblePosts.filter((p) => followingUserIds.has(p.user.id));
     }
     if (feedMode === 'latest') {
-      return [...posts].sort((a, b) => {
+      return [...visiblePosts].sort((a, b) => {
         const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
         const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
         return tB - tA;
       });
     }
     // 'for-you' is default, ranked with transparent heuristic strategy
-    return posts;
-  }, [posts, feedMode, followingUserIds]);
+    return visiblePosts;
+  }, [posts, feedMode, followingUserIds, isUserBlocked, restrictedUserIds]);
 
   // Group stories belonging to current user
   const myStories = React.useMemo(() => {
@@ -370,16 +383,18 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     };
   }, [myStories, currentUser]);
 
-  // Group other users' stories strictly by account/user
+  // Group other users' stories strictly by account/user (excluding mutually blocked accounts)
   const otherStoryGroups = React.useMemo<UserStoryGroup[]>(() => {
-    const nonUserStories = stories.filter(
-      (s) => s.user?.id !== currentUser?.id && (s as any).user_id !== currentUser?.id
-    );
+    const nonUserStories = stories.filter((s) => {
+      const ownerId = s.user?.id || (s as any).user_id;
+      return ownerId !== currentUser?.id && !isUserBlocked(ownerId);
+    });
 
     const groupMap = new Map<string, UserStoryGroup>();
     const isUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     for (const story of nonUserStories) {
       const uId = String(story.user?.id || (story as any).user_id || story.user?.username || 'user');
+      if (isUserBlocked(uId)) continue;
       if (!groupMap.has(uId)) {
         let authorUsername = story.user?.username || (story as any).username || '';
         let authorName = story.user?.name || (story as any).user_name || '';
@@ -424,7 +439,7 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     }
 
     return Array.from(groupMap.values());
-  }, [stories, currentUser?.id]);
+  }, [stories, currentUser?.id, isUserBlocked, restrictedUserIds]);
 
   // Unified list of all story groups for seamless next/prev navigation
   const allStoryGroups = React.useMemo<UserStoryGroup[]>(() => {
@@ -436,8 +451,17 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
     return list;
   }, [myStoryGroup, otherStoryGroups]);
 
+  // Close active story viewer immediately if story author becomes blocked
+  useEffect(() => {
+    if (activeStoryGroup && isUserBlocked(activeStoryGroup.userId)) {
+      setActiveStoryGroup(null);
+      setActiveStoryIndex(0);
+    }
+  }, [activeStoryGroup, isUserBlocked, restrictedUserIds]);
+
   // Open a specific story group at a given index
   const openStoryGroup = (group: UserStoryGroup, startIndex: number = 0) => {
+    if (isUserBlocked(group.userId)) return;
     const validIdx = Math.max(0, Math.min(startIndex, group.stories.length - 1));
     setActiveStoryGroup(group);
     setActiveStoryIndex(validIdx);
@@ -1952,13 +1976,13 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
             {/* Viewers & Likers Content List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 min-h-[140px] max-h-[290px] pr-1">
               {/* Liked Users section */}
-              {dbInsights?.likers && dbInsights.likers.length > 0 && (
+              {dbInsights?.likers && dbInsights.likers.filter((l) => !isUserBlocked(l.id)).length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-semibold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Heart className="w-3 h-3 fill-rose-400" /> Liked by ({dbInsights.likers.length})
+                    <Heart className="w-3 h-3 fill-rose-400" /> Liked by ({dbInsights.likers.filter((l) => !isUserBlocked(l.id)).length})
                   </p>
                   <div className="space-y-1.5">
-                    {dbInsights.likers.map((liker) => {
+                    {dbInsights.likers.filter((l) => !isUserBlocked(l.id)).map((liker) => {
                       const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
                       const displayUsername = liker.username && !isUuid(liker.username)
                         ? liker.username
@@ -1998,16 +2022,16 @@ export const HomeFeedPage: React.FC<{ onOpenCreatePost: () => void }> = ({ onOpe
               {/* Viewers section from real database */}
               <div className="space-y-1.5">
                 <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
-                  <Eye className="w-3 h-3 text-cyan-400" /> Viewers {dbInsights?.viewers ? `(${dbInsights.viewers.length})` : ''}
+                  <Eye className="w-3 h-3 text-cyan-400" /> Viewers {dbInsights?.viewers ? `(${dbInsights.viewers.filter((v) => !isUserBlocked(v.id)).length})` : ''}
                 </p>
 
                 {isLoadingDbInsights ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
                   </div>
-                ) : dbInsights?.viewers && dbInsights.viewers.length > 0 ? (
+                ) : dbInsights?.viewers && dbInsights.viewers.filter((v) => !isUserBlocked(v.id)).length > 0 ? (
                   <div className="space-y-1.5">
-                    {dbInsights.viewers.map((viewer) => {
+                    {dbInsights.viewers.filter((v) => !isUserBlocked(v.id)).map((viewer) => {
                       const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
                       const displayUsername = viewer.username && !isUuid(viewer.username)
                         ? viewer.username

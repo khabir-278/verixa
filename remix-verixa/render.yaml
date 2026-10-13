@@ -1,0 +1,37 @@
+# ============================================================================
+# VERIXA — RENDER INFRASTRUCTURE BLUEPRINT (render.yaml)
+# ============================================================================
+# Prepared under Phase 3 (Approval 3).
+# - autoDeploy is explicitly set to false so environment or repo changes do NOT
+#   trigger automatic production deployments without explicit operator approval.
+# - SUPABASE_SERVICE_ROLE_KEY and ADMIN_SECRET_TOKEN use sync: false so secret
+#   values are stored exclusively in Render's encrypted server environment and
+#   never committed to Git or exposed to the Vite frontend bundle.
+# ============================================================================
+
+services:
+  - type: web
+    name: verixa-app
+    runtime: node
+    plan: starter
+    autoDeploy: false
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        value: https://jnbaumemwxydjktwedtz.supabase.co
+      - key: VITE_SUPABASE_URL
+        value: https://jnbaumemwxydjktwedtz.supabase.co
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ADMIN_SECRET_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

@@ -49,6 +49,7 @@ import {
   isUsernameAvailable,
   getSignedMediaUrl,
   resolveUserProfileSignedUrls,
+  checkUserBlockStatus,
 } from '../lib/supabaseServices';
 
 export const ProfilePage: React.FC = () => {
@@ -66,9 +67,15 @@ export const ProfilePage: React.FC = () => {
     openUserProfile,
     setActiveChatUser,
     setCurrentPage,
+    goBack,
     followUser,
     isUserFollowing,
     followingUserIds,
+    isUserBlocked,
+    isBlockedByMe,
+    blockUser,
+    unblockUser,
+    restrictedUserIds,
   } = useApp();
 
   // Determine if viewing own profile or another user
@@ -79,10 +86,11 @@ export const ProfilePage: React.FC = () => {
     isOwnProfile ? currentUser : null
   );
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(!isOwnProfile);
+  const [isProfileRestricted, setIsProfileRestricted] = useState<boolean>(false);
 
   // Active unexpired stories (< 24h old) for displayedUser
   const profileActiveStories = React.useMemo(() => {
-    if (!displayedUser?.id) return [];
+    if (!displayedUser?.id || (!isOwnProfile && isUserBlocked(displayedUser.id))) return [];
     const now = Date.now();
     const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
     return stories.filter((s) => {
@@ -96,7 +104,7 @@ export const ProfilePage: React.FC = () => {
       }
       return true;
     });
-  }, [stories, displayedUser?.id]);
+  }, [stories, displayedUser?.id, isOwnProfile, isUserBlocked]);
 
   const hasActiveStories = profileActiveStories.length > 0;
   const [showStoryModal, setShowStoryModal] = useState<boolean>(false);
@@ -118,6 +126,8 @@ export const ProfilePage: React.FC = () => {
   const [showBlockModal, setShowBlockModal] = useState<boolean>(false);
   const [showSafetyCertModal, setShowSafetyCertModal] = useState<boolean>(false);
   const [showThreeDotMenu, setShowThreeDotMenu] = useState<boolean>(false);
+  const [isBlockingUser, setIsBlockingUser] = useState<boolean>(false);
+  const [isUserBlockedByMe, setIsUserBlockedByMe] = useState<boolean>(false);
 
   // Active Post for Post Viewer Modal
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -268,8 +278,9 @@ export const ProfilePage: React.FC = () => {
       try {
         const { data } = await supabase.from('profiles').select('*').limit(30);
         if (data && data.length > 0 && isMounted) {
+          const nonBlockedRows = data.filter((row: any) => !isUserBlocked(row.id));
           const mapped = await Promise.all(
-            data.map(async (row) => {
+            nonBlockedRows.map(async (row) => {
               const u: User = {
                 id: row.id,
                 username: row.username,
@@ -299,12 +310,13 @@ export const ProfilePage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [restrictedUserIds, isUserBlocked]);
 
   // Load profile user when viewingProfileUserId changes
   useEffect(() => {
     let isMounted = true;
     if (isOwnProfile) {
+      setIsProfileRestricted(false);
       setDisplayedUser(currentUser);
       setIsLoadingProfile(false);
       if (currentUser) {
@@ -312,21 +324,35 @@ export const ProfilePage: React.FC = () => {
         setFollowingCount(currentUser.followingCount || 0);
       }
     } else if (viewingProfileUserId) {
-      setIsLoadingProfile(true);
-      // Check existing loaded profiles for immediate display
-      const pool = supabaseProfiles;
-      const foundUser = pool.find((u) => u.id === viewingProfileUserId || u.username === viewingProfileUserId);
-      if (foundUser && isMounted) {
-        setDisplayedUser(foundUser);
-        setIsFollowing(!!foundUser.isFollowing);
-        setFollowersCount(foundUser.followersCount || 0);
-        setFollowingCount(foundUser.followingCount || 0);
+      // Immediate mutual block check against active restrictedUserIds
+      if (isUserBlocked(viewingProfileUserId)) {
+        setIsProfileRestricted(true);
+        setDisplayedUser(null);
+        setIsLoadingProfile(false);
+        return;
       }
 
-      // Query Supabase in background
-      getUserProfile(viewingProfileUserId)
-        .then((profile) => {
-          if (profile && isMounted) {
+      setIsLoadingProfile(true);
+      setIsProfileRestricted(false);
+      setDisplayedUser(null);
+
+      // Authoritative mutual block check + profile fetch
+      Promise.all([
+        checkUserBlockStatus(currentUser?.id, viewingProfileUserId),
+        getUserProfile(viewingProfileUserId, currentUser?.id),
+      ])
+        .then(([blockStatus, profile]) => {
+          if (!isMounted) return;
+          if (
+            blockStatus.restricted ||
+            isUserBlocked(viewingProfileUserId) ||
+            (profile?.id && isUserBlocked(profile.id))
+          ) {
+            setIsProfileRestricted(true);
+            setDisplayedUser(null);
+            return;
+          }
+          if (profile) {
             setDisplayedUser(profile);
             setFollowersCount(profile.followersCount || 0);
             setFollowingCount(profile.followingCount || 0);
@@ -339,11 +365,12 @@ export const ProfilePage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [viewingProfileUserId, currentUser]);
+  }, [viewingProfileUserId, currentUser, isOwnProfile, restrictedUserIds, isUserBlocked]);
 
   // Keep state updated if currentUser changes when viewing own profile
   useEffect(() => {
     if (isOwnProfile && currentUser) {
+      setIsProfileRestricted(false);
       setDisplayedUser(currentUser);
       setFollowersCount(currentUser.followersCount || 0);
       setFollowingCount(currentUser.followingCount || 0);
@@ -360,11 +387,11 @@ export const ProfilePage: React.FC = () => {
   // Load modal followers / following list dynamically when modal opens
   useEffect(() => {
     let isMounted = true;
-    if (showFollowersModal && displayedUser?.id) {
+    if (showFollowersModal && displayedUser?.id && (!viewingProfileUserId || !isUserBlocked(displayedUser.id))) {
       setIsLoadingModalFollowUsers(true);
       getUserFollowers(displayedUser.id)
         .then((users) => {
-          if (isMounted) setModalFollowUsers(users);
+          if (isMounted) setModalFollowUsers(users.filter((u) => !isUserBlocked(u.id)));
         })
         .catch((err) => {
           console.warn('Error loading followers:', err);
@@ -373,11 +400,11 @@ export const ProfilePage: React.FC = () => {
         .finally(() => {
           if (isMounted) setIsLoadingModalFollowUsers(false);
         });
-    } else if (showFollowingModal && displayedUser?.id) {
+    } else if (showFollowingModal && displayedUser?.id && (!viewingProfileUserId || !isUserBlocked(displayedUser.id))) {
       setIsLoadingModalFollowUsers(true);
       getUserFollowing(displayedUser.id)
         .then((users) => {
-          if (isMounted) setModalFollowUsers(users);
+          if (isMounted) setModalFollowUsers(users.filter((u) => !isUserBlocked(u.id)));
         })
         .catch((err) => {
           console.warn('Error loading following:', err);
@@ -392,7 +419,46 @@ export const ProfilePage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [showFollowersModal, showFollowingModal, displayedUser?.id]);
+  }, [showFollowersModal, showFollowingModal, displayedUser?.id, viewingProfileUserId, isUserBlocked]);
+
+  // Check if displayedUser is currently blocked by currentUser (Must be above early returns)
+  useEffect(() => {
+    if (!currentUser?.id || !displayedUser?.id || currentUser.id === displayedUser.id) {
+      setIsUserBlockedByMe(false);
+      return;
+    }
+    setIsUserBlockedByMe(isBlockedByMe(displayedUser.id));
+  }, [currentUser?.id, displayedUser?.id, isBlockedByMe]);
+
+  const isTargetRestricted =
+    !isOwnProfile &&
+    Boolean(
+      isProfileRestricted ||
+      (viewingProfileUserId && isUserBlocked(viewingProfileUserId)) ||
+      (displayedUser?.id && isUserBlocked(displayedUser.id))
+    );
+
+  if (isTargetRestricted) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-5" data-testid="blocked-profile-screen">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-900/90 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-[0_0_30px_rgba(147,51,234,0.18)]">
+          <Lock className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-white">Sorry, you can't view this profile.</h2>
+          <p className="text-slate-400 text-sm">This profile isn't available to you.</p>
+        </div>
+        <div className="pt-2 flex items-center justify-center gap-3">
+          <button
+            onClick={() => goBack()}
+            className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold text-xs transition"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!displayedUser && isLoadingProfile) {
     return (
@@ -421,24 +487,34 @@ export const ProfilePage: React.FC = () => {
     );
   }
 
+  const dispUsernameLower = (displayedUser.username || '').toLowerCase();
+
   // Filter posts belonging to displayed user
-  const userPosts = posts.filter(
-    (p) => p.user.id === displayedUser.id || p.user.username.toLowerCase() === displayedUser.username.toLowerCase()
+  const userPosts = (posts || []).filter(
+    (p) =>
+      !isUserBlocked(p?.user?.id) &&
+      (p?.user?.id === displayedUser.id ||
+        (dispUsernameLower && (p?.user?.username || '').toLowerCase() === dispUsernameLower))
   );
 
-  // Saved / Bookmarked posts (for logged in user)
-  const savedPosts = posts.filter((p) => p.isBookmarked);
+  // Saved / Bookmarked posts (for logged in user, excluding blocked authors)
+  const savedPosts = (posts || []).filter((p) => p?.isBookmarked && !isUserBlocked(p?.user?.id));
 
-  // Tagged posts
-  const taggedPosts = posts.filter(
+  // Tagged posts (excluding blocked authors)
+  const taggedPosts = (posts || []).filter(
     (p) =>
-      p.caption.toLowerCase().includes(`@${displayedUser.username.toLowerCase()}`) ||
-      p.tags.some((t) => t.toLowerCase() === displayedUser.username.toLowerCase())
+      !isUserBlocked(p?.user?.id) &&
+      dispUsernameLower &&
+      ((p?.caption || '').toLowerCase().includes(`@${dispUsernameLower}`) ||
+        (Array.isArray(p?.tags) && p.tags.some((t) => (t || '').toLowerCase() === dispUsernameLower)))
   );
 
   // Reels belonging to user
-  const userReels = reels.filter(
-    (r) => r.user.id === displayedUser.id || r.user.username.toLowerCase() === displayedUser.username.toLowerCase()
+  const userReels = (reels || []).filter(
+    (r) =>
+      !isUserBlocked(r?.user?.id) &&
+      (r?.user?.id === displayedUser.id ||
+        (dispUsernameLower && (r?.user?.username || '').toLowerCase() === dispUsernameLower))
   );
 
   // Calculate total engagement / likes count
@@ -751,11 +827,55 @@ export const ProfilePage: React.FC = () => {
     addToast('success', 'Report Submitted', 'Thank you for helping keep VERIXA safe. Our AI Moderation team is reviewing this account.');
   };
 
-  // Block User
-  const handleBlockUser = () => {
-    setShowBlockModal(false);
-    addToast('info', 'User Blocked', `@${displayedUser.username} has been blocked. You will no longer see their posts or messages.`);
-    openUserProfile(currentUser?.id);
+  // Block / Unblock User (Persisted in Supabase, Server Database, and Global AppContext)
+  const handleBlockUser = async () => {
+    if (!currentUser?.id || !displayedUser?.id || isBlockingUser) return;
+    setIsBlockingUser(true);
+    try {
+      const ok = await blockUser(
+        {
+          id: displayedUser.id,
+          name: displayedUser.name,
+          username: displayedUser.username,
+          avatar: displayedUser.avatar,
+        },
+        'Blocked from user profile'
+      );
+
+      if (!ok) return;
+
+      if (isFollowing) {
+        setIsFollowing(false);
+        setFollowersCount((prev) => Math.max(0, prev - 1));
+        setCurrentUser({
+          ...currentUser,
+          followingCount: Math.max(0, (currentUser.followingCount || 0) - 1),
+        });
+      }
+
+      setIsUserBlockedByMe(true);
+      setIsProfileRestricted(true);
+      setShowBlockModal(false);
+      setDisplayedUser(null);
+    } catch (err: any) {
+      addToast('error', 'Block Failed', err?.message || 'Could not block user. Please try again.');
+    } finally {
+      setIsBlockingUser(false);
+    }
+  };
+
+  const handleUnblockFromProfile = async () => {
+    if (!currentUser?.id || !displayedUser?.id || isBlockingUser) return;
+    setIsBlockingUser(true);
+    try {
+      await unblockUser(displayedUser.id);
+      setIsUserBlockedByMe(false);
+      setShowThreeDotMenu(false);
+    } catch (err: any) {
+      addToast('error', 'Unblock Failed', err?.message || 'Could not unblock user.');
+    } finally {
+      setIsBlockingUser(false);
+    }
   };
 
   // Add Comment in Post Viewer (Check toxicity FIRST before posting/rendering)
@@ -1012,15 +1132,25 @@ export const ProfilePage: React.FC = () => {
                           >
                             <Flag className="w-4 h-4 text-amber-400" /> Report Account
                           </button>
-                          <button
-                            onClick={() => {
-                              setShowBlockModal(true);
-                              setShowThreeDotMenu(false);
-                            }}
-                            className="w-full text-left px-4 py-2 hover:bg-slate-800 text-rose-400 flex items-center gap-2.5"
-                          >
-                            <Ban className="w-4 h-4 text-rose-400" /> Block User
-                          </button>
+                          {isUserBlockedByMe ? (
+                            <button
+                              onClick={handleUnblockFromProfile}
+                              disabled={isBlockingUser}
+                              className="w-full text-left px-4 py-2 hover:bg-slate-800 text-emerald-400 flex items-center gap-2.5 disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Unblock User
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setShowBlockModal(true);
+                                setShowThreeDotMenu(false);
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-slate-800 text-rose-400 flex items-center gap-2.5"
+                            >
+                              <Ban className="w-4 h-4 text-rose-400" /> Block User
+                            </button>
+                          )}
                         </>
                       )}
                     </motion.div>
@@ -1985,15 +2115,23 @@ export const ProfilePage: React.FC = () => {
               <div className="flex items-center justify-center gap-3 pt-2 text-xs">
                 <button
                   onClick={() => setShowBlockModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold"
+                  disabled={isBlockingUser}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleBlockUser}
-                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold"
+                  disabled={isBlockingUser}
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center gap-2 disabled:opacity-60"
                 >
-                  Confirm Block
+                  {isBlockingUser ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Blocking...
+                    </>
+                  ) : (
+                    'Confirm Block'
+                  )}
                 </button>
               </div>
             </motion.div>

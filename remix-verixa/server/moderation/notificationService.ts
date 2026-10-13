@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { blockService } from './blockService';
 
 export interface NotificationRecord {
   id: string;
@@ -132,6 +133,11 @@ export const notificationService = {
       return null;
     }
 
+    // RULE 2: STRICTLY NO NOTIFICATIONS BETWEEN MUTUALLY BLOCKED USERS!
+    if (blockService.isMutuallyBlocked(recipientId, senderId)) {
+      return null;
+    }
+
     // Deduplication check: prevent identical notification within 3 seconds
     const now = Date.now();
     const existingRecent = notificationsMemoryBuffer.find((n) => {
@@ -194,14 +200,43 @@ export const notificationService = {
   },
 
   /**
-   * Get all notifications for a recipient user
+   * Get all notifications for a recipient user (excluding mutually blocked senders)
    */
   getNotifications(recipientId: string, limit = 50): NotificationRecord[] {
     if (!recipientId) return [];
+    const restrictedIds = blockService.getMutuallyRestrictedIds(recipientId);
     return notificationsMemoryBuffer
-      .filter((n) => n.recipient_id === recipientId && n.recipient_id !== n.sender_id)
+      .filter(
+        (n) =>
+          n.recipient_id === recipientId &&
+          n.recipient_id !== n.sender_id &&
+          !restrictedIds.has(n.sender_id) &&
+          !blockService.isMutuallyBlocked(recipientId, n.sender_id)
+      )
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, limit);
+  },
+
+  /**
+   * Purges cross-account notifications between two users when a block is created
+   */
+  purgeNotificationsBetween(userA: string, userB: string): number {
+    if (!userA || !userB) return 0;
+    const initialLen = notificationsMemoryBuffer.length;
+    for (let i = notificationsMemoryBuffer.length - 1; i >= 0; i--) {
+      const n = notificationsMemoryBuffer[i];
+      if (
+        (n.recipient_id === userA && n.sender_id === userB) ||
+        (n.recipient_id === userB && n.sender_id === userA)
+      ) {
+        notificationsMemoryBuffer.splice(i, 1);
+      }
+    }
+    const removed = initialLen - notificationsMemoryBuffer.length;
+    if (removed > 0) {
+      saveNotificationsToFile();
+    }
+    return removed;
   },
 
   /**

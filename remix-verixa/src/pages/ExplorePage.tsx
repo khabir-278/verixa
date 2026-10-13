@@ -233,6 +233,8 @@ export const ExplorePage: React.FC = () => {
     setSelectedExploreCategory,
     exploreSearchQuery,
     setExploreSearchQuery,
+    isUserBlocked,
+    restrictedUserIds,
   } = useApp();
 
   // Active item in detail modal (either a Post or a Reel)
@@ -274,14 +276,14 @@ export const ExplorePage: React.FC = () => {
     | { type: 'post'; post: Post }
     | { type: 'reel'; reel: Reel };
 
-  // Filtered items (strictly NO video posts - all video content is REELS only!)
+  // Filtered items (strictly NO video posts - all video content is REELS only, and no mutually blocked creators!)
   const filteredItems = useMemo<ExploreFeedItem[]>(() => {
     const q = exploreSearchQuery.toLowerCase().trim();
     const cat = selectedExploreCategory;
 
-    // 1. Filtered Posts: STRICTLY REMOVE ALL REGULAR VIDEO POSTS (mediaType === 'video')
+    // 1. Filtered Posts: STRICTLY REMOVE ALL REGULAR VIDEO POSTS (mediaType === 'video') AND MUTUALLY BLOCKED USERS
     const validPosts = posts
-      .filter((p) => p.mediaType !== 'video')
+      .filter((p) => p.mediaType !== 'video' && !isUserBlocked(p.user?.id))
       .filter((p) => {
         if (cat === 'Reels') return false; // Reels only tab
         if (cat === 'Photos') {
@@ -305,10 +307,17 @@ export const ExplorePage: React.FC = () => {
 
         return true;
       })
-      .map((p) => ({ type: 'post' as const, post: p }));
+      .map((p) => ({
+        type: 'post' as const,
+        post: {
+          ...p,
+          comments: (p.comments || []).filter((c) => !isUserBlocked(c.user?.id)),
+        },
+      }));
 
-    // 2. Filtered Reels: Short-form authentic reels
+    // 2. Filtered Reels: Short-form authentic reels (excluding mutually blocked creators)
     const validReels = reels
+      .filter((r) => !isUserBlocked(r.user?.id))
       .filter((r) => {
         if (cat === 'Photos' || cat === 'Thoughts') return false;
         if (cat !== 'All' && cat !== 'Reels') {
@@ -419,18 +428,34 @@ export const ExplorePage: React.FC = () => {
       [seeded[i], seeded[j]] = [seeded[j], seeded[i]];
     }
     return seeded;
-  }, [posts, reels, selectedExploreCategory, exploreSearchQuery, shuffleSeed]);
+  }, [posts, reels, selectedExploreCategory, exploreSearchQuery, shuffleSeed, isUserBlocked, restrictedUserIds]);
+
+  // Close active modal if creator becomes blocked
+  useEffect(() => {
+    if (activeModalPost && isUserBlocked(activeModalPost.user?.id)) {
+      setActiveModalPost(null);
+    }
+    if (activeModalReel && isUserBlocked(activeModalReel.user?.id)) {
+      setActiveModalReel(null);
+    }
+  }, [activeModalPost, activeModalReel, isUserBlocked, restrictedUserIds]);
 
   // Keep modal post & reel in sync with real-time state
   const modalPost = useMemo(() => {
     if (!activeModalPost) return null;
-    return posts.find((p) => p.id === activeModalPost.id) || activeModalPost;
-  }, [posts, activeModalPost]);
+    if (isUserBlocked(activeModalPost.user?.id)) return null;
+    const found = posts.find((p) => p.id === activeModalPost.id) || activeModalPost;
+    return {
+      ...found,
+      comments: (found.comments || []).filter((c) => !isUserBlocked(c.user?.id)),
+    };
+  }, [posts, activeModalPost, isUserBlocked, restrictedUserIds]);
 
   const modalReel = useMemo(() => {
     if (!activeModalReel) return null;
+    if (isUserBlocked(activeModalReel.user?.id)) return null;
     return reels.find((r) => r.id === activeModalReel.id) || activeModalReel;
-  }, [reels, activeModalReel]);
+  }, [reels, activeModalReel, isUserBlocked, restrictedUserIds]);
 
   // Handle Like Post
   const handleToggleLike = (e: React.MouseEvent, post: Post) => {

@@ -18,4 +18,4 @@ export * from './reputationService';
 export * from './guardianService';
 export * from './reviewService';
 export * from './notificationService';
-
+export * from './blockService';

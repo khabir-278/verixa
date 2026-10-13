@@ -33,6 +33,7 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
+  Lock,
 } from 'lucide-react';
 import { User, ChatMessage, MessageType } from '../types';
 import {
@@ -43,6 +44,11 @@ import {
   ConversationSnippet,
   uploadMessageAttachment,
   getSignedMediaUrl,
+  refreshSignedMediaUrl,
+  isProtectedStorageMedia,
+  isSignedStorageUrlExpired,
+  DEFAULT_SIGNED_URL_TTL_SECONDS,
+  checkUserBlockStatus,
 } from '../lib/supabaseServices';
 
 // ================= DATE HELPERS ================= //
@@ -121,6 +127,7 @@ const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const hasRetriedRefreshRef = useRef<boolean>(false);
 
   // Parse initial duration prop defensively
   const parsedDuration = useMemo(() => {
@@ -136,10 +143,14 @@ const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }
 
   const [totalDuration, setTotalDuration] = useState<number>(parsedDuration);
 
-  // Playable URL state (resolves storage path to signed URL if needed)
-  const isDirectUrl = !!url && (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:'));
-  const [resolvedUrl, setResolvedUrl] = useState<string>(isDirectUrl ? url : '');
-  const [isLoadingUrl, setIsLoadingUrl] = useState<boolean>(!isDirectUrl && !!url);
+  // Playable URL state: treat any Supabase /storage/v1/object/ URL or relative path as protected storage media
+  const isDirectNonStorageUrl =
+    !!url &&
+    (url.startsWith('blob:') ||
+      url.startsWith('data:') ||
+      ((url.startsWith('http://') || url.startsWith('https://')) && !isProtectedStorageMedia(url)));
+  const [resolvedUrl, setResolvedUrl] = useState<string>(isDirectNonStorageUrl ? url : '');
+  const [isLoadingUrl, setIsLoadingUrl] = useState<boolean>(!isDirectNonStorageUrl && !!url);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Update totalDuration if prop updates with a valid finite number
@@ -149,10 +160,11 @@ const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }
     }
   }, [parsedDuration]);
 
-  // Dynamically resolve storage path to signed URL if not a direct URL
+  // Dynamically resolve storage path or legacy/expired storage URL to a fresh signed URL
   useEffect(() => {
     let isCancelled = false;
     setHasError(false);
+    hasRetriedRefreshRef.current = false;
 
     if (!url) {
       setResolvedUrl('');
@@ -160,20 +172,25 @@ const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }
       return;
     }
 
-    if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) {
+    if (
+      url.startsWith('blob:') ||
+      url.startsWith('data:') ||
+      ((url.startsWith('http://') || url.startsWith('https://')) && !isProtectedStorageMedia(url))
+    ) {
       setResolvedUrl(url);
       setIsLoadingUrl(false);
       return;
     }
 
-    // It's a private storage path (e.g. userId/audio/voice.webm)
+    // Protected storage path or Supabase storage URL — resolve via getSignedMediaUrl (enforces block check & expiry check)
     setIsLoadingUrl(true);
-    getSignedMediaUrl(url, 3600)
+    getSignedMediaUrl(url, DEFAULT_SIGNED_URL_TTL_SECONDS)
       .then((signed) => {
         if (!isCancelled) {
           if (signed) {
             setResolvedUrl(signed);
           } else {
+            setResolvedUrl('');
             setHasError(true);
           }
           setIsLoadingUrl(false);
@@ -182,6 +199,7 @@ const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }
       .catch((err) => {
         if (!isCancelled) {
           console.warn('Could not resolve signed voice URL:', err);
+          setResolvedUrl('');
           setHasError(true);
           setIsLoadingUrl(false);
         }
@@ -192,12 +210,24 @@ const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }
     };
   }, [url]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current || hasError || !resolvedUrl) return;
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      // Refresh before playing if signed storage URL has expired
+      if (isProtectedStorageMedia(resolvedUrl) && isSignedStorageUrlExpired(resolvedUrl)) {
+        setIsLoadingUrl(true);
+        const refreshed = await refreshSignedMediaUrl(url, DEFAULT_SIGNED_URL_TTL_SECONDS);
+        setIsLoadingUrl(false);
+        if (!refreshed) {
+          setResolvedUrl('');
+          setHasError(true);
+          return;
+        }
+        setResolvedUrl(refreshed);
+      }
       audioRef.current
         .play()
         .then(() => setIsPlaying(true))
@@ -247,10 +277,29 @@ const ChatVoicePlayer: React.FC<ChatVoicePlayerProps> = ({ url, duration, isMe }
   };
 
   const handleError = () => {
-    if (resolvedUrl) {
-      setHasError(true);
-      setIsPlaying(false);
+    if (!resolvedUrl) return;
+    if (!hasRetriedRefreshRef.current && isProtectedStorageMedia(url)) {
+      hasRetriedRefreshRef.current = true;
+      refreshSignedMediaUrl(url, DEFAULT_SIGNED_URL_TTL_SECONDS)
+        .then((refreshed) => {
+          if (refreshed) {
+            setHasError(false);
+            setResolvedUrl(refreshed);
+          } else {
+            setResolvedUrl('');
+            setHasError(true);
+            setIsPlaying(false);
+          }
+        })
+        .catch(() => {
+          setResolvedUrl('');
+          setHasError(true);
+          setIsPlaying(false);
+        });
+      return;
     }
+    setHasError(true);
+    setIsPlaying(false);
   };
 
   // Safe duration formatter that never returns NaN or Infinity
@@ -360,12 +409,15 @@ export const MessagesPage: React.FC = () => {
     startCall,
     isUserOnline,
     addToast,
+    isUserBlocked,
+    restrictedUserIds,
   } = useApp();
 
   const [chatInput, setChatInput] = useState('');
   const [supabaseUsers, setSupabaseUsers] = useState<User[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState<boolean>(true);
   const [conversationsMap, setConversationsMap] = useState<Record<string, ConversationSnippet>>({});
+  const [isActiveChatRestricted, setIsActiveChatRestricted] = useState<boolean>(false);
 
   // Voice Recording state
   const [isRecordingVoice, setIsRecordingVoice] = useState<boolean>(false);
@@ -424,6 +476,38 @@ export const MessagesPage: React.FC = () => {
   const prevLastMsgIdRef = useRef<string | undefined>(messages[messages.length - 1]?.id);
   const prevActiveChatUserIdRef = useRef<string | undefined>(activeChatUser?.id);
 
+  const isChatBlocked = Boolean(
+    activeChatUser?.id && (isActiveChatRestricted || isUserBlocked(activeChatUser.id))
+  );
+
+  // Check authoritative mutual block status for activeChatUser
+  useEffect(() => {
+    let active = true;
+    if (!activeChatUser?.id || !currentUser?.id) {
+      setIsActiveChatRestricted(false);
+      return;
+    }
+    if (isUserBlocked(activeChatUser.id)) {
+      setIsActiveChatRestricted(true);
+      setReplyingTo(null);
+      setEditingMessage(null);
+      return;
+    }
+    checkUserBlockStatus(currentUser.id, activeChatUser.id)
+      .then((status) => {
+        if (!active) return;
+        setIsActiveChatRestricted(Boolean(status.restricted));
+        if (status.restricted) {
+          setReplyingTo(null);
+          setEditingMessage(null);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [activeChatUser?.id, currentUser?.id, restrictedUserIds, isUserBlocked]);
+
   const handleChatScroll = () => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -447,14 +531,14 @@ export const MessagesPage: React.FC = () => {
           const combined: User[] = [];
 
           for (const p of partners) {
-            if (!seen.has(p.id)) {
+            if (!seen.has(p.id) && !isUserBlocked(p.id)) {
               seen.add(p.id);
               combined.push(p);
             }
           }
 
           for (const p of allProfiles) {
-            if (!seen.has(p.id)) {
+            if (!seen.has(p.id) && !isUserBlocked(p.id)) {
               seen.add(p.id);
               combined.push(p);
             }
@@ -480,7 +564,7 @@ export const MessagesPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.id]);
+  }, [currentUser?.id, restrictedUserIds, isUserBlocked]);
 
   // Keep conversationsMap in sync with the active chat's message feed without mutating ordering timestamps on view
   useEffect(() => {
@@ -571,15 +655,16 @@ export const MessagesPage: React.FC = () => {
 
   // Sort contacts deterministically: latest authentic message activity first, then alphabetical (no jumps on click)
   const contactsToDisplay = useMemo(() => {
-    if (supabaseUsers.length <= 1) return supabaseUsers;
-    return [...supabaseUsers].sort((a, b) => {
+    const nonBlocked = supabaseUsers.filter((u) => !isUserBlocked(u.id));
+    if (nonBlocked.length <= 1) return nonBlocked;
+    return [...nonBlocked].sort((a, b) => {
       const timeA = conversationsMap[a.id]?.createdAt ? new Date(conversationsMap[a.id].createdAt).getTime() : 0;
       const timeB = conversationsMap[b.id]?.createdAt ? new Date(conversationsMap[b.id].createdAt).getTime() : 0;
       if (timeA !== timeB) return timeB - timeA;
 
       return a.name.localeCompare(b.name);
     });
-  }, [supabaseUsers, conversationsMap]);
+  }, [supabaseUsers, conversationsMap, isUserBlocked]);
 
   // Filtered contacts based on search query and active tab filter (scoped to messages only)
   const filteredContacts = useMemo(() => {
@@ -603,8 +688,8 @@ export const MessagesPage: React.FC = () => {
   }, [contactsToDisplay, activeFilterTab, chatSearchQuery, unreadChatSenders, conversationsMap]);
 
   const unreadCountTotal = useMemo(() => {
-    return supabaseUsers.filter((u) => (unreadChatSenders[u.id]?.count || 0) > 0).length;
-  }, [supabaseUsers, unreadChatSenders]);
+    return supabaseUsers.filter((u) => !isUserBlocked(u.id) && (unreadChatSenders[u.id]?.count || 0) > 0).length;
+  }, [supabaseUsers, unreadChatSenders, isUserBlocked]);
 
   // In-Chat search matching message IDs
   const matchingMessageIds = useMemo(() => {
@@ -670,6 +755,10 @@ export const MessagesPage: React.FC = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isChatBlocked) {
+      addToast('error', 'Unable to send messages', "Messaging isn't available between these accounts.");
+      return;
+    }
     if (!chatInput.trim()) return;
     const textToSend = chatInput.trim();
 
@@ -712,6 +801,7 @@ export const MessagesPage: React.FC = () => {
   // --- ATTACHMENT SELECTION & SEND HANDLERS ---
 
   const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>, type: MessageType) => {
+    if (isChatBlocked) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -745,6 +835,10 @@ export const MessagesPage: React.FC = () => {
   };
 
   const sendAttachment = async () => {
+    if (isChatBlocked) {
+      addToast('error', 'Unable to send messages', "Messaging isn't available between these accounts.");
+      return;
+    }
     if (!selectedAttachment || !currentUser?.id || !activeChatUser?.id) return;
     setIsUploadingAttachment(true);
     try {
@@ -790,6 +884,10 @@ export const MessagesPage: React.FC = () => {
   // --- VOICE RECORDING HANDLERS ---
 
   const startVoiceRecording = async () => {
+    if (isChatBlocked) {
+      addToast('error', 'Unable to send messages', "Messaging isn't available between these accounts.");
+      return;
+    }
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         addToast('error', 'Unsupported', 'Voice recording is not supported on this browser.');
@@ -842,6 +940,11 @@ export const MessagesPage: React.FC = () => {
   };
 
   const sendVoiceRecording = async () => {
+    if (isChatBlocked) {
+      cancelVoiceRecording();
+      addToast('error', 'Unable to send messages', "Messaging isn't available between these accounts.");
+      return;
+    }
     if (!mediaRecorderRef.current || !currentUser?.id) return;
 
     if (recordingTimerRef.current) {
@@ -919,12 +1022,14 @@ export const MessagesPage: React.FC = () => {
   };
 
   const handleStartReply = (msg: ChatMessage) => {
+    if (isChatBlocked) return;
     setReplyingTo(msg);
     setEditingMessage(null);
     setActiveMenuMessageId(null);
   };
 
   const handleStartEdit = (msg: ChatMessage) => {
+    if (isChatBlocked) return;
     if (msg.senderId !== currentUser?.id || msg.deletedAt || msg.isVoice) return;
     setEditingMessage(msg);
     setChatInput(msg.text);
@@ -934,6 +1039,10 @@ export const MessagesPage: React.FC = () => {
 
   const handleForwardMessage = async (targetUser: User) => {
     if (!forwardingMessage || !currentUser?.id) return;
+    if (isUserBlocked(targetUser.id)) {
+      addToast('error', 'Unable to send messages', "Messaging isn't available between these accounts.");
+      return;
+    }
     try {
       await sendMessage(
         forwardingMessage.text,
@@ -1238,7 +1347,12 @@ export const MessagesPage: React.FC = () => {
                         {activeChatUser.name}
                         <ShieldCheck className="w-4 h-4 text-emerald-400" />
                       </h3>
-                      {isUserOnline(activeChatUser.id) ? (
+                      {isChatBlocked ? (
+                        <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-slate-600 rounded-full" />
+                          Messaging unavailable
+                        </p>
+                      ) : isUserOnline(activeChatUser.id) ? (
                         <p className="text-[11px] text-emerald-400 flex items-center gap-1">
                           <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
                           Online • Encrypted & AI Moderated
@@ -1281,19 +1395,21 @@ export const MessagesPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => startCall(activeChatUser, 'audio')}
-                    title="Start Audio Call"
+                    disabled={isChatBlocked}
+                    onClick={() => !isChatBlocked && startCall(activeChatUser, 'audio')}
+                    title={isChatBlocked ? 'Calls unavailable' : 'Start Audio Call'}
                     aria-label="Start Audio Call"
-                    className="p-2.5 rounded-xl hover:bg-slate-800 hover:text-emerald-400 transition cursor-pointer"
+                    className="p-2.5 rounded-xl hover:bg-slate-800 hover:text-emerald-400 transition cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <PhoneCall className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => startCall(activeChatUser, 'video')}
-                    title="Start Video Call"
+                    disabled={isChatBlocked}
+                    onClick={() => !isChatBlocked && startCall(activeChatUser, 'video')}
+                    title={isChatBlocked ? 'Calls unavailable' : 'Start Video Call'}
                     aria-label="Start Video Call"
-                    className="p-2.5 rounded-xl hover:bg-slate-800 hover:text-purple-400 transition cursor-pointer"
+                    className="p-2.5 rounded-xl hover:bg-slate-800 hover:text-purple-400 transition cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <Video className="w-4 h-4" />
                   </button>
@@ -1409,7 +1525,9 @@ export const MessagesPage: React.FC = () => {
                     </div>
                     <p className="text-sm font-semibold text-white">No messages yet</p>
                     <p className="text-xs text-slate-400 max-w-xs">
-                      Say hello to {activeChatUser.name}! All messages are protected and verified safe.
+                      {isChatBlocked
+                        ? 'Messaging isn\'t available between these accounts.'
+                        : `Say hello to ${activeChatUser.name}! All messages are protected and verified safe.`}
                     </p>
                   </div>
                 ) : (
@@ -1458,73 +1576,77 @@ export const MessagesPage: React.FC = () => {
                               } opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-900/95 border border-purple-500/30 shadow-xl backdrop-blur-md z-20 text-xs`}
                             >
                               {/* Reply Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleStartReply(msg)}
-                                className="p-1 rounded-full hover:bg-white/10 text-slate-300 hover:text-purple-300 transition cursor-pointer"
-                                title="Reply to message"
-                                aria-label="Reply to message"
-                              >
-                                <Reply className="w-3.5 h-3.5" />
-                              </button>
-
-                              {/* Emoji React Button (Click / Tap accessible) */}
-                              <div className="relative">
+                              {!isChatBlocked && (
                                 <button
                                   type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveReactionMessageId(activeReactionMessageId === msg.id ? null : msg.id);
-                                    setActiveMenuMessageId(null);
-                                  }}
-                                  className={`p-1 rounded-full transition cursor-pointer ${
-                                    activeReactionMessageId === msg.id
-                                      ? 'bg-amber-500/20 text-amber-300'
-                                      : 'hover:bg-white/10 text-slate-300 hover:text-amber-300'
-                                  }`}
-                                  title="React with emoji"
-                                  aria-label="React to message"
+                                  onClick={() => handleStartReply(msg)}
+                                  className="p-1 rounded-full hover:bg-white/10 text-slate-300 hover:text-purple-300 transition cursor-pointer"
+                                  title="Reply to message"
+                                  aria-label="Reply to message"
                                 >
-                                  <Smile className="w-3.5 h-3.5" />
+                                  <Reply className="w-3.5 h-3.5" />
                                 </button>
+                              )}
 
-                                {/* Click/Tap Toggleable Reaction Picker */}
-                                {activeReactionMessageId === msg.id && (
-                                  <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    className={`absolute bottom-full mb-1.5 ${
-                                      isMe ? 'right-0 origin-bottom-right' : 'left-0 origin-bottom-left'
-                                    } p-1.5 bg-slate-900/95 border border-purple-500/40 rounded-full shadow-2xl flex items-center gap-1 z-40 backdrop-blur-md animate-in fade-in zoom-in-95 duration-100 max-w-[calc(100vw-32px)] overflow-x-auto custom-scrollbar`}
+                              {/* Emoji React Button (Click / Tap accessible) */}
+                              {!isChatBlocked && (
+                                <div className="relative">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveReactionMessageId(activeReactionMessageId === msg.id ? null : msg.id);
+                                      setActiveMenuMessageId(null);
+                                    }}
+                                    className={`p-1 rounded-full transition cursor-pointer ${
+                                      activeReactionMessageId === msg.id
+                                        ? 'bg-amber-500/20 text-amber-300'
+                                        : 'hover:bg-white/10 text-slate-300 hover:text-amber-300'
+                                    }`}
+                                    title="React with emoji"
+                                    aria-label="React to message"
                                   >
-                                    {quickReactions.map((emoji) => (
+                                    <Smile className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Click/Tap Toggleable Reaction Picker */}
+                                  {activeReactionMessageId === msg.id && (
+                                    <div
+                                      onClick={(e) => e.stopPropagation()}
+                                      className={`absolute bottom-full mb-1.5 ${
+                                        isMe ? 'right-0 origin-bottom-right' : 'left-0 origin-bottom-left'
+                                      } p-1.5 bg-slate-900/95 border border-purple-500/40 rounded-full shadow-2xl flex items-center gap-1 z-40 backdrop-blur-md animate-in fade-in zoom-in-95 duration-100 max-w-[calc(100vw-32px)] overflow-x-auto custom-scrollbar`}
+                                    >
+                                      {quickReactions.map((emoji) => (
+                                        <button
+                                          key={emoji}
+                                          type="button"
+                                          onClick={() => {
+                                            reactToMessage(msg.id, emoji);
+                                            setActiveReactionMessageId(null);
+                                          }}
+                                          className="w-7 h-7 flex items-center justify-center text-sm rounded-full hover:bg-white/10 hover:scale-125 transition active:scale-95 cursor-pointer"
+                                          title={`React ${emoji}`}
+                                        >
+                                          {emoji}
+                                        </button>
+                                      ))}
+                                      {/* Plus button to open full categorized emoji picker */}
                                       <button
-                                        key={emoji}
                                         type="button"
                                         onClick={() => {
-                                          reactToMessage(msg.id, emoji);
+                                          setShowFullPickerMessageId(msg.id);
                                           setActiveReactionMessageId(null);
                                         }}
-                                        className="w-7 h-7 flex items-center justify-center text-sm rounded-full hover:bg-white/10 hover:scale-125 transition active:scale-95 cursor-pointer"
-                                        title={`React ${emoji}`}
+                                        className="w-7 h-7 flex items-center justify-center text-xs font-bold text-purple-300 bg-purple-950/60 hover:bg-purple-800/80 rounded-full hover:scale-110 transition cursor-pointer"
+                                        title="More emojis (+)"
                                       >
-                                        {emoji}
+                                        <Plus className="w-3.5 h-3.5" />
                                       </button>
-                                    ))}
-                                    {/* Plus button to open full categorized emoji picker */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setShowFullPickerMessageId(msg.id);
-                                        setActiveReactionMessageId(null);
-                                      }}
-                                      className="w-7 h-7 flex items-center justify-center text-xs font-bold text-purple-300 bg-purple-950/60 hover:bg-purple-800/80 rounded-full hover:scale-110 transition cursor-pointer"
-                                      title="More emojis (+)"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
 
                               {/* More Actions Dropdown Toggle */}
                               <div className="relative">
@@ -1552,18 +1674,20 @@ export const MessagesPage: React.FC = () => {
                                     } w-44 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl py-1.5 z-40 text-xs text-slate-200 max-h-[70vh] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100`}
                                   >
                                     {/* Quick react option in menu for touch devices */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveReactionMessageId(msg.id);
-                                        setActiveMenuMessageId(null);
-                                      }}
-                                      className="w-full px-3 py-1.5 hover:bg-white/10 flex items-center gap-2 text-left transition sm:hidden text-amber-300"
-                                      aria-label="React with emoji"
-                                    >
-                                      <Smile className="w-3.5 h-3.5" />
-                                      <span>React with emoji</span>
-                                    </button>
+                                    {!isChatBlocked && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveReactionMessageId(msg.id);
+                                          setActiveMenuMessageId(null);
+                                        }}
+                                        className="w-full px-3 py-1.5 hover:bg-white/10 flex items-center gap-2 text-left transition sm:hidden text-amber-300"
+                                        aria-label="React with emoji"
+                                      >
+                                        <Smile className="w-3.5 h-3.5" />
+                                        <span>React with emoji</span>
+                                      </button>
+                                    )}
                                     {/* Copy Text */}
                                     {msg.text && (
                                       <button
@@ -1606,7 +1730,7 @@ export const MessagesPage: React.FC = () => {
                                     </button>
 
                                     {/* Edit (Own text messages only) */}
-                                    {isMe && !isVoice && msg.text && msg.messageType !== 'image' && msg.messageType !== 'video' && (
+                                    {!isChatBlocked && isMe && !isVoice && msg.text && msg.messageType !== 'image' && msg.messageType !== 'video' && (
                                       <button
                                         type="button"
                                         onClick={() => handleStartEdit(msg)}
@@ -1787,8 +1911,9 @@ export const MessagesPage: React.FC = () => {
                                   <button
                                     key={emoji}
                                     type="button"
-                                    onClick={() => reactToMessage(msg.id, emoji)}
-                                    className={`px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                                    disabled={isChatBlocked}
+                                    onClick={() => !isChatBlocked && reactToMessage(msg.id, emoji)}
+                                    className={`px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 transition cursor-pointer disabled:cursor-default ${
                                       isSelected
                                         ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-sm'
                                         : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:bg-slate-800'
@@ -1826,275 +1951,292 @@ export const MessagesPage: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Replying Preview Bar */}
-              {replyingTo && (
-                <div className="px-4 py-2.5 bg-slate-900/95 border-t border-purple-500/30 flex items-center justify-between text-xs shrink-0 backdrop-blur-md">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Reply className="w-4 h-4 text-purple-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="font-bold text-purple-300">
-                        Replying to {replyingTo.senderId === currentUser?.id ? 'yourself' : activeChatUser?.name}
-                      </span>
-                      <p className="text-slate-400 truncate text-[11px]">
-                        {replyingTo.text || (replyingTo.isVoice ? '🎙️ Voice note' : 'Media attachment')}
-                      </p>
-                    </div>
+              {isChatBlocked ? (
+                /* Restricted Messaging Banner (Mutual Block Enforcement) */
+                <div className="p-4 bg-slate-950/95 border-t border-slate-800/90 flex items-center justify-center gap-3 shrink-0 text-center">
+                  <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                    <Lock className="w-4 h-4" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setReplyingTo(null)}
-                    className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
-                    title="Cancel reply"
-                    aria-label="Cancel reply"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              {/* Editing Preview Bar */}
-              {editingMessage && (
-                <div className="px-4 py-2.5 bg-slate-900/95 border-t border-amber-500/30 flex items-center justify-between text-xs shrink-0 backdrop-blur-md">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Edit3 className="w-4 h-4 text-amber-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="font-bold text-amber-300">Editing message</span>
-                      <p className="text-slate-400 truncate text-[11px]">{editingMessage.text}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingMessage(null);
-                      setChatInput('');
-                    }}
-                    className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
-                    title="Cancel edit"
-                    aria-label="Cancel edit"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              {/* Media Attachment Preview Card */}
-              {selectedAttachment && (
-                <div className="p-3 bg-slate-900/95 border-t border-purple-500/30 shrink-0 backdrop-blur-md space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-300 pb-1 border-b border-slate-800">
-                    <span className="font-bold text-white flex items-center gap-1.5">
-                      <Paperclip className="w-3.5 h-3.5 text-purple-400" />
-                      Attachment Preview ({selectedAttachment.type.toUpperCase()})
-                    </span>
-                    <button
-                      type="button"
-                      onClick={cancelAttachment}
-                      disabled={isUploadingAttachment}
-                      className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
-                      title="Cancel attachment"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {/* Visual Thumbnail */}
-                    {selectedAttachment.type === 'image' || selectedAttachment.type === 'gif' ? (
-                      <img
-                        src={selectedAttachment.previewUrl}
-                        alt="Preview"
-                        className="w-16 h-16 rounded-xl object-cover border border-purple-500/30 shrink-0"
-                      />
-                    ) : selectedAttachment.type === 'video' ? (
-                      <video
-                        src={selectedAttachment.previewUrl}
-                        className="w-16 h-16 rounded-xl object-cover border border-purple-500/30 shrink-0 bg-black"
-                        muted
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-xl bg-slate-800 border border-slate-700 flex flex-col items-center justify-center text-blue-400 shrink-0">
-                        <FileText className="w-7 h-7" />
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-xs text-white truncate">{selectedAttachment.name}</p>
-                      <p className="text-[11px] text-slate-400">{formatFileSize(selectedAttachment.size)}</p>
-                      <input
-                        type="text"
-                        value={attachmentCaption}
-                        onChange={(e) => setAttachmentCaption(e.target.value)}
-                        placeholder="Add a caption (optional)..."
-                        className="w-full mt-1.5 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
-                        disabled={isUploadingAttachment}
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={sendAttachment}
-                      disabled={isUploadingAttachment}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-md shadow-purple-900/30 shrink-0 cursor-pointer disabled:opacity-50"
-                    >
-                      {isUploadingAttachment ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                      <span>Send</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Message Input Bar & Voice Recorder */}
-              {isRecordingVoice ? (
-                /* Glowing Voice Recording Bar with live timer and controls */
-                <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3 shrink-0">
-                  <div className="flex items-center gap-3">
-                    <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping shrink-0" />
-                    <span className="text-xs font-mono font-bold text-rose-400">
-                      Recording: {Math.floor(recordingSeconds / 60)}:
-                      {(recordingSeconds % 60).toString().padStart(2, '0')}
-                    </span>
-                    <span className="text-xs text-slate-400 hidden sm:inline">
-                      Encrypted audio note
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={cancelVoiceRecording}
-                      disabled={isUploadingVoice}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-                      title="Cancel voice recording"
-                      aria-label="Cancel voice recording"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Cancel
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={sendVoiceRecording}
-                      disabled={isUploadingVoice || recordingSeconds < 1}
-                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 transition cursor-pointer disabled:opacity-50"
-                      title="Send voice note"
-                      aria-label="Send voice note"
-                    >
-                      {isUploadingVoice ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Check className="w-3.5 h-3.5" />
-                      )}
-                      Send Note
-                    </button>
+                  <div className="text-left">
+                    <p className="text-xs sm:text-sm font-bold text-white">Unable to send messages</p>
+                    <p className="text-[11px] text-slate-400">
+                      Messaging isn't available between these accounts.
+                    </p>
                   </div>
                 </div>
               ) : (
-                /* Standard Message Input Form */
-                <form
-                  onSubmit={handleSend}
-                  className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2 shrink-0 relative"
-                >
-                  {/* Attachment Button & Popover */}
-                  <div className="relative" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => setShowAttachMenu(!showAttachMenu)}
-                      title="Add attachment"
-                      aria-label="Open attachments"
-                      className={`p-2.5 rounded-xl transition cursor-pointer ${
-                        showAttachMenu
-                          ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50'
-                          : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
+                <>
+                  {/* Replying Preview Bar */}
+                  {replyingTo && (
+                    <div className="px-4 py-2.5 bg-slate-900/95 border-t border-purple-500/30 flex items-center justify-between text-xs shrink-0 backdrop-blur-md">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Reply className="w-4 h-4 text-purple-400 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="font-bold text-purple-300">
+                            Replying to {replyingTo.senderId === currentUser?.id ? 'yourself' : activeChatUser?.name}
+                          </span>
+                          <p className="text-slate-400 truncate text-[11px]">
+                            {replyingTo.text || (replyingTo.isVoice ? '🎙️ Voice note' : 'Media attachment')}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setReplyingTo(null)}
+                        className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                        title="Cancel reply"
+                        aria-label="Cancel reply"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
-                    {showAttachMenu && (
-                      <div className="absolute bottom-full left-0 mb-2 w-44 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl py-1.5 z-40 text-xs">
+                  {/* Editing Preview Bar */}
+                  {editingMessage && (
+                    <div className="px-4 py-2.5 bg-slate-900/95 border-t border-amber-500/30 flex items-center justify-between text-xs shrink-0 backdrop-blur-md">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Edit3 className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="font-bold text-amber-300">Editing message</span>
+                          <p className="text-slate-400 truncate text-[11px]">{editingMessage.text}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingMessage(null);
+                          setChatInput('');
+                        }}
+                        className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                        title="Cancel edit"
+                        aria-label="Cancel edit"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Media Attachment Preview Card */}
+                  {selectedAttachment && (
+                    <div className="p-3 bg-slate-900/95 border-t border-purple-500/30 shrink-0 backdrop-blur-md space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-300 pb-1 border-b border-slate-800">
+                        <span className="font-bold text-white flex items-center gap-1.5">
+                          <Paperclip className="w-3.5 h-3.5 text-purple-400" />
+                          Attachment Preview ({selectedAttachment.type.toUpperCase()})
+                        </span>
                         <button
                           type="button"
-                          onClick={() => photoInputRef.current?.click()}
-                          className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
-                          aria-label="Send photo"
+                          onClick={cancelAttachment}
+                          disabled={isUploadingAttachment}
+                          className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                          title="Cancel attachment"
                         >
-                          <ImageIcon className="w-4 h-4 text-emerald-400" />
-                          <span>Photos</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => videoInputRef.current?.click()}
-                          className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
-                          aria-label="Send video"
-                        >
-                          <Film className="w-4 h-4 text-purple-400" />
-                          <span>Videos</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => gifInputRef.current?.click()}
-                          className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
-                          aria-label="Send GIF"
-                        >
-                          <Smile className="w-4 h-4 text-amber-400" />
-                          <span>GIFs</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
-                          aria-label="Send file"
-                        >
-                          <FileText className="w-4 h-4 text-blue-400" />
-                          <span>Files</span>
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Microphone / Voice Note Button */}
-                  <button
-                    type="button"
-                    onClick={startVoiceRecording}
-                    title="Record Voice Note"
-                    aria-label="Record voice note"
-                    className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-purple-400 hover:text-purple-300 hover:bg-slate-800 transition cursor-pointer"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </button>
+                      <div className="flex items-center gap-3">
+                        {/* Visual Thumbnail */}
+                        {selectedAttachment.type === 'image' || selectedAttachment.type === 'gif' ? (
+                          <img
+                            src={selectedAttachment.previewUrl}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-xl object-cover border border-purple-500/30 shrink-0"
+                          />
+                        ) : selectedAttachment.type === 'video' ? (
+                          <video
+                            src={selectedAttachment.previewUrl}
+                            className="w-16 h-16 rounded-xl object-cover border border-purple-500/30 shrink-0 bg-black"
+                            muted
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-xl bg-slate-800 border border-slate-700 flex flex-col items-center justify-center text-blue-400 shrink-0">
+                            <FileText className="w-7 h-7" />
+                          </div>
+                        )}
 
-                  {/* Text Input */}
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder={
-                      editingMessage
-                        ? 'Edit message content...'
-                        : replyingTo
-                        ? `Reply to ${replyingTo.senderId === currentUser?.id ? 'yourself' : activeChatUser?.name}...`
-                        : 'Send an encrypted message...'
-                    }
-                    className="flex-1 bg-slate-900 border border-purple-500/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
-                  />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-xs text-white truncate">{selectedAttachment.name}</p>
+                          <p className="text-[11px] text-slate-400">{formatFileSize(selectedAttachment.size)}</p>
+                          <input
+                            type="text"
+                            value={attachmentCaption}
+                            onChange={(e) => setAttachmentCaption(e.target.value)}
+                            placeholder="Add a caption (optional)..."
+                            className="w-full mt-1.5 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                            disabled={isUploadingAttachment}
+                          />
+                        </div>
 
-                  {/* Send Button */}
-                  <button
-                    type="submit"
-                    disabled={!chatInput.trim()}
-                    className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white disabled:opacity-50 transition shadow-md shadow-purple-900/30 cursor-pointer"
-                    title={editingMessage ? 'Save Edit' : 'Send message'}
-                    aria-label={editingMessage ? 'Save Edit' : 'Send message'}
-                  >
-                    {editingMessage ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </form>
+                        <button
+                          type="button"
+                          onClick={sendAttachment}
+                          disabled={isUploadingAttachment}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-md shadow-purple-900/30 shrink-0 cursor-pointer disabled:opacity-50"
+                        >
+                          {isUploadingAttachment ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                          <span>Send</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Message Input Bar & Voice Recorder */}
+                  {isRecordingVoice ? (
+                    /* Glowing Voice Recording Bar with live timer and controls */
+                    <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3 shrink-0">
+                      <div className="flex items-center gap-3">
+                        <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                        <span className="text-xs font-mono font-bold text-rose-400">
+                          Recording: {Math.floor(recordingSeconds / 60)}:
+                          {(recordingSeconds % 60).toString().padStart(2, '0')}
+                        </span>
+                        <span className="text-xs text-slate-400 hidden sm:inline">
+                          Encrypted audio note
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={cancelVoiceRecording}
+                          disabled={isUploadingVoice}
+                          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                          title="Cancel voice recording"
+                          aria-label="Cancel voice recording"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Cancel
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={sendVoiceRecording}
+                          disabled={isUploadingVoice || recordingSeconds < 1}
+                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 transition cursor-pointer disabled:opacity-50"
+                          title="Send voice note"
+                          aria-label="Send voice note"
+                        >
+                          {isUploadingVoice ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                          Send Note
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Standard Message Input Form */
+                    <form
+                      onSubmit={handleSend}
+                      className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2 shrink-0 relative"
+                    >
+                      {/* Attachment Button & Popover */}
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setShowAttachMenu(!showAttachMenu)}
+                          title="Add attachment"
+                          aria-label="Open attachments"
+                          className={`p-2.5 rounded-xl transition cursor-pointer ${
+                            showAttachMenu
+                              ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50'
+                              : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+                          }`}
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </button>
+
+                        {showAttachMenu && (
+                          <div className="absolute bottom-full left-0 mb-2 w-44 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl py-1.5 z-40 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => photoInputRef.current?.click()}
+                              className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
+                              aria-label="Send photo"
+                            >
+                              <ImageIcon className="w-4 h-4 text-emerald-400" />
+                              <span>Photos</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => videoInputRef.current?.click()}
+                              className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
+                              aria-label="Send video"
+                            >
+                              <Film className="w-4 h-4 text-purple-400" />
+                              <span>Videos</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => gifInputRef.current?.click()}
+                              className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
+                              aria-label="Send GIF"
+                            >
+                              <Smile className="w-4 h-4 text-amber-400" />
+                              <span>GIFs</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="w-full px-3 py-2 hover:bg-white/10 flex items-center gap-2.5 text-left text-slate-200 transition cursor-pointer"
+                              aria-label="Send file"
+                            >
+                              <FileText className="w-4 h-4 text-blue-400" />
+                              <span>Files</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Microphone / Voice Note Button */}
+                      <button
+                        type="button"
+                        onClick={startVoiceRecording}
+                        title="Record Voice Note"
+                        aria-label="Record voice note"
+                        className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-purple-400 hover:text-purple-300 hover:bg-slate-800 transition cursor-pointer"
+                      >
+                        <Mic className="w-4 h-4" />
+                      </button>
+
+                      {/* Text Input */}
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder={
+                          editingMessage
+                            ? 'Edit message content...'
+                            : replyingTo
+                            ? `Reply to ${replyingTo.senderId === currentUser?.id ? 'yourself' : activeChatUser?.name}...`
+                            : 'Send an encrypted message...'
+                        }
+                        className="flex-1 bg-slate-900 border border-purple-500/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                      />
+
+                      {/* Send Button */}
+                      <button
+                        type="submit"
+                        disabled={!chatInput.trim()}
+                        className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white disabled:opacity-50 transition shadow-md shadow-purple-900/30 cursor-pointer"
+                        title={editingMessage ? 'Save Edit' : 'Send message'}
+                        aria-label={editingMessage ? 'Save Edit' : 'Send message'}
+                      >
+                        {editingMessage ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                      </button>
+                    </form>
+                  )}
+                </>
               )}
             </>
           ) : (
@@ -2154,7 +2296,7 @@ export const MessagesPage: React.FC = () => {
             {/* Recipient List */}
             <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
               {supabaseUsers
-                .filter((u) => u.id !== currentUser?.id)
+                .filter((u) => u.id !== currentUser?.id && !isUserBlocked(u.id))
                 .filter((u) => {
                   if (!forwardSearchQuery) return true;
                   const q = forwardSearchQuery.toLowerCase();

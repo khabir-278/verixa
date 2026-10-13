@@ -34,3 +34,62 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
     detectSessionInUrl: typeof window !== 'undefined',
   },
 });
+
+let cachedAccessToken: string | null = null;
+
+if (typeof window !== 'undefined') {
+  supabase.auth
+    .getSession()
+    .then(({ data }) => {
+      cachedAccessToken = data?.session?.access_token || null;
+    })
+    .catch(() => {});
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    cachedAccessToken = session?.access_token || null;
+  });
+
+  const win = window as any;
+  if (typeof win.fetch === 'function' && !win.__verixaAuthFetchInstalled) {
+    win.__verixaAuthFetchInstalled = true;
+    const nativeFetch = win.fetch.bind(window);
+
+    win.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      try {
+        const urlStr =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+            ? input.toString()
+            : (input as Request)?.url || '';
+
+        const isSameOriginApi =
+          urlStr.startsWith('/api/') ||
+          (typeof window.location?.origin === 'string' &&
+            urlStr.startsWith(`${window.location.origin}/api/`));
+
+        if (isSameOriginApi) {
+          const headers = new Headers(
+            init?.headers || (input instanceof Request ? input.headers : undefined)
+          );
+          if (!headers.has('Authorization')) {
+            let token = cachedAccessToken;
+            if (!token) {
+              const { data } = await supabase.auth.getSession();
+              token = data?.session?.access_token || null;
+              cachedAccessToken = token;
+            }
+            if (token) {
+              headers.set('Authorization', `Bearer ${token}`);
+              return nativeFetch(input, { ...(init || {}), headers });
+            }
+          }
+        }
+      } catch {
+        // Proceed with original request on header construction errors
+      }
+      return nativeFetch(input, init);
+    };
+  }
+}
+

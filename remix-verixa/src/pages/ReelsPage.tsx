@@ -31,7 +31,7 @@ interface ReelsPageProps {
 }
 
 export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirectReel }) => {
-  const { reels, likeReel, addReel, addToast, currentUser, openUserProfile } = useApp();
+  const { reels, likeReel, addReel, addToast, currentUser, openUserProfile, isUserBlocked, restrictedUserIds } = useApp();
   const [currentReelIdx, setCurrentReelIdx] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -51,6 +51,11 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
   const [commentInputText, setCommentInputText] = useState<string>('');
   const [isSubmittingComment, setIsSubmittingComment] = useState<boolean>(false);
 
+  const visibleReels = React.useMemo(
+    () => reels.filter((r) => !isUserBlocked(r.user?.id)),
+    [reels, isUserBlocked, restrictedUserIds]
+  );
+
   // Handle directReelId
   useEffect(() => {
     if (!directReelId) {
@@ -59,8 +64,8 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
       return;
     }
 
-    // Check if reel exists in local list
-    const foundIdx = reels.findIndex((r) => r.id === directReelId);
+    // Check if reel exists in visible local list
+    const foundIdx = visibleReels.findIndex((r) => r.id === directReelId);
     if (foundIdx >= 0) {
       setCurrentReelIdx(foundIdx);
       setDirectReel(null);
@@ -76,9 +81,10 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
     fetchReelById(directReelId, currentUser?.id)
       .then((r) => {
         if (!isMounted) return;
-        if (r) {
+        if (r && !isUserBlocked(r.user?.id)) {
           setDirectReel(r);
         } else {
+          setDirectReel(null);
           setDirectNotFound(true);
         }
       })
@@ -92,12 +98,20 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
     return () => {
       isMounted = false;
     };
-  }, [directReelId, reels, currentUser?.id]);
+  }, [directReelId, visibleReels, currentUser?.id, isUserBlocked]);
+
+  // If active directReel creator becomes blocked, immediately hide it
+  useEffect(() => {
+    if (directReel && isUserBlocked(directReel.user?.id)) {
+      setDirectReel(null);
+      setDirectNotFound(true);
+    }
+  }, [directReel, isUserBlocked, restrictedUserIds]);
 
   const activeReel: Reel =
     directReel ||
-    reels[currentReelIdx] ||
-    reels[0] || {
+    visibleReels[currentReelIdx] ||
+    visibleReels[0] || {
       id: 'reel_empty',
       user: {
         id: 'usr_verixa',
@@ -131,14 +145,14 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
 
     setIsLoadingComments(true);
     const unsubscribe = subscribeReelComments(activeReel.id, (comments) => {
-      setReelComments(comments);
+      setReelComments(comments.filter((c) => !isUserBlocked(c.user?.id)));
       setIsLoadingComments(false);
     });
 
     return () => {
       unsubscribe();
     };
-  }, [isCommentsDrawerOpen, activeReel.id]);
+  }, [isCommentsDrawerOpen, activeReel.id, isUserBlocked]);
 
   const handleNext = () => {
     if (directReel) {
@@ -147,7 +161,7 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ directReelId, onClearDirec
       setCurrentReelIdx(0);
       return;
     }
-    if (currentReelIdx < reels.length - 1) {
+    if (currentReelIdx < visibleReels.length - 1) {
       setCurrentReelIdx((prev) => prev + 1);
     } else {
       setCurrentReelIdx(0);

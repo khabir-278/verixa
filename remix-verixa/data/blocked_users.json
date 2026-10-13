@@ -1,0 +1,23 @@
+{
+  "blocks": {
+    "e825d91d-4d19-4283-bd1f-9da12cf0ff10": [
+      {
+        "id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+        "blockerId": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+        "blockedId": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+        "name": "Jashu Yellasiri",
+        "username": "jashu_2426",
+        "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIYd0D-jEH5XoEWZEw0XIfSRjoHDqefllK3EYQmv1zpAHMpII-TjA=s96-c",
+        "reason": "Blocked from user profile",
+        "blockedAt": "2026-10-11T07:50:10.519Z"
+      }
+    ],
+    "c7aa8500-26f1-4c6f-ac9d-deaf95373544": []
+  },
+  "unblockedIds": {
+    "e825d91d-4d19-4283-bd1f-9da12cf0ff10": [],
+    "c7aa8500-26f1-4c6f-ac9d-deaf95373544": [
+      "e825d91d-4d19-4283-bd1f-9da12cf0ff10"
+    ]
+  }
+}

@@ -20,7 +20,7 @@ interface PostDetailModalProps {
 }
 
 export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClose }) => {
-  const { currentUser, addToast, openUserProfile } = useApp();
+  const { currentUser, addToast, openUserProfile, isUserBlocked, restrictedUserIds } = useApp();
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [notFound, setNotFound] = useState<boolean>(false);
@@ -35,9 +35,13 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
       try {
         const fetched = await fetchPostById(postId, currentUser?.id);
         if (!isMounted) return;
-        if (fetched) {
-          setPost(fetched);
+        if (fetched && !isUserBlocked(fetched.user?.id)) {
+          setPost({
+            ...fetched,
+            comments: (fetched.comments || []).filter((c) => !isUserBlocked(c.user?.id)),
+          });
         } else {
+          setPost(null);
           setNotFound(true);
         }
       } catch (err) {
@@ -52,7 +56,14 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
     return () => {
       isMounted = false;
     };
-  }, [postId, currentUser?.id]);
+  }, [postId, currentUser?.id, isUserBlocked]);
+
+  useEffect(() => {
+    if (post && isUserBlocked(post.user?.id)) {
+      setPost(null);
+      setNotFound(true);
+    }
+  }, [post, isUserBlocked, restrictedUserIds]);
 
   const handleLike = async () => {
     if (!currentUser || !post) {

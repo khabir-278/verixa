@@ -47,12 +47,22 @@ import {
   getSignedMediaUrl,
   getUserLikedPostIds,
   resolvePostSignedUrls,
+  resolveReelSignedUrls,
+  resolveReelsSignedUrls,
+  isProtectedStorageMedia,
+  DEFAULT_SIGNED_URL_TTL_SECONDS,
   deleteStorageFile,
   toggleStoryLike,
   recordStoryViewInDatabase,
   createNotification,
   markSingleNotificationAsReadInApi,
   markConversationAsRead,
+  blockUserAccount,
+  unblockUserAccount,
+  fetchUserBlockRelations,
+  setClientRestrictedUserIds,
+  isClientUserRestricted,
+  BlockedUserAccount,
 } from '../lib/supabaseServices';
 
 interface Toast {
@@ -122,6 +132,19 @@ interface AppContextType {
   followingUserIds: Set<string>;
   followUser: (targetUserId: string) => Promise<void>;
   isUserFollowing: (userId: string) => boolean;
+
+  // Blocking & Mutual Privacy
+  blockedUsers: BlockedUserAccount[];
+  blockedUserIds: Set<string>;
+  restrictedUserIds: Set<string>;
+  isUserBlocked: (targetUserId?: string | null) => boolean;
+  isBlockedByMe: (targetUserId?: string | null) => boolean;
+  blockUser: (
+    targetUser: User | { id: string; username?: string; name?: string; avatar?: string },
+    reason?: string
+  ) => Promise<boolean>;
+  unblockUser: (targetUserId: string, targetName?: string) => Promise<boolean>;
+  refreshBlockRelations: (explicitUserId?: string) => Promise<void>;
 
   // Stories & Reels
   stories: Story[];
@@ -278,6 +301,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [unreadChatSenders]
   );
   const [followingUserIds, setFollowingUserIds] = useState<Set<string>>(new Set());
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUserAccount[]>([]);
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
+  const [restrictedUserIds, setRestrictedUserIds] = useState<Set<string>>(new Set());
+  const restrictedUserIdsRef = useRef<Set<string>>(new Set());
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
   const [auditLogs, setAuditLogs] = useState<ModerationAuditLog[]>([]);
@@ -398,6 +425,124 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 4500);
   }, [removeToast]);
 
+  // Immediate cache & state purge whenever restricted user IDs update
+  const applyRestrictedPurge = useCallback((restrictedSet: Set<string>) => {
+    if (!restrictedSet || restrictedSet.size === 0) return;
+
+    setPosts((prev) =>
+      prev
+        .filter((p) => !p.user?.id || !restrictedSet.has(String(p.user.id)))
+        .map((p) => ({
+          ...p,
+          comments: Array.isArray(p.comments)
+            ? p.comments.filter((c) => !c.user?.id || !restrictedSet.has(String(c.user.id)))
+            : [],
+        }))
+    );
+
+    setStories((prev) =>
+      prev.filter((s) => !s.user?.id || !restrictedSet.has(String(s.user.id)))
+    );
+
+    setReels((prev) =>
+      prev.filter((r) => !r.user?.id || !restrictedSet.has(String(r.user.id)))
+    );
+
+    setNotifications((prev) =>
+      prev.filter((n) => !n.user?.id || !restrictedSet.has(String(n.user.id)))
+    );
+
+    setFollowingUserIds((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      restrictedSet.forEach((uid) => {
+        if (next.has(uid)) {
+          next.delete(uid);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+
+    setUnreadChatSenders((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      restrictedSet.forEach((uid) => {
+        if (next[uid]) {
+          delete next[uid];
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+
+    setActiveCall((prevCall) => {
+      if (prevCall?.peerId && restrictedSet.has(String(prevCall.peerId))) {
+        webrtcCallService.endCall().catch(() => {});
+        return null;
+      }
+      return prevCall;
+    });
+  }, []);
+
+  const isUserBlocked = useCallback(
+    (targetUserId?: string | null): boolean => {
+      if (!targetUserId) return false;
+      const clean = String(targetUserId).trim();
+      if (!clean || clean === currentUser?.id) return false;
+      return (
+        restrictedUserIds.has(clean) ||
+        restrictedUserIdsRef.current.has(clean) ||
+        isClientUserRestricted(clean)
+      );
+    },
+    [restrictedUserIds, currentUser?.id]
+  );
+
+  const isBlockedByMe = useCallback(
+    (targetUserId?: string | null): boolean => {
+      if (!targetUserId) return false;
+      const clean = String(targetUserId).trim();
+      if (!clean || clean === currentUser?.id) return false;
+      return blockedUserIds.has(clean);
+    },
+    [blockedUserIds, currentUser?.id]
+  );
+
+  const refreshBlockRelations = useCallback(
+    async (explicitUserId?: string) => {
+      const uid = explicitUserId || currentUser?.id;
+      if (!uid) {
+        setBlockedUsers([]);
+        setBlockedUserIds(new Set());
+        setRestrictedUserIds(new Set());
+        restrictedUserIdsRef.current = new Set();
+        setClientRestrictedUserIds(null, []);
+        return;
+      }
+
+      try {
+        const { blockedUsers: myBlocked, restrictedUserIds: allRestricted } =
+          await fetchUserBlockRelations(uid);
+        const myBlockedSet = new Set<string>(myBlocked.map((b) => String(b.id)));
+        const restrictedSet = new Set<string>([
+          ...myBlockedSet,
+          ...allRestricted.map((id) => String(id)),
+        ]);
+
+        restrictedUserIdsRef.current = restrictedSet;
+        setBlockedUsers(myBlocked);
+        setBlockedUserIds(myBlockedSet);
+        setRestrictedUserIds(restrictedSet);
+        setClientRestrictedUserIds(uid, Array.from(restrictedSet));
+        applyRestrictedPurge(restrictedSet);
+      } catch (err) {
+        console.warn('Notice refreshing block relations:', err);
+      }
+    },
+    [currentUser?.id, applyRestrictedPurge]
+  );
+
   // Online Presence Tracking (Supabase Realtime Presence)
   useEffect(() => {
     if (!currentUser?.id) {
@@ -414,12 +559,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const state = presenceChannel.presenceState();
         const ids = new Set<string>();
         Object.keys(state).forEach((key) => {
-          ids.add(key);
+          if (!restrictedUserIdsRef.current.has(key)) {
+            ids.add(key);
+          }
         });
         setOnlineUserIds(ids);
       })
       .on('presence', { event: 'join' }, ({ key }) => {
-        setOnlineUserIds((prev) => new Set(prev).add(key));
+        if (!restrictedUserIdsRef.current.has(key)) {
+          setOnlineUserIds((prev) => new Set(prev).add(key));
+        }
       })
       .on('presence', { event: 'leave' }, ({ key }) => {
         setOnlineUserIds((prev) => {
@@ -451,6 +600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isUserOnline = useCallback(
     (userId: string): boolean => {
       if (!userId) return false;
+      if (restrictedUserIdsRef.current.has(userId)) return false;
       if (currentUser?.id === userId) return true;
       return onlineUserIds.has(userId);
     },
@@ -467,6 +617,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     webrtcCallService.init(currentUser);
 
     const unsubState = webrtcCallService.subscribe((info, local, remote) => {
+      if (info?.peerId && restrictedUserIdsRef.current.has(String(info.peerId))) {
+        webrtcCallService.dropCallSilently();
+        return;
+      }
       setActiveCall(info);
       setLocalStream(local);
       setRemoteStream(remote);
@@ -485,9 +639,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const startCall = useCallback(
     async (targetUser: { id: string; name: string; avatar?: string }, type: CallType) => {
+      if (targetUser?.id && restrictedUserIdsRef.current.has(String(targetUser.id))) {
+        addToast('warning', 'Unable to Call', "Calling isn't available between these accounts.");
+        return;
+      }
       await webrtcCallService.startCall(targetUser, type);
     },
-    []
+    [addToast]
   );
 
   const acceptCall = useCallback(async () => {
@@ -566,9 +724,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  // Load and apply User's relationships (Following, Saved Posts, Liked Posts)
+  // Load and apply User's relationships (Block relations, Following, Saved Posts, Liked Posts)
   const loadUserRelations = useCallback(async (userId: string) => {
     try {
+      await refreshBlockRelations(userId);
+
       const localLikedRaw = typeof window !== 'undefined' ? localStorage.getItem(`verixa_liked_posts_${userId}`) : null;
       let localLikedArr: string[] = [];
       if (localLikedRaw) {
@@ -583,7 +743,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getUserLikedPostIds(userId),
       ]);
 
-      const followingSet = new Set(following.map((u) => u.id));
+      const followingSet = new Set(
+        following
+          .filter((u) => !restrictedUserIdsRef.current.has(String(u.id)))
+          .map((u) => u.id)
+      );
       setFollowingUserIds(followingSet);
 
       if (savedPosts && (savedPosts as any).data) {
@@ -597,7 +761,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (err) {
       console.warn('Notice loading user relations:', err);
     }
-  }, []);
+  }, [refreshBlockRelations]);
+
+  // Periodic & cross-tab sync of mutual block relationships so if User A blocks User B,
+  // User B's active session immediately enforces the block without requiring a page reload.
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    refreshBlockRelations(currentUser.id);
+    const interval = setInterval(() => {
+      refreshBlockRelations(currentUser.id);
+    }, 5000);
+
+    const bc =
+      typeof BroadcastChannel !== 'undefined'
+        ? new BroadcastChannel('verixa_blocks_channel')
+        : null;
+    if (bc) {
+      bc.onmessage = () => {
+        refreshBlockRelations(currentUser.id);
+      };
+    }
+
+    return () => {
+      clearInterval(interval);
+      bc?.close();
+    };
+  }, [currentUser?.id, refreshBlockRelations]);
 
   // Helper to map video posts into Reels
   const syncReelsFromPosts = (postsList: Post[]) => {
@@ -681,23 +871,28 @@ function formatStoryRelativeTime(dateString?: string): string {
 
   const normalizeStoryItem = async (item: any, currentUserId?: string): Promise<Story> => {
     const rawMedia = item.mediaUrl || item.media_url || '';
-    const resolvedMedia = await getSignedMediaUrl(rawMedia, 3600);
+    const resolvedMedia = await getSignedMediaUrl(rawMedia, DEFAULT_SIGNED_URL_TTL_SECONDS);
     const rawAvatar = item.user?.avatar || item.user_avatar || '';
-    const resolvedAvatar = rawAvatar ? await getSignedMediaUrl(rawAvatar, 3600) : '';
+    const resolvedAvatar = rawAvatar ? await getSignedMediaUrl(rawAvatar, DEFAULT_SIGNED_URL_TTL_SECONDS) : '';
 
     const isMyStory = Boolean(
       (currentUserId && (item.user?.id === currentUserId || item.user_id === currentUserId)) ||
       (currentUser?.id && (item.user?.id === currentUser.id || item.user_id === currentUser.id))
     );
 
-    let finalAvatar = resolvedAvatar || rawAvatar;
+    const safeRawAvatar = isProtectedStorageMedia(rawAvatar) ? '' : rawAvatar;
+    let finalAvatar = resolvedAvatar || safeRawAvatar;
     if (isMyStory && currentUser?.avatar && !currentUser.avatar.includes('unsplash.com')) {
-      finalAvatar = currentUser.avatar;
+      finalAvatar = isProtectedStorageMedia(currentUser.avatar) && !currentUser.avatar.startsWith('http')
+        ? (await getSignedMediaUrl(currentUser.avatar, DEFAULT_SIGNED_URL_TTL_SECONDS))
+        : currentUser.avatar;
     } else if (isMyStory && currentUserId && typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem(`verixa_user_avatar_${currentUserId}`);
         if (cached && !cached.includes('unsplash.com')) {
-          finalAvatar = cached;
+          finalAvatar = isProtectedStorageMedia(cached) && !cached.startsWith('http')
+            ? (await getSignedMediaUrl(cached, DEFAULT_SIGNED_URL_TTL_SECONDS))
+            : cached;
         }
       } catch {}
     }
@@ -754,8 +949,9 @@ function formatStoryRelativeTime(dateString?: string): string {
         followingCount: item.user?.followingCount ?? 0,
         postsCount: item.user?.postsCount ?? 0,
       },
-      mediaUrl: resolvedMedia || rawMedia,
-      media_url: resolvedMedia || rawMedia,
+      // STOR-03: Never fall back to rawMedia when signed resolution fails for protected storage content
+      mediaUrl: resolvedMedia,
+      media_url: resolvedMedia,
       type: mediaType,
       mediaType: mediaType,
       media_type: mediaType,
@@ -780,14 +976,28 @@ function formatStoryRelativeTime(dateString?: string): string {
 
   const loadStories = useCallback(async () => {
     try {
-      const res = await fetch(`/api/stories${currentUser?.id ? `?userId=${currentUser.id}` : ''}`);
+      const headers: Record<string, string> = {};
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+        }
+      } catch {}
+
+      const res = await fetch(`/api/stories${currentUser?.id ? `?userId=${currentUser.id}` : ''}`, { headers });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.stories) && data.stories.length > 0) {
+        if (Array.isArray(data.stories)) {
           const normalized = await Promise.all(
             data.stories.map((s: any) => normalizeStoryItem(s, currentUser?.id))
           );
-          setStories(normalized);
+          setStories(
+            normalized.filter(
+              (s) =>
+                Boolean(s.mediaUrl) &&
+                (!s.user?.id || !restrictedUserIdsRef.current.has(String(s.user.id)))
+            )
+          );
         }
       }
     } catch {
@@ -797,11 +1007,25 @@ function formatStoryRelativeTime(dateString?: string): string {
 
   const loadReels = useCallback(async () => {
     try {
-      const res = await fetch(`/api/reels${currentUser?.id ? `?userId=${currentUser.id}` : ''}`);
+      const headers: Record<string, string> = {};
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+        }
+      } catch {}
+
+      const res = await fetch(`/api/reels${currentUser?.id ? `?userId=${currentUser.id}` : ''}`, { headers });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.reels) && data.reels.length > 0) {
-          setReels(data.reels);
+        if (Array.isArray(data.reels)) {
+          const permittedReels = data.reels.filter((r: any) => {
+            const uid = String(r?.user?.id || r?.user_id || '');
+            return !uid || !restrictedUserIdsRef.current.has(uid);
+          });
+          // STOR-02: Resolve signed URLs for relative reel video paths and creator avatars
+          const resolvedReels = await resolveReelsSignedUrls(permittedReels);
+          setReels(resolvedReels);
         }
       }
     } catch {
@@ -810,6 +1034,7 @@ function formatStoryRelativeTime(dateString?: string): string {
   }, [currentUser?.id]);
 
   const refreshPosts = async () => {
+    await refreshBlockRelations();
     await loadPosts();
     await loadStories();
     await loadReels();
@@ -860,6 +1085,11 @@ function formatStoryRelativeTime(dateString?: string): string {
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
         setFollowingUserIds(new Set());
+        setBlockedUsers([]);
+        setBlockedUserIds(new Set());
+        setRestrictedUserIds(new Set());
+        restrictedUserIdsRef.current = new Set();
+        setClientRestrictedUserIds(null, []);
         setSavedPostIds(new Set());
         setLikedPostIds(new Set());
         setNotifications([]);
@@ -885,9 +1115,12 @@ function formatStoryRelativeTime(dateString?: string): string {
   useEffect(() => {
     const unsubPosts = subscribePosts((sbPosts) => {
       if (sbPosts) {
-        setPosts(sbPosts);
+        const filtered = sbPosts.filter(
+          (p) => !p.user?.id || !restrictedUserIdsRef.current.has(String(p.user.id))
+        );
+        setPosts(filtered);
         setIsPostsLoading(false);
-        syncReelsFromPosts(sbPosts);
+        syncReelsFromPosts(filtered);
       }
     }, currentUser?.id);
 
@@ -906,13 +1139,16 @@ function formatStoryRelativeTime(dateString?: string): string {
     // Reset notifications list on user change to prevent stale user notifications
     setNotifications([]);
 
-    // Load any offline / local notifications cached for this user (strictly non-self)
+    // Load any offline / local notifications cached for this user (strictly non-self & non-blocked)
     try {
       const storageKey = `verixa_notifications_${currentUser.id}`;
       const cached = JSON.parse(localStorage.getItem(storageKey) || '[]');
       if (cached && Array.isArray(cached) && cached.length > 0) {
-        // STRICT: Never allow self-notifications from cache
-        const nonSelf = cached.filter((n: Notification) => n.user?.id !== currentUser.id);
+        const nonSelf = cached.filter(
+          (n: Notification) =>
+            n.user?.id !== currentUser.id &&
+            (!n.user?.id || !restrictedUserIdsRef.current.has(String(n.user.id)))
+        );
         if (nonSelf.length > 0) {
           setNotifications(nonSelf);
         }
@@ -921,8 +1157,11 @@ function formatStoryRelativeTime(dateString?: string): string {
 
     const unsubNotifs = subscribeUserNotifications(currentUser.id, (realtimeNotifs) => {
       if (realtimeNotifs && Array.isArray(realtimeNotifs)) {
-        // Filter out any notification where sender is current user
-        const cleanNotifs = realtimeNotifs.filter((n) => n.user?.id !== currentUser.id);
+        const cleanNotifs = realtimeNotifs.filter(
+          (n) =>
+            n.user?.id !== currentUser.id &&
+            (!n.user?.id || !restrictedUserIdsRef.current.has(String(n.user.id)))
+        );
         setNotifications(cleanNotifs);
 
         // Cache clean notifications in localStorage
@@ -939,8 +1178,9 @@ function formatStoryRelativeTime(dateString?: string): string {
       bc.onmessage = (event) => {
         if (event.data?.recipientId === currentUser.id && event.data?.notification) {
           const incoming: Notification = event.data.notification;
-          // STRICT: Ignore any self notification
+          // STRICT: Ignore any self or blocked notification
           if (incoming.user?.id === currentUser.id) return;
+          if (incoming.user?.id && restrictedUserIdsRef.current.has(String(incoming.user.id))) return;
 
           setNotifications((prev) => {
             if (prev.some((n) => n.id === incoming.id)) return prev;
@@ -1017,6 +1257,7 @@ function formatStoryRelativeTime(dateString?: string): string {
       const unreadMap: Record<string, { count: number; lastText: string; lastTime: string }> = {};
       for (const item of recentIncoming) {
         const senderId = item.senderId;
+        if (restrictedUserIdsRef.current.has(String(senderId))) continue;
         const lastRead = lastReadMap[senderId];
         const isUnread = !lastRead || new Date(item.createdAt) > new Date(lastRead);
         if (isUnread) {
@@ -1056,6 +1297,7 @@ function formatStoryRelativeTime(dateString?: string): string {
     if (!currentUser?.id) return;
 
     const unsubIncoming = subscribeIncomingMessages(currentUser.id, (newMsg) => {
+      if (restrictedUserIdsRef.current.has(String(newMsg.senderId))) return;
       // If currently on Messages page AND actively chatting with this sender:
       if (activeChatUser?.id === newMsg.senderId && currentPage === 'messages') {
         updateLastRead(newMsg.senderId, new Date().toISOString());
@@ -1680,8 +1922,11 @@ function formatStoryRelativeTime(dateString?: string): string {
     postId?: string;
     detail?: string;
   }) => {
-    // 0. ABSOLUTELY ZERO SELF-NOTIFICATIONS!
+    // 0. ABSOLUTELY ZERO SELF-NOTIFICATIONS OR BLOCKED NOTIFICATIONS!
     if (!recipientId || !currentUser?.id || recipientId === currentUser.id) {
+      return;
+    }
+    if (isUserBlocked(recipientId)) {
       return;
     }
 
@@ -1760,6 +2005,11 @@ function formatStoryRelativeTime(dateString?: string): string {
     const currentPost = posts.find((p) => p.id === postId);
     if (!currentPost) return;
 
+    if (currentPost.user?.id && isUserBlocked(currentPost.user.id)) {
+      addToast('warning', 'Action Unavailable', 'You cannot interact with this content.');
+      return;
+    }
+
     const previousLiked = !!currentPost.isLiked;
     const previousLikesCount = currentPost.likes;
     const nextLiked = !previousLiked;
@@ -1829,6 +2079,11 @@ function formatStoryRelativeTime(dateString?: string): string {
     const currentPost = posts.find((p) => p.id === postId);
     if (!currentPost) return;
 
+    if (currentPost.user?.id && isUserBlocked(currentPost.user.id)) {
+      addToast('warning', 'Action Unavailable', 'You cannot bookmark this post.');
+      return;
+    }
+
     const previousBookmarked = !!currentPost.isBookmarked;
     const nextBookmarked = !previousBookmarked;
 
@@ -1873,6 +2128,12 @@ function formatStoryRelativeTime(dateString?: string): string {
     if (!currentUser?.id) {
       addToast('warning', 'Sign In Required', 'Please sign in to post comments.');
       return { allowed: false, reason: 'Authentication required.' };
+    }
+
+    const targetPostForCheck = posts.find((p) => p.id === postId);
+    if (targetPostForCheck?.user?.id && isUserBlocked(targetPostForCheck.user.id)) {
+      addToast('warning', 'Action Unavailable', 'You cannot comment on this post.');
+      return { allowed: false, reason: 'You cannot comment on this post.' };
     }
 
     // 0. VERIXA AI Guardian Action Authorization & Cooldown Check
@@ -2070,7 +2331,7 @@ function formatStoryRelativeTime(dateString?: string): string {
     setBlockedCommentModal((prev) => ({ ...prev, open: false }));
   };
 
-  // ================= FOLLOWS ================= //
+  // ================= FOLLOWS & BLOCKS ================= //
 
   const followUser = async (targetUserId: string) => {
     if (!currentUser?.id) {
@@ -2079,6 +2340,10 @@ function formatStoryRelativeTime(dateString?: string): string {
     }
     if (currentUser.id === targetUserId) {
       addToast('warning', 'Invalid Action', 'You cannot follow yourself.');
+      return;
+    }
+    if (isUserBlocked(targetUserId)) {
+      addToast('warning', 'Action Unavailable', 'You cannot follow this account.');
       return;
     }
 
@@ -2131,10 +2396,138 @@ function formatStoryRelativeTime(dateString?: string): string {
   };
 
   const isUserFollowing = (userId: string) => {
+    if (isUserBlocked(userId)) return false;
     return followingUserIds.has(userId);
   };
 
+  const blockUser = async (
+    targetUser: User | { id: string; username?: string; name?: string; avatar?: string },
+    reason?: string
+  ): Promise<boolean> => {
+    if (!currentUser?.id) {
+      addToast('warning', 'Sign In Required', 'Please sign in to block accounts.');
+      return false;
+    }
+    const targetId = String(targetUser?.id || '').trim();
+    if (!targetId) return false;
+    if (targetId === currentUser.id) {
+      addToast('warning', 'Invalid Action', 'You cannot block your own account.');
+      return false;
+    }
+
+    // Optimistically update block state & purge content immediately
+    const optimisticEntry: BlockedUserAccount = {
+      id: targetId,
+      username: targetUser.username || 'user',
+      name: targetUser.name || targetUser.username || 'User',
+      avatar:
+        targetUser.avatar ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          targetUser.name || targetUser.username || 'User'
+        )}&background=4285F4&color=fff&size=256&bold=true`,
+      reason: reason || 'Blocked by user',
+      blockedAt: new Date().toISOString(),
+    };
+
+    const nextBlockedSet = new Set(blockedUserIds);
+    nextBlockedSet.add(targetId);
+    const nextRestrictedSet = new Set(restrictedUserIds);
+    nextRestrictedSet.add(targetId);
+
+    restrictedUserIdsRef.current = nextRestrictedSet;
+    setBlockedUserIds(nextBlockedSet);
+    setRestrictedUserIds(nextRestrictedSet);
+    setBlockedUsers((prev) => [
+      optimisticEntry,
+      ...prev.filter((u) => String(u.id) !== targetId),
+    ]);
+    setClientRestrictedUserIds(currentUser.id, Array.from(nextRestrictedSet));
+    applyRestrictedPurge(nextRestrictedSet);
+
+    try {
+      await blockUserAccount(currentUser.id, targetUser, reason);
+
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const bc = new BroadcastChannel('verixa_blocks_channel');
+          bc.postMessage({ type: 'BLOCK_UPDATED', blockerId: currentUser.id, targetId });
+          bc.close();
+        } catch {}
+      }
+
+      await refreshBlockRelations(currentUser.id);
+      addToast(
+        'info',
+        'Account Blocked',
+        `@${targetUser.username || targetUser.name || 'user'} has been blocked.`
+      );
+      return true;
+    } catch (err: any) {
+      console.warn('Block account error:', err?.message || err);
+      addToast('error', 'Block Failed', err?.message || 'Could not block this account.');
+      return false;
+    }
+  };
+
+  const unblockUser = async (targetUserId: string): Promise<boolean> => {
+    if (!currentUser?.id) return false;
+    const cleanTargetId = String(targetUserId || '').trim();
+    if (!cleanTargetId) return false;
+
+    const targetAccount = blockedUsers.find((u) => String(u.id) === cleanTargetId);
+
+    // Optimistic removal from personal blocked list
+    setBlockedUsers((prev) => prev.filter((u) => String(u.id) !== cleanTargetId));
+    setBlockedUserIds((prev) => {
+      const next = new Set(prev);
+      next.delete(cleanTargetId);
+      return next;
+    });
+
+    try {
+      await unblockUserAccount(currentUser.id, cleanTargetId);
+
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          const bc = new BroadcastChannel('verixa_blocks_channel');
+          bc.postMessage({ type: 'BLOCK_UPDATED', blockerId: currentUser.id, targetId: cleanTargetId });
+          bc.close();
+        } catch {}
+      }
+
+      await refreshBlockRelations(currentUser.id);
+      await loadPosts();
+      await loadStories();
+      await loadReels();
+
+      addToast(
+        'success',
+        'Account Unblocked',
+        targetAccount?.username
+          ? `@${targetAccount.username} has been unblocked.`
+          : 'Account has been unblocked.'
+      );
+      return true;
+    } catch (err: any) {
+      console.warn('Unblock account error:', err?.message || err);
+      await refreshBlockRelations(currentUser.id);
+      addToast('error', 'Unblock Failed', err?.message || 'Could not unblock this account.');
+      return false;
+    }
+  };
+
   // Stories & Reels
+  const getSessionJsonHeaders = async (): Promise<Record<string, string>> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.access_token) {
+        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+      }
+    } catch {}
+    return headers;
+  };
+
   const addStory = async (
     mediaUrl: string,
     mediaType?: 'image' | 'video',
@@ -2149,9 +2542,10 @@ function formatStoryRelativeTime(dateString?: string): string {
     setStoryUploadStage('VERIXA Vision AI analyzing content for safety...');
 
     try {
+      const headers = await getSessionJsonHeaders();
       const res = await fetch('/api/stories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           mediaUrl,
           mediaType: mediaType || (mediaUrl.includes('.mp4') ? 'video' : 'image'),
@@ -2185,7 +2579,9 @@ function formatStoryRelativeTime(dateString?: string): string {
 
       if (data.story) {
         const normalized = await normalizeStoryItem(data.story, currentUser.id);
-        setStories((prev) => [normalized, ...prev.filter((s) => s.id !== normalized.id)]);
+        if (normalized.mediaUrl) {
+          setStories((prev) => [normalized, ...prev.filter((s) => s.id !== normalized.id)]);
+        }
 
         // Direct authenticated client sync to Supabase
         try {
@@ -2218,6 +2614,11 @@ function formatStoryRelativeTime(dateString?: string): string {
   };
 
   const viewStory = async (storyId: string) => {
+    const targetStory = stories.find((s) => s.id === storyId);
+    if (targetStory?.user?.id && isUserBlocked(targetStory.user.id)) {
+      return;
+    }
+
     setStories((prev) =>
       prev.map((s) => {
         if (s.id === storyId) {
@@ -2238,9 +2639,10 @@ function formatStoryRelativeTime(dateString?: string): string {
     if (currentUser?.id) {
       try {
         recordStoryViewInDatabase(storyId, currentUser.id).catch(() => {});
+        const headers = await getSessionJsonHeaders();
         await fetch(`/api/stories/${storyId}/view`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ userId: currentUser.id }),
         });
       } catch {
@@ -2261,6 +2663,17 @@ function formatStoryRelativeTime(dateString?: string): string {
     }
 
     const targetStory = stories.find((s) => s.id === storyId);
+    const checkAuthorId = String(
+      explicitAuthorId ||
+      targetStory?.user?.id ||
+      (targetStory as any)?.user_id ||
+      ''
+    );
+    if (checkAuthorId && isUserBlocked(checkAuthorId)) {
+      addToast('warning', 'Action Unavailable', 'You cannot interact with this story.');
+      return false;
+    }
+
     const prevLikedBy = targetStory?.likedBy || targetStory?.liked_by || [];
     const wasLiked = Boolean(
       targetStory?.isLiked ||
@@ -2290,17 +2703,32 @@ function formatStoryRelativeTime(dateString?: string): string {
       })
     );
 
-    // Persist to Supabase and Backend API concurrently
-    try {
-      await toggleStoryLike(storyId, currentUser.id, targetLiked);
-    } catch {
-      // Non-blocking sync fallback
+    // Persist to Supabase and Backend API
+    const sbResult = await toggleStoryLike(storyId, currentUser.id, targetLiked);
+    if (!sbResult.success) {
+      // Revert optimistic update on restriction or write failure
+      setStories((prev) =>
+        prev.map((s) =>
+          s.id === storyId
+            ? {
+                ...s,
+                isLiked: wasLiked,
+                likesCount: prevLikes,
+                likes_count: prevLikes,
+                likedBy: prevLikedBy,
+                liked_by: prevLikedBy,
+              }
+            : s
+        )
+      );
+      return false;
     }
 
     try {
+      const headers = await getSessionJsonHeaders();
       const res = await fetch(`/api/stories/${storyId}/like`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ userId: currentUser.id, targetLiked }),
       });
       if (res.ok) {
@@ -2364,6 +2792,10 @@ function formatStoryRelativeTime(dateString?: string): string {
       addToast('warning', 'Sign In Required', 'Please sign in to react to stories.');
       return false;
     }
+    if (authorId && isUserBlocked(authorId)) {
+      addToast('warning', 'Action Unavailable', 'You cannot react to this story.');
+      return false;
+    }
 
     const cleanText = reactionText.trim();
 
@@ -2395,16 +2827,17 @@ function formatStoryRelativeTime(dateString?: string): string {
 
     try {
       // 2. Call backend API to delete from memory buffer and file
+      const headers = await getSessionJsonHeaders();
       await fetch(`/api/stories/${storyId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ userId: currentUser?.id }),
       });
 
       // 3. Delete from Supabase if authenticated
       if (currentUser?.id) {
         try {
-          await supabase.from('stories').delete().eq('id', storyId);
+          await supabase.from('stories').delete().eq('id', storyId).eq('user_id', currentUser.id);
           await supabase.from('story_likes').delete().eq('story_id', storyId);
         } catch (sbErr) {
           console.warn('Notice deleting story from Supabase:', sbErr);
@@ -2434,9 +2867,10 @@ function formatStoryRelativeTime(dateString?: string): string {
     }
 
     try {
+      const headers = await getSessionJsonHeaders();
       const res = await fetch('/api/reels', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           videoUrl,
           caption,
@@ -2468,7 +2902,10 @@ function formatStoryRelativeTime(dateString?: string): string {
       }
 
       if (data.reel) {
-        setReels((prev) => [data.reel, ...prev]);
+        const signedReel = await resolveReelSignedUrls(data.reel);
+        if (signedReel?.videoUrl) {
+          setReels((prev) => [signedReel, ...prev]);
+        }
 
         // Direct authenticated client sync to Supabase
         try {
@@ -2501,6 +2938,13 @@ function formatStoryRelativeTime(dateString?: string): string {
   };
 
   const likeReel = (reelId: string) => {
+    const existingReel = reels.find((r) => r.id === reelId);
+    const existingAuthorId = String(existingReel?.user?.id || (existingReel as any)?.user_id || '');
+    if (existingAuthorId && isUserBlocked(existingAuthorId)) {
+      addToast('warning', 'Action Unavailable', 'You cannot interact with this reel.');
+      return;
+    }
+
     let targetReel: Reel | undefined;
     let nextLiked = false;
 
@@ -2520,16 +2964,20 @@ function formatStoryRelativeTime(dateString?: string): string {
     );
 
     if (!targetReel) {
-      targetReel = reels.find((r) => r.id === reelId);
+      targetReel = existingReel;
       if (targetReel) nextLiked = !targetReel.isLiked;
     }
 
-    // Call server API asynchronously
-    fetch(`/api/reels/${reelId}/like`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser?.id }),
-    }).catch(() => {});
+    // Call server API asynchronously with JWT header
+    getSessionJsonHeaders()
+      .then((headers) =>
+        fetch(`/api/reels/${reelId}/like`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ userId: currentUser?.id }),
+        })
+      )
+      .catch(() => {});
 
     // If reel was liked, dispatch notification to reel author (User 1)
     if (nextLiked && currentUser && targetReel) {
@@ -2570,6 +3018,11 @@ function formatStoryRelativeTime(dateString?: string): string {
     if (!targetReceiverId) {
       addToast('warning', 'No Contact Selected', 'Please select a conversation partner.');
       return;
+    }
+
+    if (isUserBlocked(targetReceiverId)) {
+      addToast('error', 'Unable to send messages', "Messaging isn't available between these accounts.");
+      throw new Error("Messaging isn't available between these accounts.");
     }
 
     const isCurrentChat = activeChatUser?.id === targetReceiverId;
@@ -2744,6 +3197,10 @@ function formatStoryRelativeTime(dateString?: string): string {
 
   const reactToMessage = async (messageId: string, emoji: string) => {
     if (!currentUser?.id) return;
+    if (activeChatUser?.id && isUserBlocked(activeChatUser.id)) {
+      addToast('warning', 'Unable to react', "Messaging isn't available between these accounts.");
+      return;
+    }
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId) return m;
@@ -2883,6 +3340,14 @@ function formatStoryRelativeTime(dateString?: string): string {
         followingUserIds,
         followUser,
         isUserFollowing,
+        blockedUsers,
+        blockedUserIds,
+        restrictedUserIds,
+        isUserBlocked,
+        isBlockedByMe,
+        blockUser,
+        unblockUser,
+        refreshBlockRelations,
         stories,
         addStory,
         viewStory,

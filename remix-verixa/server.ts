@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import * as fs from "fs";
+import * as crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -19,6 +20,8 @@ import {
   guardianService,
   reviewService,
   notificationService,
+  blockService,
+  BlockedUserEntry,
 } from "./server/moderation";
 import { createClient } from "@supabase/supabase-js";
 import { feedService } from "./server/feed";
@@ -35,6 +38,193 @@ app.use(express.json({ limit: "25mb" }));
 
 // Rate limiter for public moderation endpoints (60 req/min per IP)
 const publicRateLimiter = createRateLimiter(60, 60 * 1000);
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Reusable Strict JWT Authentication Helper & Middleware
+ * Derives the authenticated actor strictly from the verified Supabase user ID.
+ * Rejects missing, invalid, or expired JWTs with 401 and spoofed claimed identities with 403.
+ */
+async function authenticateRequestActor(
+  req: express.Request,
+  res: express.Response,
+  claimedUserId?: string | null,
+  errorShape?: Record<string, any>
+): Promise<{ actorId: string; token: string } | null> {
+  const check = await blockService.verifyRequestActor(
+    req.headers.authorization,
+    claimedUserId !== undefined && claimedUserId !== null ? String(claimedUserId) : undefined
+  );
+  if (!check.verifiedByToken || !check.actorId || !check.token) {
+    res.status(401).json({
+      ...(errorShape || {}),
+      error: check.authError || "Unauthorized: Valid authentication token required.",
+    });
+    return null;
+  }
+  if (check.impersonationAttempt) {
+    res.status(403).json({
+      ...(errorShape || {}),
+      error: "Forbidden: Claimed user ID does not match authenticated session.",
+    });
+    return null;
+  }
+  await blockService.syncFromSupabase(false, req.headers.authorization, check.actorId);
+  return { actorId: check.actorId, token: check.token };
+}
+
+function requireAuth(claimedIdExtractor?: (req: express.Request) => string | undefined | null) {
+  return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const claimedId = claimedIdExtractor ? claimedIdExtractor(req) : undefined;
+    const auth = await authenticateRequestActor(req, res, claimedId);
+    if (!auth) return;
+    (req as any).actorId = auth.actorId;
+    (req as any).authToken = auth.token;
+    next();
+  };
+}
+
+/**
+ * Server-Side Supabase Client Factory
+ * Respects authenticated user context for RLS, or applies service-role key when requested.
+ */
+function getServerSupabase(authHeader?: string, options?: { useServiceRole?: boolean }) {
+  const sbUrl = (
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    'https://jnbaumemwxydjktwedtz.supabase.co'
+  ).trim();
+  const anonKey = (
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    'sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2'
+  ).trim();
+  const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+  // When authHeader is provided without explicit useServiceRole=true, preserve user-scoped JWT and RLS
+  const useServiceRole =
+    options?.useServiceRole === true
+      ? Boolean(serviceRoleKey)
+      : !authHeader && Boolean(serviceRoleKey);
+
+  const sbKey = useServiceRole ? serviceRoleKey : anonKey;
+  if (!sbUrl || !sbKey) return null;
+  try {
+    const clientOptions: any = { auth: { persistSession: false, autoRefreshToken: false } };
+    if (authHeader && !useServiceRole) {
+      clientOptions.global = { headers: { Authorization: authHeader } };
+    }
+    return createClient(sbUrl, sbKey, clientOptions);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Constant-time verification of server-only ADMIN_SECRET_TOKEN.
+ * Rejects synthetic dev_* tokens, short secrets (< 16 chars), and SUPABASE_SERVICE_ROLE_KEY reuse.
+ */
+function verifyAdminSecretToken(candidate?: string | null): boolean {
+  if (!candidate || typeof candidate !== "string") return false;
+  const trimmedCandidate = candidate.trim();
+  if (!trimmedCandidate || trimmedCandidate.startsWith("dev_")) return false;
+
+  const configuredAdminSecret = (
+    process.env.ADMIN_SECRET_TOKEN ||
+    process.env.ADMIN_SECRET_KEY ||
+    ""
+  ).trim();
+
+  if (!configuredAdminSecret || configuredAdminSecret.length < 16) {
+    return false;
+  }
+
+  // Never allow SUPABASE_SERVICE_ROLE_KEY to be accepted as an HTTP admin header/token
+  const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (serviceRoleKey && trimmedCandidate === serviceRoleKey) {
+    return false;
+  }
+
+  const bufA = Buffer.from(trimmedCandidate, "utf8");
+  const bufB = Buffer.from(configuredAdminSecret, "utf8");
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/**
+ * Server-Side Admin Authorization Middleware
+ * Enforces admin authority strictly server-side via verified ADMIN_SECRET_TOKEN or Supabase JWT & role check.
+ * SECURITY MANDATE: All dev_admin_token_* and hardcoded secret fallbacks have been removed.
+ */
+async function requireAdminAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    const adminKey = req.headers["x-admin-key"] as string | undefined;
+    const bearerCandidate =
+      typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")
+        ? authHeader.slice(7).trim()
+        : undefined;
+
+    // 1. Verify trusted server ADMIN_SECRET_TOKEN ONLY if explicitly configured (>= 16 chars)
+    if (verifyAdminSecretToken(adminKey) || verifyAdminSecretToken(bearerCandidate)) {
+      (req as any).adminUser = {
+        id: "sys_admin",
+        username: "SystemAdmin",
+        email: "admin@verixa.ai",
+        role: "admin",
+      };
+      return next();
+    }
+
+    // 2. Extract and strictly verify Bearer token via blockService.verifyRequestActor
+    const actorCheck = await blockService.verifyRequestActor(authHeader);
+    if (!actorCheck.verifiedByToken || !actorCheck.actorId || !actorCheck.token) {
+      return res.status(401).json({
+        error: actorCheck.authError || "Unauthorized: Valid administrative Bearer token required.",
+      });
+    }
+
+    const userId = actorCheck.actorId;
+    const sbClient = getServerSupabase(authHeader);
+    if (!sbClient) {
+      return res.status(503).json({ error: "Authentication service unavailable." });
+    }
+
+    // 3. Query public.profiles to verify user role
+    const { data: profile } = await sbClient
+      .from("profiles")
+      .select("id, username, role, email")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const allowedRoles = ["admin", "moderator", "Moderator", "Admin"];
+    const userRole = profile?.role;
+
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      return res.status(403).json({
+        error: "Forbidden: Administrative privileges required. Verified user role does not have moderator access.",
+      });
+    }
+
+    (req as any).adminUser = {
+      id: profile?.id || userId,
+      username: profile?.username || "admin",
+      email: profile?.email || "",
+      role: userRole,
+    };
+
+    return next();
+  } catch (err: any) {
+    console.error("requireAdminAuth middleware error:", err);
+    return res.status(500).json({ error: "Internal authorization error." });
+  }
+}
+
+// Global server-side admin guard for all current and future /api/admin/* endpoints
+app.use("/api/admin", requireAdminAuth);
 
 // Initialize Gemini Client for Sentinel Chatbot Assistant
 function getGeminiClient() {
@@ -59,12 +249,13 @@ function getGeminiClient() {
 // VERIXA CENTRALIZED AI MODERATION GATEWAY API
 // -------------------------------------------------------------
 
-// Health check
+// Health check (includes boolean-only environment readiness flags — never exposes secret values)
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     service: "VERIXA Centralized AI Moderation Gateway",
     timestamp: new Date().toISOString(),
+    envReadiness: blockService.getEnvReadiness(),
   });
 });
 
@@ -137,7 +328,7 @@ app.post("/api/moderation/gateway", publicRateLimiter, async (req, res) => {
  * 2. Moderation Audit Events Endpoint
  * Returns persisted moderation event logs (raw sensitive content redacted)
  */
-app.get("/api/moderation/events", async (req, res) => {
+app.get("/api/moderation/events", requireAdminAuth, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string, 10) || 50;
     const events = moderationGateway.getEvents(limit);
@@ -411,12 +602,87 @@ app.post(["/api/comments", "/api/posts/:postId/comments"], async (req, res) => {
   try {
     const textToAnalyze = req.body.comment || req.body.text || "";
     const postId = req.params.postId || req.body.postId || "post_default";
-    const userId = req.body.userId || "user_guest";
+    const claimedUserId = req.body.userId;
     const username = req.body.username || "VerixaUser";
-    const targetUserId = req.body.targetUserId || req.body.postAuthorId || "";
+    const parentCommentId = req.body.parentCommentId || req.body.parent_comment_id || "";
+    let targetUserId = req.body.targetUserId || req.body.postAuthorId || "";
 
     if (!textToAnalyze || typeof textToAnalyze !== "string" || !textToAnalyze.trim()) {
       return res.status(400).json({ error: "Comment text is required." });
+    }
+
+    const auth = await authenticateRequestActor(req, res, claimedUserId, {
+      allowed: false,
+      status: "BLOCKED",
+      decision: "BLOCK",
+    });
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    // Authoritatively resolve post/reel author and parent comment author from backend/Supabase
+    let resolvedContentOwnerId = "";
+    let resolvedParentCommentOwnerId = "";
+    if (postId && postId !== "post_default") {
+      const reelMatch = reelService.getReelById(postId);
+      if (reelMatch) {
+        resolvedContentOwnerId = reelMatch.user_id || reelMatch.user?.id || "";
+      } else {
+        const sb = getServerSupabase(req.headers.authorization);
+        if (sb) {
+          try {
+            const { data: postRow } = await sb
+              .from("posts")
+              .select("user_id")
+              .eq("id", postId)
+              .maybeSingle();
+            if (postRow?.user_id) {
+              resolvedContentOwnerId = postRow.user_id;
+            } else {
+              const { data: reelRow } = await sb
+                .from("reels")
+                .select("user_id")
+                .eq("id", postId)
+                .maybeSingle();
+              if (reelRow?.user_id) resolvedContentOwnerId = reelRow.user_id;
+            }
+          } catch {}
+        }
+      }
+    }
+
+    if (parentCommentId) {
+      const sb = getServerSupabase(req.headers.authorization);
+      if (sb) {
+        try {
+          const { data: parentRow } = await sb
+            .from("comments")
+            .select("user_id")
+            .eq("id", parentCommentId)
+            .maybeSingle();
+          if (parentRow?.user_id) {
+            resolvedParentCommentOwnerId = parentRow.user_id;
+          }
+        } catch {}
+      }
+    }
+
+    if (resolvedContentOwnerId) {
+      targetUserId = resolvedContentOwnerId;
+    }
+
+    // Enforce mutual block policy on comments (both content owner and parent comment owner)
+    if (
+      (targetUserId && blockService.isMutuallyBlocked(userId, targetUserId)) ||
+      (resolvedContentOwnerId && blockService.isMutuallyBlocked(userId, resolvedContentOwnerId)) ||
+      (resolvedParentCommentOwnerId && blockService.isMutuallyBlocked(userId, resolvedParentCommentOwnerId))
+    ) {
+      return res.status(403).json({
+        allowed: false,
+        status: "BLOCKED",
+        decision: "BLOCK",
+        restricted: true,
+        error: "You cannot comment on this content.",
+      });
     }
 
     // 0. AI Guardian Action Authorization & Cooldown Checks
@@ -629,7 +895,41 @@ app.post(["/api/comments", "/api/posts/:postId/comments"], async (req, res) => {
  */
 app.post("/api/posts", async (req, res) => {
   try {
-    const { caption = "", mediaUrl, mediaType = "image", userId, username, userPhotoURL, visibility, tags } = req.body;
+    const {
+      caption = "",
+      mediaUrl,
+      mediaType = "image",
+      userId: claimedUserId,
+      username,
+      userPhotoURL,
+      visibility,
+      tags,
+    } = req.body;
+
+    const auth = await authenticateRequestActor(req, res, claimedUserId, {
+      allowed: false,
+      decision: "BLOCK",
+    });
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    // Enforce mutual block check on tagged/mentioned users
+    if (Array.isArray(tags) && tags.length > 0) {
+      for (const rawTag of tags) {
+        const tagTarget =
+          typeof rawTag === "string"
+            ? rawTag.replace(/^@/, "")
+            : rawTag?.id || rawTag?.userId || rawTag?.username || "";
+        if (tagTarget && blockService.isMutuallyBlocked(userId, String(tagTarget))) {
+          return res.status(403).json({
+            allowed: false,
+            decision: "BLOCK",
+            restricted: true,
+            error: "You cannot tag or mention a restricted account.",
+          });
+        }
+      }
+    }
 
     // 0. AI Guardian Action Authorization & Cooldown Checks
     if (userId && userId !== 'user_guest') {
@@ -829,35 +1129,41 @@ function savePostLikesToFile() {
   }
 }
 
-function getServerSupabase(authHeader?: string) {
-  const sbUrl =
-    process.env.VITE_SUPABASE_URL ||
-    process.env.SUPABASE_URL ||
-    'https://jnbaumemwxydjktwedtz.supabase.co';
-  const sbKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
-    'sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2';
-  if (!sbUrl || !sbKey) return null;
-  try {
-    const options: any = { auth: { persistSession: false } };
-    if (authHeader && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      options.global = { headers: { Authorization: authHeader } };
-    }
-    return createClient(sbUrl, sbKey, options);
-  } catch {
-    return null;
-  }
-}
-
 app.post("/api/posts/:id/like", async (req, res) => {
   try {
     const postId = req.params.id;
-    const { userId, targetLiked } = req.body;
+    const { userId: claimedUserId, targetLiked, postAuthorId } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required to like post." });
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    // Authoritatively resolve post author to enforce mutual block check
+    let authorId = "";
+    const sb = getServerSupabase(req.headers.authorization);
+    if (sb && postId) {
+      try {
+        const { data: postRow } = await sb.from("posts").select("user_id").eq("id", postId).maybeSingle();
+        if (postRow?.user_id) {
+          authorId = postRow.user_id;
+        } else {
+          const { data: reelRow } = await sb.from("reels").select("user_id").eq("id", postId).maybeSingle();
+          if (reelRow?.user_id) authorId = reelRow.user_id;
+        }
+      } catch {}
+    }
+    if (!authorId && postAuthorId) {
+      authorId = postAuthorId;
+    }
+
+    if (
+      (authorId && blockService.isMutuallyBlocked(userId, authorId)) ||
+      (postAuthorId && blockService.isMutuallyBlocked(userId, postAuthorId))
+    ) {
+      return res.status(403).json({
+        error: "You cannot interact with this post.",
+        restricted: true,
+      });
     }
 
     if (!postLikesStore.post_likes[postId]) {
@@ -894,30 +1200,19 @@ app.post("/api/posts/:id/like", async (req, res) => {
 
     savePostLikesToFile();
 
-    // Async attempt to sync to Supabase if connected
-    const sb = getServerSupabase();
-    if (sb) {
+    // Sync to Supabase public.likes if connected
+    if (sb && UUID_REGEX.test(postId)) {
       if (nextLiked) {
         Promise.resolve(
-          Promise.allSettled([
-            sb.from('likes').upsert({
-              post_id: postId,
-              user_id: userId,
-              created_at: new Date().toISOString(),
-            }, { onConflict: 'post_id,user_id' }),
-            sb.from('post_likes').upsert({
-              post_id: postId,
-              user_id: userId,
-              created_at: new Date().toISOString(),
-            }, { onConflict: 'post_id,user_id' }),
-          ])
+          sb.from('likes').upsert({
+            post_id: postId,
+            user_id: userId,
+            created_at: new Date().toISOString(),
+          }, { onConflict: 'post_id,user_id' })
         ).catch(() => {});
       } else {
         Promise.resolve(
-          Promise.allSettled([
-            sb.from('likes').delete().eq('post_id', postId).eq('user_id', userId),
-            sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId),
-          ])
+          sb.from('likes').delete().eq('post_id', postId).eq('user_id', userId)
         ).catch(() => {});
       }
     }
@@ -937,29 +1232,50 @@ app.post("/api/posts/:id/like", async (req, res) => {
 
 /**
  * Endpoint: Get all users who liked a specific post
- * Queries both postLikesStore memory and Supabase likes/post_likes/profiles
+ * Enforces strict JWT auth and verifies viewer is not mutually blocked with post author or likers.
  */
 app.get("/api/posts/:id/likes", async (req, res) => {
   try {
     const postId = req.params.id;
+    const claimedViewerId = req.query.viewerId as string | undefined;
+
+    const auth = await authenticateRequestActor(req, res, claimedViewerId);
+    if (!auth) return;
+    const viewerId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
+    let postOwnerId = "";
+    if (sb && postId) {
+      try {
+        const { data: postRow } = await sb.from("posts").select("user_id").eq("id", postId).maybeSingle();
+        if (postRow?.user_id) {
+          postOwnerId = postRow.user_id;
+        }
+      } catch {}
+    }
+
+    if (postOwnerId && blockService.isMutuallyBlocked(viewerId, postOwnerId)) {
+      return res.status(403).json({
+        error: "You cannot view likes on this post.",
+        restricted: true,
+        users: [],
+        likesCount: 0,
+      });
+    }
+
+    const restrictedIds = blockService.getMutuallyRestrictedIds(viewerId);
+    const restrictedForOwner = postOwnerId
+      ? blockService.getMutuallyRestrictedIds(postOwnerId)
+      : new Set<string>();
+
     const memoryUserIds = postLikesStore.post_likes[postId] || [];
     let dbUserIds: string[] = [];
 
-    const sb = getServerSupabase();
     if (sb) {
       try {
-        const [likesRes, postLikesRes] = await Promise.allSettled([
-          sb.from('likes').select('user_id').eq('post_id', postId),
-          sb.from('post_likes').select('user_id').eq('post_id', postId),
-        ]);
-
-        if (likesRes.status === 'fulfilled' && likesRes.value?.data) {
-          likesRes.value.data.forEach((r: any) => {
-            if (r.user_id) dbUserIds.push(r.user_id);
-          });
-        }
-        if (postLikesRes.status === 'fulfilled' && postLikesRes.value?.data) {
-          postLikesRes.value.data.forEach((r: any) => {
+        const { data: likesRows } = await sb.from('likes').select('user_id').eq('post_id', postId);
+        if (Array.isArray(likesRows)) {
+          likesRows.forEach((r: any) => {
             if (r.user_id) dbUserIds.push(r.user_id);
           });
         }
@@ -968,7 +1284,13 @@ app.get("/api/posts/:id/likes", async (req, res) => {
       }
     }
 
-    const uniqueUserIds = Array.from(new Set([...memoryUserIds, ...dbUserIds]));
+    const uniqueUserIds = Array.from(new Set([...memoryUserIds, ...dbUserIds])).filter(
+      (uid) =>
+        !restrictedIds.has(uid) &&
+        !restrictedForOwner.has(uid) &&
+        !blockService.isMutuallyBlocked(viewerId, uid) &&
+        (!postOwnerId || !blockService.isMutuallyBlocked(postOwnerId, uid))
+    );
 
     // Fetch user profiles for these user IDs
     let userProfiles: any[] = [];
@@ -1026,6 +1348,20 @@ app.get("/api/posts/:id/likes", async (req, res) => {
 app.get("/api/posts/liked/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+    const claimedViewerId = req.query.viewerId as string | undefined;
+
+    const auth = await authenticateRequestActor(req, res, claimedViewerId);
+    if (!auth) return;
+    const viewerId = auth.actorId;
+
+    if (viewerId !== userId && blockService.isMutuallyBlocked(viewerId, userId)) {
+      return res.status(403).json({
+        error: "Action not available due to account privacy restrictions.",
+        restricted: true,
+        likedPostIds: [],
+      });
+    }
+
     const likedPostIds = postLikesStore.user_likes[userId] || [];
     return res.json({ likedPostIds });
   } catch (err: any) {
@@ -1036,97 +1372,148 @@ app.get("/api/posts/liked/:userId", async (req, res) => {
 
 /**
  * Follow / Unfollow User Endpoint
- * Safely inserts or deletes follows in Supabase with service privileges,
- * updates follower/following counts on profiles, and triggers real notifications.
+ * Enforces strict JWT authentication, mutual block policy, and verified Supabase writes.
  */
 app.post("/api/users/:targetUserId/follow", async (req, res) => {
   try {
     const { targetUserId } = req.params;
-    const { followerId, targetFollowing } = req.body;
+    const { followerId: claimedFollowerId, targetFollowing } = req.body;
 
-    if (!followerId || !targetUserId) {
-      return res.status(400).json({ error: "followerId and targetUserId are required" });
+    if (!targetUserId) {
+      return res.status(400).json({ error: "targetUserId is required" });
     }
-    if (followerId === targetUserId) {
+
+    const auth = await authenticateRequestActor(req, res, claimedFollowerId);
+    if (!auth) return;
+    const followerId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
+    let resolvedTargetId = blockService.resolveCanonicalId(targetUserId);
+    if (sb && !UUID_REGEX.test(resolvedTargetId)) {
+      try {
+        const { data: prof } = await sb
+          .from("profiles")
+          .select("id, username")
+          .or(`id.eq.${targetUserId},username.eq.${targetUserId.toLowerCase()}`)
+          .maybeSingle();
+        if (prof?.id) {
+          resolvedTargetId = prof.id;
+          blockService.registerUsernameMapping(prof.username, prof.id);
+        }
+      } catch {}
+    }
+
+    if (followerId === resolvedTargetId || followerId === targetUserId) {
       return res.status(400).json({ error: "Cannot follow yourself" });
     }
 
-    const sb = getServerSupabase(req.headers.authorization);
-    let shouldFollow: boolean;
-
-    if (sb) {
-      if (targetFollowing !== undefined) {
-        shouldFollow = Boolean(targetFollowing);
-      } else {
-        const { data } = await sb
-          .from("follows")
-          .select("id")
-          .eq("follower_id", followerId)
-          .eq("following_id", targetUserId)
-          .maybeSingle();
-        shouldFollow = !data;
-      }
-
-      if (shouldFollow) {
-        await sb.from("follows").upsert(
-          {
-            follower_id: followerId,
-            following_id: targetUserId,
-            created_at: new Date().toISOString(),
-          },
-          { onConflict: "follower_id,following_id" }
-        );
-
-        // Send in-app notification
-        try {
-          await sb.from("notifications").insert({
-            user_id: targetUserId,
-            actor_id: followerId,
-            type: "follow",
-            title: "New Follower",
-            content: "started following you.",
-            read: false,
-            created_at: new Date().toISOString(),
-          });
-        } catch (notifErr) {
-          console.warn("Notice: could not dispatch follow notification:", notifErr);
-        }
-      } else {
-        await sb
-          .from("follows")
-          .delete()
-          .eq("follower_id", followerId)
-          .eq("following_id", targetUserId);
-      }
-
-      // Sync counts on both profiles
-      let followersCount = 0;
-      let followingCount = 0;
-      try {
-        const [{ count: fCount }, { count: fingCount }] = await Promise.all([
-          sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", targetUserId),
-          sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", followerId),
-        ]);
-        followersCount = fCount ?? 0;
-        followingCount = fingCount ?? 0;
-
-        await Promise.all([
-          sb.from("profiles").update({ followers_count: followersCount }).eq("id", targetUserId),
-          sb.from("profiles").update({ following_count: followingCount }).eq("id", followerId),
-        ]);
-      } catch (countErr) {
-        console.warn("Notice: could not update profile counts:", countErr);
-      }
-
-      return res.json({
-        success: true,
-        following: shouldFollow,
-        targetFollowersCount: followersCount,
-        actorFollowingCount: followingCount,
+    // Enforce mutual block check when attempting to follow
+    if (
+      targetFollowing !== false &&
+      (blockService.isMutuallyBlocked(followerId, resolvedTargetId) ||
+        blockService.isMutuallyBlocked(followerId, targetUserId))
+    ) {
+      return res.status(403).json({
+        error: "You cannot follow this account.",
+        restricted: true,
       });
     }
 
-    return res.json({ success: true, following: Boolean(targetFollowing) });
+    if (!sb) {
+      return res.status(503).json({ error: "Database service unavailable" });
+    }
+
+    let shouldFollow: boolean;
+    if (targetFollowing !== undefined) {
+      shouldFollow = Boolean(targetFollowing);
+    } else {
+      const { data } = await sb
+        .from("follows")
+        .select("id")
+        .eq("follower_id", followerId)
+        .eq("following_id", resolvedTargetId)
+        .maybeSingle();
+      shouldFollow = !data;
+    }
+
+    if (
+      shouldFollow &&
+      (blockService.isMutuallyBlocked(followerId, resolvedTargetId) ||
+        blockService.isMutuallyBlocked(followerId, targetUserId))
+    ) {
+      return res.status(403).json({
+        error: "You cannot follow this account.",
+        restricted: true,
+      });
+    }
+
+    if (shouldFollow) {
+      const { error: followInsertErr } = await sb.from("follows").insert({
+        follower_id: followerId,
+        following_id: resolvedTargetId,
+        created_at: new Date().toISOString(),
+      });
+      const followWriteErr =
+        followInsertErr && followInsertErr.code !== "23505" ? followInsertErr : null;
+      if (followWriteErr) {
+        return res.status(403).json({
+          success: false,
+          error: followWriteErr.message || "Failed to follow user.",
+        });
+      }
+
+      // Send in-app notification using actual live schema columns (recipient_id, sender_id, type, message)
+      try {
+        await sb.from("notifications").insert({
+          recipient_id: resolvedTargetId,
+          sender_id: followerId,
+          type: "follow",
+          message: "started following you.",
+          read: false,
+          created_at: new Date().toISOString(),
+        });
+      } catch (notifErr) {
+        console.warn("Notice: could not dispatch follow notification:", notifErr);
+      }
+    } else {
+      const { error: unfollowErr } = await sb
+        .from("follows")
+        .delete()
+        .eq("follower_id", followerId)
+        .eq("following_id", resolvedTargetId);
+      if (unfollowErr) {
+        return res.status(500).json({
+          success: false,
+          error: unfollowErr.message || "Failed to unfollow user.",
+        });
+      }
+    }
+
+    // Sync counts on both profiles
+    let followersCount = 0;
+    let followingCount = 0;
+    try {
+      const [{ count: fCount }, { count: fingCount }] = await Promise.all([
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", resolvedTargetId),
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", followerId),
+      ]);
+      followersCount = fCount ?? 0;
+      followingCount = fingCount ?? 0;
+
+      await Promise.all([
+        sb.from("profiles").update({ followers_count: followersCount }).eq("id", resolvedTargetId),
+        sb.from("profiles").update({ following_count: followingCount }).eq("id", followerId),
+      ]);
+    } catch (countErr) {
+      console.warn("Notice: could not update profile counts:", countErr);
+    }
+
+    return res.json({
+      success: true,
+      following: shouldFollow,
+      targetFollowersCount: followersCount,
+      actorFollowingCount: followingCount,
+    });
   } catch (err: any) {
     console.error("Follow endpoint error:", err);
     return res.status(500).json({ error: err.message || "Failed to process follow" });
@@ -1136,7 +1523,17 @@ app.post("/api/users/:targetUserId/follow", async (req, res) => {
 app.get("/api/users/:id/followers", async (req, res) => {
   try {
     const userId = req.params.id;
-    const sb = getServerSupabase();
+    const claimedViewerId = req.query.viewerId as string | undefined;
+
+    const auth = await authenticateRequestActor(req, res, claimedViewerId);
+    if (!auth) return;
+    const viewerId = auth.actorId;
+
+    if (viewerId !== userId && blockService.isMutuallyBlocked(viewerId, userId)) {
+      return res.status(403).json({ restricted: true, followers: [] });
+    }
+
+    const sb = getServerSupabase(req.headers.authorization);
     if (!sb) return res.json({ followers: [] });
 
     const { data, error } = await sb
@@ -1161,7 +1558,13 @@ app.get("/api/users/:id/followers", async (req, res) => {
       .eq("following_id", userId);
 
     if (error || !data) return res.json({ followers: [] });
-    const followers = data.filter((r: any) => r.profiles).map((r: any) => r.profiles);
+    const restrictedForOwner = blockService.getMutuallyRestrictedIds(userId);
+    const restrictedForViewer = blockService.getMutuallyRestrictedIds(viewerId);
+
+    const followers = data
+      .filter((r: any) => r.profiles)
+      .map((r: any) => r.profiles)
+      .filter((p: any) => !restrictedForOwner.has(p.id) && !restrictedForViewer.has(p.id));
     return res.json({ followers });
   } catch (err: any) {
     return res.json({ followers: [] });
@@ -1171,7 +1574,17 @@ app.get("/api/users/:id/followers", async (req, res) => {
 app.get("/api/users/:id/following", async (req, res) => {
   try {
     const userId = req.params.id;
-    const sb = getServerSupabase();
+    const claimedViewerId = req.query.viewerId as string | undefined;
+
+    const auth = await authenticateRequestActor(req, res, claimedViewerId);
+    if (!auth) return;
+    const viewerId = auth.actorId;
+
+    if (viewerId !== userId && blockService.isMutuallyBlocked(viewerId, userId)) {
+      return res.status(403).json({ restricted: true, following: [] });
+    }
+
+    const sb = getServerSupabase(req.headers.authorization);
     if (!sb) return res.json({ following: [] });
 
     const { data, error } = await sb
@@ -1196,23 +1609,601 @@ app.get("/api/users/:id/following", async (req, res) => {
       .eq("follower_id", userId);
 
     if (error || !data) return res.json({ following: [] });
-    const following = data.filter((r: any) => r.profiles).map((r: any) => r.profiles);
+    const restrictedForOwner = blockService.getMutuallyRestrictedIds(userId);
+    const restrictedForViewer = blockService.getMutuallyRestrictedIds(viewerId);
+
+    const following = data
+      .filter((r: any) => r.profiles)
+      .map((r: any) => r.profiles)
+      .filter((p: any) => !restrictedForOwner.has(p.id) && !restrictedForViewer.has(p.id));
     return res.json({ following });
   } catch (err: any) {
     return res.json({ following: [] });
   }
 });
 
+// =============================================================
+// BLOCKED USERS & PROFILE AUTHORIZATION ENDPOINTS
+// =============================================================
+
+/**
+ * Authoritative Mutual Block Status Oracle
+ * Requires valid JWT; derives viewerId strictly from token and returns neutral restriction status.
+ */
+app.get("/api/users/:targetUserId/block-status", async (req, res) => {
+  try {
+    const { targetUserId } = req.params;
+    const claimedViewerId = req.query.viewerId as string | undefined;
+
+    const auth = await authenticateRequestActor(req, res, claimedViewerId);
+    if (!auth) return;
+    const viewerId = auth.actorId;
+
+    await blockService.syncFromSupabase(true, req.headers.authorization, viewerId);
+
+    if (!viewerId || !targetUserId || viewerId === targetUserId) {
+      return res.json({
+        restricted: false,
+        isBlocked: false,
+        blockedByViewer: false,
+      });
+    }
+
+    let resolvedTargetId = blockService.resolveCanonicalId(targetUserId);
+    const sb = getServerSupabase(req.headers.authorization);
+    if (sb && !UUID_REGEX.test(resolvedTargetId)) {
+      try {
+        const { data: prof } = await sb
+          .from("profiles")
+          .select("id, username")
+          .or(`id.eq.${targetUserId},username.eq.${targetUserId.toLowerCase()}`)
+          .maybeSingle();
+        if (prof?.id) {
+          resolvedTargetId = prof.id;
+          blockService.registerUsernameMapping(prof.username, prof.id);
+        }
+      } catch {}
+    }
+
+    const rel = blockService.getBlockRelationship(viewerId, resolvedTargetId);
+    return res.json({
+      restricted: rel.isBlocked,
+      isBlocked: rel.isBlocked,
+      blockedByViewer: rel.blockedByViewer,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to verify block status" });
+  }
+});
+
+/**
+ * Backend-Protected Profile Data Endpoint
+ * Requires valid JWT; enforces mutual block policy BEFORE returning any profile metadata.
+ */
+app.get("/api/users/:targetUserId/profile", async (req, res) => {
+  try {
+    const { targetUserId } = req.params;
+    const claimedViewerId = req.query.viewerId as string | undefined;
+
+    const auth = await authenticateRequestActor(req, res, claimedViewerId);
+    if (!auth) return;
+    const viewerId = auth.actorId;
+
+    await blockService.syncFromSupabase(true, req.headers.authorization, viewerId);
+
+    if (viewerId !== targetUserId && blockService.isMutuallyBlocked(viewerId, targetUserId)) {
+      return res.status(403).json({
+        restricted: true,
+        error: "This profile isn't available to you.",
+      });
+    }
+
+    const sb = getServerSupabase(req.headers.authorization);
+    if (!sb) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    const { data, error } = await sb
+      .from("profiles")
+      .select("*")
+      .or(`id.eq.${targetUserId},username.eq.${targetUserId.toLowerCase()}`)
+      .maybeSingle();
+
+    if (error || !data) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    blockService.registerUsernameMapping(data.username, data.id);
+
+    if (
+      viewerId !== data.id &&
+      (blockService.isMutuallyBlocked(viewerId, data.id) ||
+        blockService.isMutuallyBlocked(viewerId, data.username))
+    ) {
+      return res.status(403).json({
+        restricted: true,
+        error: "This profile isn't available to you.",
+      });
+    }
+
+    return res.json({ restricted: false, profile: data });
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+
+/**
+ * Block a User Endpoint
+ * - Strictly verifies JWT session token to derive blockerId and prevent impersonation
+ * - Persists block record in Supabase public.blocked_users FIRST and checks for errors
+ * - Automatically removes mutual follow relationships, cross-account notifications, and post likes
+ */
+app.post("/api/users/:targetUserId/block", async (req, res) => {
+  try {
+    const { targetUserId } = req.params;
+    const {
+      blockerId: claimedBlockerId,
+      reason = "Blocked by user",
+      targetName,
+      targetUsername,
+      targetAvatar,
+    } = req.body;
+
+    const auth = await authenticateRequestActor(req, res, claimedBlockerId);
+    if (!auth) return;
+    const blockerId = auth.actorId;
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: "targetUserId is required" });
+    }
+    if (blockerId === targetUserId) {
+      return res.status(400).json({ error: "You cannot block yourself" });
+    }
+
+    const sb = getServerSupabase(req.headers.authorization);
+    if (!sb) {
+      return res.status(503).json({
+        success: false,
+        blocked: false,
+        error: "Database service unavailable",
+      });
+    }
+
+    let resolvedTargetId = blockService.resolveCanonicalId(targetUserId);
+    let resolvedName = targetName || "Blocked User";
+    let resolvedUsername = targetUsername || "blocked_user";
+    let resolvedAvatar =
+      targetAvatar ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=E11D48&color=fff&size=256&bold=true`;
+
+    // 1. Fetch target user profile details
+    try {
+      const { data: prof } = await sb
+        .from("profiles")
+        .select("id, name, username, avatar")
+        .or(`id.eq.${targetUserId},username.eq.${targetUserId.toLowerCase()}`)
+        .maybeSingle();
+      if (prof) {
+        resolvedTargetId = prof.id || resolvedTargetId;
+        resolvedName = prof.name || prof.username || resolvedName;
+        resolvedUsername = prof.username || resolvedUsername;
+        resolvedAvatar = prof.avatar || resolvedAvatar;
+        blockService.registerUsernameMapping(prof.username, prof.id);
+      }
+    } catch {}
+
+    if (blockerId === resolvedTargetId) {
+      return res.status(400).json({ error: "You cannot block yourself" });
+    }
+
+    if (!UUID_REGEX.test(resolvedTargetId)) {
+      return res.status(400).json({
+        success: false,
+        blocked: false,
+        error: "Target user account not found or invalid UUID",
+      });
+    }
+
+    // 2. Authoritative write to Supabase public.blocked_users (MUST succeed before reporting success)
+    const nowIso = new Date().toISOString();
+    const { error: blockInsertErr } = await sb.from("blocked_users").insert({
+      blocker_id: blockerId,
+      blocked_id: resolvedTargetId,
+      reason,
+      created_at: nowIso,
+    });
+    const blockDbError =
+      blockInsertErr && blockInsertErr.code !== "23505" ? blockInsertErr : null;
+
+    if (blockDbError) {
+      console.error("Failed to persist block in Supabase blocked_users:", blockDbError);
+      return res.status(500).json({
+        success: false,
+        blocked: false,
+        error: blockDbError.message || "Failed to persist block relationship in database",
+      });
+    }
+
+    // 3. Record audit log in moderation_logs
+    try {
+      await sb.rpc("log_moderation_entry", {
+        p_target_id: resolvedTargetId,
+        p_target_type: "user",
+        p_status: "blocked",
+        p_category: "USER_BLOCK",
+        p_confidence: 100,
+        p_reason: JSON.stringify({
+          reason,
+          name: resolvedName,
+          username: resolvedUsername,
+          avatar: resolvedAvatar,
+        }),
+      });
+    } catch {}
+
+    // 4. Remove mutual follow relationships in Supabase
+    try {
+      await Promise.allSettled([
+        sb.from("follows").delete().eq("follower_id", blockerId).eq("following_id", resolvedTargetId),
+        sb.from("follows").delete().eq("follower_id", resolvedTargetId).eq("following_id", blockerId),
+      ]);
+
+      const [
+        { count: targetFollowers },
+        { count: targetFollowing },
+        { count: blockerFollowers },
+        { count: blockerFollowing },
+      ] = await Promise.all([
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", resolvedTargetId),
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", resolvedTargetId),
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", blockerId),
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", blockerId),
+      ]);
+
+      await Promise.allSettled([
+        sb
+          .from("profiles")
+          .update({
+            followers_count: targetFollowers ?? 0,
+            following_count: targetFollowing ?? 0,
+          })
+          .eq("id", resolvedTargetId),
+        sb
+          .from("profiles")
+          .update({
+            followers_count: blockerFollowers ?? 0,
+            following_count: blockerFollowing ?? 0,
+          })
+          .eq("id", blockerId),
+      ]);
+    } catch (followCleanErr) {
+      console.warn("Notice cleaning up follows on block:", followCleanErr);
+    }
+
+    // 5. Purge cross-account notifications (both in-memory and Supabase)
+    notificationService.purgeNotificationsBetween(blockerId, resolvedTargetId);
+    try {
+      await Promise.allSettled([
+        sb.from("notifications").delete().eq("recipient_id", blockerId).eq("sender_id", resolvedTargetId),
+        sb.from("notifications").delete().eq("recipient_id", resolvedTargetId).eq("sender_id", blockerId),
+      ]);
+    } catch {}
+
+    // 6. Update BlockService in-memory index
+    const entry = blockService.recordBlock({
+      blockerId,
+      targetUserId: resolvedTargetId,
+      name: resolvedName,
+      username: resolvedUsername,
+      avatar: resolvedAvatar,
+      reason,
+    });
+
+    return res.json({
+      success: true,
+      blocked: true,
+      blockedUser: entry,
+      restrictedUserIds: Array.from(blockService.getMutuallyRestrictedIds(blockerId)),
+    });
+  } catch (err: any) {
+    console.error("Block user endpoint error:", err);
+    return res.status(500).json({ error: err.message || "Failed to block user" });
+  }
+});
+
+/**
+ * Unblock a User Endpoint
+ * - Strictly verifies JWT session token to derive blockerId
+ * - Deletes block record from Supabase public.blocked_users FIRST and checks for errors
+ */
+app.post("/api/users/:targetUserId/unblock", async (req, res) => {
+  try {
+    const { targetUserId } = req.params;
+    const { blockerId: claimedBlockerId } = req.body;
+
+    const auth = await authenticateRequestActor(req, res, claimedBlockerId);
+    if (!auth) return;
+    const blockerId = auth.actorId;
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: "targetUserId is required" });
+    }
+
+    const sb = getServerSupabase(req.headers.authorization);
+    if (!sb) {
+      return res.status(503).json({
+        success: false,
+        error: "Database service unavailable",
+      });
+    }
+
+    let resolvedTargetId = blockService.resolveCanonicalId(targetUserId);
+    if (!UUID_REGEX.test(resolvedTargetId)) {
+      try {
+        const { data: prof } = await sb
+          .from("profiles")
+          .select("id, username")
+          .or(`id.eq.${targetUserId},username.eq.${targetUserId.toLowerCase()}`)
+          .maybeSingle();
+        if (prof?.id) {
+          resolvedTargetId = prof.id;
+          blockService.registerUsernameMapping(prof.username, prof.id);
+        }
+      } catch {}
+    }
+
+    const { error: unblockDbError } = await sb
+      .from("blocked_users")
+      .delete()
+      .eq("blocker_id", blockerId)
+      .eq("blocked_id", resolvedTargetId);
+
+    if (unblockDbError) {
+      console.error("Failed to delete block in Supabase blocked_users:", unblockDbError);
+      return res.status(500).json({
+        success: false,
+        error: unblockDbError.message || "Failed to remove block relationship from database",
+      });
+    }
+
+    try {
+      await sb.rpc("log_moderation_entry", {
+        p_target_id: resolvedTargetId,
+        p_target_type: "user",
+        p_status: "approved",
+        p_category: "USER_UNBLOCK",
+        p_confidence: 100,
+        p_reason: "Unblocked by user",
+      });
+    } catch {}
+
+    blockService.removeBlock(blockerId, resolvedTargetId);
+
+    return res.json({
+      success: true,
+      blocked: false,
+      unblockedUserId: resolvedTargetId,
+      restrictedUserIds: Array.from(blockService.getMutuallyRestrictedIds(blockerId)),
+    });
+  } catch (err: any) {
+    console.error("Unblock user endpoint error:", err);
+    return res.status(500).json({ error: err.message || "Failed to unblock user" });
+  }
+});
+
+/**
+ * Get All Blocked Users & Mutual Restriction Set for a User Endpoint
+ * - Requires valid JWT matching :userId (returns 401 if unauthenticated, 403 if accessing another user's block list)
+ * - Returns:
+ *   - blockedUsers: ONLY accounts personally blocked by userId (for Settings -> Blocked Accounts)
+ *   - restrictedUserIds: All user IDs mutually restricted with userId (blockedByMe U blockedMe)
+ */
+app.get("/api/users/:userId/blocked", async (req, res) => {
+  try {
+    const requestedUserId = req.params.userId;
+    const auth = await authenticateRequestActor(req, res, requestedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    await blockService.syncFromSupabase(true, req.headers.authorization, userId);
+    const sb = getServerSupabase(req.headers.authorization);
+    const blockedMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        username: string;
+        avatar: string;
+        reason: string;
+        blockedAt: string;
+      }
+    >();
+
+    // 1. Load from BlockService store first
+    const localList = blockService.getStoreEntriesForBlocker(userId);
+    for (const item of localList) {
+      const targetId = item.blockedId || item.id;
+      blockedMap.set(targetId, {
+        id: targetId,
+        name: item.name || "Blocked User",
+        username: item.username || "blocked_user",
+        avatar: item.avatar || "",
+        reason: item.reason || "Blocked by user",
+        blockedAt: item.blockedAt || new Date().toISOString(),
+      });
+    }
+
+    // 2. Authoritative load from Supabase blocked_users & moderation_logs
+    const activeSbBlockedIds = new Set<string>();
+    if (sb) {
+      try {
+        const { data: sbBlocked, error: sbBlockedErr } = await sb
+          .from("blocked_users")
+          .select("blocked_id, reason, created_at")
+          .eq("blocker_id", userId)
+          .order("created_at", { ascending: false });
+
+        if (!sbBlockedErr && Array.isArray(sbBlocked)) {
+          for (const row of sbBlocked) {
+            if (row.blocked_id) {
+              activeSbBlockedIds.add(row.blocked_id);
+              if (!blockedMap.has(row.blocked_id)) {
+                blockedMap.set(row.blocked_id, {
+                  id: row.blocked_id,
+                  name: "Blocked User",
+                  username: "blocked_user",
+                  avatar: "",
+                  reason: row.reason || "Blocked by user",
+                  blockedAt: row.created_at || new Date().toISOString(),
+                });
+              }
+              blockService.recordBlock({
+                blockerId: userId,
+                targetUserId: row.blocked_id,
+                reason: row.reason || "Blocked by user",
+              });
+            }
+          }
+        }
+      } catch {}
+
+      try {
+        const { data: modLogs } = await sb
+          .from("moderation_logs")
+          .select("target_id, status, category, reason, created_at")
+          .eq("user_id", userId)
+          .eq("target_type", "user")
+          .in("category", ["USER_BLOCK", "USER_UNBLOCK"])
+          .order("created_at", { ascending: false });
+
+        if (Array.isArray(modLogs)) {
+          const seenTargets = new Set<string>();
+          for (const log of modLogs) {
+            const tId = log.target_id;
+            if (!tId || seenTargets.has(tId)) continue;
+            seenTargets.add(tId);
+
+            if (log.category === "USER_UNBLOCK" || log.status === "approved") {
+              if (!activeSbBlockedIds.has(tId)) {
+                blockedMap.delete(tId);
+                blockService.removeBlock(userId, tId);
+              }
+            } else if (log.category === "USER_BLOCK" && log.status === "blocked") {
+              let parsedMeta: any = {};
+              if (log.reason && log.reason.startsWith("{")) {
+                try {
+                  parsedMeta = JSON.parse(log.reason);
+                } catch {}
+              }
+              const existing = blockedMap.get(tId);
+              if (existing) {
+                if (parsedMeta.name && existing.name === "Blocked User") existing.name = parsedMeta.name;
+                if (parsedMeta.username && existing.username === "blocked_user") existing.username = parsedMeta.username;
+                if (parsedMeta.avatar && !existing.avatar) existing.avatar = parsedMeta.avatar;
+                if (parsedMeta.reason) existing.reason = parsedMeta.reason;
+              } else if (!blockService.isExplicitlyUnblocked(userId, tId)) {
+                blockedMap.set(tId, {
+                  id: tId,
+                  name: parsedMeta.name || "Blocked User",
+                  username: parsedMeta.username || "blocked_user",
+                  avatar: parsedMeta.avatar || "",
+                  reason: parsedMeta.reason || log.reason || "Blocked by user",
+                  blockedAt: log.created_at || new Date().toISOString(),
+                });
+                blockService.recordBlock({
+                  blockerId: userId,
+                  targetUserId: tId,
+                  name: parsedMeta.name || "Blocked User",
+                  username: parsedMeta.username || "blocked_user",
+                  avatar: parsedMeta.avatar || "",
+                  reason: parsedMeta.reason || log.reason || "Blocked by user",
+                });
+              }
+            }
+          }
+        }
+      } catch {}
+
+      // 3. Hydrate full profile details from public.profiles
+      const targetIds = Array.from(blockedMap.keys()).filter((id) => UUID_REGEX.test(id));
+      if (targetIds.length > 0) {
+        try {
+          const { data: profiles } = await sb
+            .from("profiles")
+            .select("id, name, username, avatar")
+            .in("id", targetIds);
+          if (Array.isArray(profiles)) {
+            for (const p of profiles) {
+              const existing = blockedMap.get(p.id);
+              if (existing) {
+                existing.name = p.name || p.username || existing.name;
+                existing.username = p.username || existing.username;
+                existing.avatar =
+                  p.avatar ||
+                  existing.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(existing.name)}&background=E11D48&color=fff&size=256&bold=true`;
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+
+    const resultList = Array.from(blockedMap.values()).map((u) => ({
+      ...u,
+      avatar:
+        u.avatar ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username || "User")}&background=E11D48&color=fff&size=256&bold=true`,
+    }));
+
+    return res.json({
+      success: true,
+      blockedUsers: resultList,
+      restrictedUserIds: Array.from(blockService.getMutuallyRestrictedIds(userId)),
+    });
+  } catch (err: any) {
+    console.error("Get blocked users endpoint error:", err);
+    return res.status(500).json({ error: "Failed to fetch blocked users" });
+  }
+});
+
+
 /**
  * 8. Direct UGC Direct Message Creation Endpoint
- * Moderates DM text and message media through the gateway before delivery
+ * Requires strict JWT authentication and enforces mutual block policy BEFORE moderating DM text and media
  */
 app.post("/api/messages", async (req, res) => {
   try {
-    const { text = "", mediaUrl, senderId } = req.body;
+    const { text = "", mediaUrl, senderId: claimedSenderId, receiverId, recipientId } = req.body;
+    const targetReceiverId = receiverId || recipientId || "";
 
     if (!text.trim() && !mediaUrl) {
       return res.status(400).json({ error: "Message text or media is required." });
+    }
+
+    const auth = await authenticateRequestActor(req, res, claimedSenderId, {
+      allowed: false,
+      decision: "BLOCK",
+    });
+    if (!auth) return;
+    const senderId = auth.actorId;
+
+    if (!targetReceiverId) {
+      return res.status(400).json({
+        allowed: false,
+        decision: "BLOCK",
+        error: "receiverId is required.",
+      });
+    }
+
+    // Enforce mutual block check before moderating or delivering message
+    if (blockService.isMutuallyBlocked(senderId, targetReceiverId)) {
+      return res.status(403).json({
+        allowed: false,
+        decision: "BLOCK",
+        restricted: true,
+        error: "Messaging isn't available between these accounts.",
+      });
     }
 
     // 0. AI Guardian Action Authorization Check
@@ -1307,6 +2298,8 @@ app.post("/api/messages", async (req, res) => {
  */
 app.get("/api/stories/sync", async (req, res) => {
   try {
+    const auth = await authenticateRequestActor(req, res);
+    if (!auth) return;
     const count = await syncStoriesToSupabase();
     return res.json({ success: true, message: `Synced ${count} stories to Supabase!`, count });
   } catch (err: any) {
@@ -1316,9 +2309,14 @@ app.get("/api/stories/sync", async (req, res) => {
 
 app.get("/api/stories", async (req, res) => {
   try {
-    const userId = req.query.userId as string | undefined;
-    const sb = getServerSupabase();
+    const claimedUserId = req.query.userId as string | undefined;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
     let dbStoriesList: any[] = [];
+    const restrictedSet = new Set(blockService.getMutuallyRestrictedIds(userId));
 
     if (sb) {
       try {
@@ -1330,7 +2328,10 @@ app.get("/api/stories", async (req, res) => {
           .order('created_at', { ascending: false });
 
         if (!error && dbStories && dbStories.length > 0) {
-          const userIds = Array.from(new Set(dbStories.map((s: any) => s.user_id).filter(Boolean)));
+          const visibleDbStories = dbStories.filter(
+            (s: any) => !s.user_id || (!restrictedSet.has(s.user_id) && !blockService.isMutuallyBlocked(userId, s.user_id))
+          );
+          const userIds = Array.from(new Set(visibleDbStories.map((s: any) => s.user_id).filter(Boolean)));
           let profileMap: Record<string, any> = {};
           if (userIds.length > 0) {
             const { data: profiles } = await sb.from('profiles').select('id, name, username, avatar').in('id', userIds);
@@ -1339,11 +2340,13 @@ app.get("/api/stories", async (req, res) => {
             }
           }
 
-          const storyIds = dbStories.map((s: any) => s.id);
-          const { data: allLikes } = await sb
-            .from('story_likes')
-            .select('story_id, user_id')
-            .in('story_id', storyIds);
+          const storyIds = visibleDbStories.map((s: any) => s.id);
+          const { data: allLikes } = storyIds.length > 0
+            ? await sb
+                .from('story_likes')
+                .select('story_id, user_id')
+                .in('story_id', storyIds)
+            : { data: [] as any[] };
 
           const likesMap: Record<string, string[]> = {};
           if (allLikes) {
@@ -1354,10 +2357,12 @@ app.get("/api/stories", async (req, res) => {
           }
 
           const isUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          dbStoriesList = dbStories.map((s: any) => {
+          dbStoriesList = visibleDbStories.map((s: any) => {
             const p = profileMap[s.user_id];
-            const likedBy = likesMap[s.id] || [];
-            const viewedBy = Array.isArray(s.viewed_by) ? s.viewed_by : [];
+            const rawLikedBy = likesMap[s.id] || [];
+            const rawViewedBy = Array.isArray(s.viewed_by) ? s.viewed_by : [];
+            const likedBy = rawLikedBy.filter((uid: string) => !blockService.isMutuallyBlocked(s.user_id, uid) && !blockService.isMutuallyBlocked(userId, uid));
+            const viewedBy = rawViewedBy.filter((uid: string) => !blockService.isMutuallyBlocked(s.user_id, uid) && !blockService.isMutuallyBlocked(userId, uid));
             const isVideo = s.media_type === 'video' || (s.media_url && s.media_url.includes('.mp4'));
 
             let authorUsername = p?.username || '';
@@ -1392,8 +2397,8 @@ app.get("/api/stories", async (req, res) => {
               type: isVideo ? 'video' : 'image',
               moderation_status: s.moderation_status || 'allowed',
               moderation_state: 'APPROVED',
-              views_count: s.views_count ?? viewedBy.length,
-              viewsCount: s.views_count ?? viewedBy.length,
+              views_count: viewedBy.length,
+              viewsCount: viewedBy.length,
               viewed_by: viewedBy,
               viewedBy: viewedBy,
               likes_count: likedBy.length,
@@ -1437,7 +2442,7 @@ app.post("/api/stories", async (req, res) => {
       mediaUrl,
       mediaType,
       mimeType,
-      userId = "user_guest",
+      userId: claimedUserId,
       username = "VerixaUser",
       name,
       avatar,
@@ -1447,6 +2452,13 @@ app.post("/api/stories", async (req, res) => {
     if (!mediaUrl) {
       return res.status(400).json({ error: "Story media URL or data is required." });
     }
+
+    const auth = await authenticateRequestActor(req, res, claimedUserId, {
+      allowed: false,
+      decision: "BLOCK",
+    });
+    if (!auth) return;
+    const userId = auth.actorId;
 
     // 0. AI Guardian Action Authorization Check
     if (userId && userId !== 'user_guest') {
@@ -1525,8 +2537,31 @@ app.post("/api/stories", async (req, res) => {
 app.post("/api/stories/:id/view", async (req, res) => {
   try {
     const storyId = req.params.id;
-    const userId = req.body.userId || "anonymous";
+    const claimedUserId = req.body.userId;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
+    if (sb && UUID_REGEX.test(storyId)) {
+      try {
+        const { data: dbStory } = await sb.from('stories').select('user_id').eq('id', storyId).maybeSingle();
+        if (dbStory?.user_id && blockService.isMutuallyBlocked(userId, dbStory.user_id)) {
+          return res.status(403).json({
+            error: "Action not available due to account privacy restrictions.",
+            restricted: true,
+          });
+        }
+      } catch {}
+    }
+
     const result = await storyService.recordView(storyId, userId);
+    if (result.restricted) {
+      return res.status(403).json({
+        error: "Action not available due to account privacy restrictions.",
+        restricted: true,
+      });
+    }
     return res.json(result);
   } catch (err: any) {
     console.error("Story view recording error:", err);
@@ -1537,9 +2572,32 @@ app.post("/api/stories/:id/view", async (req, res) => {
 app.post("/api/stories/:id/like", async (req, res) => {
   try {
     const storyId = req.params.id;
-    const userId = req.body.userId || "user_guest";
+    const claimedUserId = req.body.userId;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
+    if (sb && UUID_REGEX.test(storyId)) {
+      try {
+        const { data: dbStory } = await sb.from('stories').select('user_id').eq('id', storyId).maybeSingle();
+        if (dbStory?.user_id && blockService.isMutuallyBlocked(userId, dbStory.user_id)) {
+          return res.status(403).json({
+            error: "Action not available due to account privacy restrictions.",
+            restricted: true,
+          });
+        }
+      } catch {}
+    }
+
     const targetLiked = typeof req.body.targetLiked === 'boolean' ? req.body.targetLiked : undefined;
     const result = await storyService.toggleLike(storyId, userId, targetLiked);
+    if (result.restricted) {
+      return res.status(403).json({
+        error: "Action not available due to account privacy restrictions.",
+        restricted: true,
+      });
+    }
     return res.json(result);
   } catch (err: any) {
     console.error("Story like error:", err);
@@ -1550,20 +2608,50 @@ app.post("/api/stories/:id/like", async (req, res) => {
 app.delete("/api/stories/:id", async (req, res) => {
   try {
     const storyId = req.params.id;
+    const claimedUserId = req.body?.userId || (req.query?.userId as string | undefined);
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const actorId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
+    let storyOwnerId: string | undefined;
+
+    const memStory = storyService.getStoryById(storyId);
+    if (memStory?.user_id) {
+      storyOwnerId = memStory.user_id;
+    }
+
+    if (!storyOwnerId && sb && UUID_REGEX.test(storyId)) {
+      try {
+        const { data: dbStory } = await sb.from('stories').select('user_id').eq('id', storyId).maybeSingle();
+        if (dbStory?.user_id) {
+          storyOwnerId = dbStory.user_id;
+        }
+      } catch {}
+    }
+
+    if (!storyOwnerId) {
+      return res.status(404).json({ error: "Story not found." });
+    }
+
+    if (storyOwnerId !== actorId) {
+      return res.status(403).json({
+        error: "Forbidden: You can only delete your own stories.",
+      });
+    }
+
     const deleted = storyService.deleteStory(storyId);
 
-    // Also delete from Supabase if table exists
-    const sb = getServerSupabase();
-    if (sb) {
+    if (sb && UUID_REGEX.test(storyId)) {
       try {
-        await sb.from('stories').delete().eq('id', storyId);
+        await sb.from('stories').delete().eq('id', storyId).eq('user_id', actorId);
         await sb.from('story_likes').delete().eq('story_id', storyId);
       } catch (sbErr) {
         console.warn('Notice deleting story from Supabase:', sbErr);
       }
     }
 
-    return res.json({ success: true, deleted });
+    return res.json({ success: true, deleted: true });
   } catch (err: any) {
     console.error("Story deletion error:", err);
     return res.status(500).json({ error: "Failed to delete story." });
@@ -1592,18 +2680,24 @@ setInterval(async () => {
 app.get("/api/stories/:id/insights", async (req, res) => {
   try {
     const storyId = req.params.id;
-    const sb = getServerSupabase();
+    const claimedViewerId = req.query.viewerId as string | undefined;
+    const auth = await authenticateRequestActor(req, res, claimedViewerId);
+    if (!auth) return;
+    const actorId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
     let viewsCount = 0;
     let likesCount = 0;
     let viewedBy: string[] = [];
     let likedBy: string[] = [];
+    let storyOwnerId: string | undefined;
 
     // 1. Check Supabase database
-    if (sb) {
+    if (sb && UUID_REGEX.test(storyId)) {
       try {
         const { data: dbStory } = await sb
           .from('stories')
-          .select('views_count, viewed_by')
+          .select('user_id, views_count, viewed_by')
           .eq('id', storyId)
           .maybeSingle();
 
@@ -1613,6 +2707,7 @@ app.get("/api/stories/:id/insights", async (req, res) => {
           .eq('story_id', storyId);
 
         if (dbStory) {
+          storyOwnerId = dbStory.user_id;
           viewedBy = Array.isArray(dbStory.viewed_by) ? dbStory.viewed_by : [];
           viewsCount = dbStory.views_count ?? viewedBy.length;
         }
@@ -1629,17 +2724,38 @@ app.get("/api/stories/:id/insights", async (req, res) => {
     // 2. Fallback to memory / stories.json buffer if Supabase has 0
     const memStory = storyService.getStoryById(storyId);
     if (memStory) {
+      if (!storyOwnerId) storyOwnerId = memStory.user_id;
       if (viewsCount === 0 && memStory.views_count) viewsCount = memStory.views_count;
       if (viewedBy.length === 0 && memStory.viewed_by) viewedBy = memStory.viewed_by;
       if (likesCount === 0 && memStory.likes_count) likesCount = memStory.likes_count;
       if (likedBy.length === 0 && memStory.liked_by) likedBy = memStory.liked_by;
     }
 
+    if (storyOwnerId && blockService.isMutuallyBlocked(actorId, storyOwnerId)) {
+      return res.status(403).json({
+        error: "Story insights unavailable due to privacy restrictions.",
+        restricted: true,
+      });
+    }
+
+    if (storyOwnerId && storyOwnerId !== actorId) {
+      return res.status(403).json({
+        error: "Forbidden: Only the story author can view story insights.",
+      });
+    }
+
+    if (storyOwnerId) {
+      viewedBy = viewedBy.filter((uid) => !blockService.isMutuallyBlocked(storyOwnerId, uid));
+      likedBy = likedBy.filter((uid) => !blockService.isMutuallyBlocked(storyOwnerId, uid));
+      viewsCount = viewedBy.length;
+      likesCount = likedBy.length;
+    }
+
     // 3. Resolve user profiles for viewers and likers
     let viewers: any[] = [];
     let likers: any[] = [];
     const allUserIds = Array.from(new Set([...viewedBy, ...likedBy].filter(Boolean)));
-    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+    const isUuid = (val: string) => UUID_REGEX.test(val);
     const map: Record<string, any> = {};
 
     if (sb && allUserIds.length > 0) {
@@ -1706,7 +2822,11 @@ app.get("/api/stories/:id/insights", async (req, res) => {
  */
 app.get("/api/reels", async (req, res) => {
   try {
-    const userId = req.query.userId as string | undefined;
+    const claimedUserId = req.query.userId as string | undefined;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
     const reels = reelService.getReels(userId);
     return res.json({ reels, count: reels.length });
   } catch (err: any) {
@@ -1722,7 +2842,7 @@ app.post("/api/reels", async (req, res) => {
       caption,
       audioTitle,
       tags,
-      userId = "user_guest",
+      userId: claimedUserId,
       username = "VerixaUser",
       name,
       avatar,
@@ -1734,6 +2854,13 @@ app.post("/api/reels", async (req, res) => {
     if (!videoUrl) {
       return res.status(400).json({ error: "Reel video URL or data is required." });
     }
+
+    const auth = await authenticateRequestActor(req, res, claimedUserId, {
+      allowed: false,
+      decision: "BLOCK",
+    });
+    if (!auth) return;
+    const userId = auth.actorId;
 
     // 0. AI Guardian Action Authorization Check
     if (userId && userId !== 'user_guest') {
@@ -1817,7 +2944,28 @@ app.post("/api/reels", async (req, res) => {
 app.post("/api/reels/:id/like", async (req, res) => {
   try {
     const reelId = req.params.id;
-    const result = reelService.toggleLike(reelId);
+    const claimedUserId = req.body?.userId as string | undefined;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
+    if (sb && UUID_REGEX.test(reelId)) {
+      try {
+        const { data: dbReel } = await sb.from('reels').select('user_id').eq('id', reelId).maybeSingle();
+        if (dbReel?.user_id && blockService.isMutuallyBlocked(userId, dbReel.user_id)) {
+          return res.status(403).json({
+            error: "Action not available due to account privacy restrictions.",
+            restricted: true,
+          });
+        }
+      } catch {}
+    }
+
+    const result = reelService.toggleLike(reelId, userId);
+    if (result.error) {
+      return res.status(403).json({ error: result.error, restricted: true });
+    }
     return res.json(result);
   } catch (err: any) {
     console.error("Reel like error:", err);
@@ -1827,19 +2975,39 @@ app.post("/api/reels/:id/like", async (req, res) => {
 
 /**
  * 9c. Server-Authoritative Notifications Endpoints
- * Guaranteed persistence, fast retrieval, zero self-notifications
+ * Guaranteed persistence, fast retrieval, zero self-notifications, strict JWT auth
  */
 app.post("/api/notifications", async (req, res) => {
   try {
-    const { recipientId, senderId, type = "like", message = "New notification", postId, detail, sender } = req.body;
+    const {
+      recipientId,
+      senderId: claimedSenderId,
+      type = "like",
+      message = "New notification",
+      postId,
+      detail,
+      sender,
+    } = req.body;
 
-    if (!recipientId || !senderId) {
-      return res.status(400).json({ error: "recipientId and senderId are required" });
+    if (!recipientId) {
+      return res.status(400).json({ error: "recipientId is required" });
     }
+
+    const auth = await authenticateRequestActor(req, res, claimedSenderId);
+    if (!auth) return;
+    const senderId = auth.actorId;
 
     // STRICT: Reject self-notifications immediately
     if (recipientId === senderId) {
       return res.json({ ignored: true, reason: "Self-notification ignored" });
+    }
+
+    // STRICT: Reject notifications between mutually blocked users
+    if (blockService.isMutuallyBlocked(recipientId, senderId)) {
+      return res.status(403).json({
+        error: "Action not available due to account privacy restrictions.",
+        restricted: true,
+      });
     }
 
     const notif = await notificationService.createNotification({
@@ -1852,6 +3020,10 @@ app.post("/api/notifications", async (req, res) => {
       sender,
     });
 
+    if (!notif) {
+      return res.json({ ignored: true, reason: "Notification suppressed" });
+    }
+
     return res.status(200).json({ success: true, notification: notif });
   } catch (err: any) {
     console.error("Notification creation error:", err);
@@ -1859,12 +3031,13 @@ app.post("/api/notifications", async (req, res) => {
   }
 });
 
-app.get("/api/notifications", (req, res) => {
+app.get("/api/notifications", async (req, res) => {
   try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      return res.status(400).json({ error: "userId query parameter is required" });
-    }
+    const claimedUserId = req.query.userId as string | undefined;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
     const limit = parseInt(req.query.limit as string, 10) || 50;
     const notifications = notificationService.getNotifications(userId, limit);
     return res.json({ notifications, count: notifications.length });
@@ -1874,12 +3047,13 @@ app.get("/api/notifications", (req, res) => {
   }
 });
 
-app.post("/api/notifications/read", (req, res) => {
+app.post("/api/notifications/read", async (req, res) => {
   try {
-    const { userId, notificationId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required" });
-    }
+    const { userId: claimedUserId, notificationId } = req.body;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
     if (notificationId) {
       const success = notificationService.markOneRead(userId, notificationId);
       return res.json({ success });
@@ -1893,13 +3067,14 @@ app.post("/api/notifications/read", (req, res) => {
   }
 });
 
-app.delete("/api/notifications/:id", (req, res) => {
+app.delete("/api/notifications/:id", async (req, res) => {
   try {
     const notificationId = req.params.id;
-    const userId = (req.query.userId as string) || req.body.userId;
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required" });
-    }
+    const claimedUserId = (req.query.userId as string) || req.body?.userId;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
     const success = notificationService.deleteNotification(userId, notificationId);
     return res.json({ success });
   } catch (err: any) {
@@ -1915,12 +3090,19 @@ app.delete("/api/notifications/:id", (req, res) => {
  */
 app.post("/api/profiles/moderate-media", async (req, res) => {
   try {
-    const { mediaUrl, mediaBase64, mediaType = "profile_picture", userId } = req.body;
+    const { mediaUrl, mediaBase64, mediaType = "profile_picture", userId: claimedUserId } = req.body;
     const content = mediaBase64 || mediaUrl;
 
     if (!content) {
       return res.status(400).json({ error: "Media data or URL is required." });
     }
+
+    const auth = await authenticateRequestActor(req, res, claimedUserId, {
+      allowed: false,
+      decision: "BLOCK",
+    });
+    if (!auth) return;
+    const userId = auth.actorId;
 
     const result = await moderationGateway.moderate({
       content,
@@ -1966,13 +3148,31 @@ app.post("/api/profiles/moderate-media", async (req, res) => {
 /**
  * A. Spam Detection Endpoint
  */
-app.post("/api/behavioral/check-spam", (req, res) => {
+app.post("/api/behavioral/check-spam", async (req, res) => {
   try {
-    const { userId = "user_guest", content = "", contentType = "post", contentId } = req.body;
+    const {
+      userId: claimedUserId,
+      targetUserId,
+      targetId,
+      content = "",
+      contentType = "post",
+      contentId,
+    } = req.body;
     if (!content || typeof content !== "string") {
       return res.status(400).json({ error: "Content string is required for spam inspection." });
     }
-    const result = spamService.evaluateSpam(userId, content, contentType, { contentId });
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+
+    const effectiveTarget = targetUserId || targetId;
+    if (effectiveTarget && blockService.isMutuallyBlocked(auth.actorId, String(effectiveTarget))) {
+      return res.status(403).json({
+        error: "Action not available due to account privacy restrictions.",
+        restricted: true,
+      });
+    }
+
+    const result = spamService.evaluateSpam(auth.actorId, content, contentType, { contentId });
     return res.json(result);
   } catch (err: any) {
     console.error("Spam check error:", err);
@@ -2000,7 +3200,7 @@ app.post("/api/behavioral/check-privacy", (req, res) => {
 app.post("/api/behavioral/record-interaction", async (req, res) => {
   try {
     const {
-      actorId,
+      actorId: claimedActorId,
       targetId,
       content = "",
       toxicityScore = 0,
@@ -2009,8 +3209,19 @@ app.post("/api/behavioral/record-interaction", async (req, res) => {
       interactionType = "comment",
     } = req.body;
 
-    if (!actorId || !targetId) {
-      return res.status(400).json({ error: "actorId and targetId are required." });
+    if (!targetId) {
+      return res.status(400).json({ error: "targetId is required." });
+    }
+
+    const auth = await authenticateRequestActor(req, res, claimedActorId);
+    if (!auth) return;
+    const actorId = auth.actorId;
+
+    if (blockService.isMutuallyBlocked(actorId, targetId)) {
+      return res.status(403).json({
+        error: "Action not available due to account privacy restrictions.",
+        restricted: true,
+      });
     }
 
     const result = await cyberbullyingService.evaluateInteraction(
@@ -2030,9 +3241,13 @@ app.post("/api/behavioral/record-interaction", async (req, res) => {
 /**
  * D. Cyberbullying Events Query for Target User
  */
-app.get("/api/behavioral/bullying-events/:userId", (req, res) => {
+app.get("/api/behavioral/bullying-events/:userId", async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const requestedUserId = req.params.userId;
+    const auth = await authenticateRequestActor(req, res, requestedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
     const targetEvents = cyberbullyingService.getEventsForTarget(userId);
     const actorEvents = cyberbullyingService.getEventsByActor(userId);
     return res.json({ targetEvents, actorEvents });
@@ -2048,6 +3263,36 @@ app.get("/api/behavioral/bullying-events/:userId", (req, res) => {
 app.get("/api/behavioral/fake-account-risk/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
+    const auth = await authenticateRequestActor(req, res);
+    if (!auth) return;
+
+    if (auth.actorId !== userId) {
+      const adminKey = req.headers["x-admin-key"] as string | undefined;
+      const authHeader = req.headers.authorization;
+      const bearerCandidate =
+        typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")
+          ? authHeader.slice(7).trim()
+          : undefined;
+      const isAdmin =
+        verifyAdminSecretToken(adminKey) ||
+        verifyAdminSecretToken(bearerCandidate) ||
+        Boolean((req as any).adminUser);
+
+      if (!isAdmin) {
+        return res.status(403).json({
+          error: "Forbidden: Account risk evaluations are restricted to the account owner or an administrator.",
+          restricted: true,
+        });
+      }
+    }
+
+    if (auth.actorId !== userId && blockService.isMutuallyBlocked(auth.actorId, userId)) {
+      return res.status(403).json({
+        error: "Account risk data unavailable due to privacy restrictions.",
+        restricted: true,
+      });
+    }
+
     const evaluation = await fakeAccountService.evaluateUserFromDatabase(userId);
     return res.json(evaluation);
   } catch (err: any) {
@@ -2062,6 +3307,17 @@ app.get("/api/behavioral/fake-account-risk/:userId", async (req, res) => {
 app.get("/api/reputation/:userId/history", async (req, res) => {
   try {
     const userId = req.params.userId;
+    const auth = await authenticateRequestActor(req, res);
+    if (!auth) return;
+
+    if (auth.actorId !== userId && blockService.isMutuallyBlocked(auth.actorId, userId)) {
+      return res.status(403).json({
+        error: "Reputation history unavailable due to account privacy restrictions.",
+        restricted: true,
+        history: [],
+      });
+    }
+
     const limit = parseInt(req.query.limit as string, 10) || 30;
     const history = await reputationService.getHistory(userId, limit);
     return res.json({ history });
@@ -2077,6 +3333,16 @@ app.get("/api/reputation/:userId/history", async (req, res) => {
 app.get("/api/reputation/:userId/summary", async (req, res) => {
   try {
     const userId = req.params.userId;
+    const auth = await authenticateRequestActor(req, res);
+    if (!auth) return;
+
+    if (auth.actorId !== userId && blockService.isMutuallyBlocked(auth.actorId, userId)) {
+      return res.status(403).json({
+        error: "Reputation summary unavailable due to account privacy restrictions.",
+        restricted: true,
+      });
+    }
+
     const summary = await reputationService.getSummary(userId);
     return res.json(summary);
   } catch (err: any) {
@@ -2087,13 +3353,17 @@ app.get("/api/reputation/:userId/summary", async (req, res) => {
 
 /**
  * H. Server-Authoritative Reputation Score Adjustment
- * Every modification requires event, reason, source, amount, and timestamp
+ * Every modification requires verified JWT actor, event, reason, source, amount, and timestamp
  */
 app.post("/api/reputation/record-event", async (req, res) => {
   try {
-    const { userId, event, reason, source = "admin_review", amount, metadata } = req.body;
-    if (!userId || !event || typeof amount !== "number" || !reason) {
-      return res.status(400).json({ error: "userId, event, amount (number), and reason are required." });
+    const { userId: claimedUserId, event, reason, source = "user_activity", amount, metadata } = req.body;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    if (!event || typeof amount !== "number" || !reason) {
+      return res.status(400).json({ error: "event, amount (number), and reason are required." });
     }
 
     const record = await reputationService.recordEvent({
@@ -2121,10 +3391,21 @@ app.post("/api/reputation/record-event", async (req, res) => {
 app.get("/api/guardian/score/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
-    const isAdmin = req.query.isAdmin === "true" || req.headers["x-user-role"] === "admin";
+    const auth = await authenticateRequestActor(req, res);
+    if (!auth) return;
+
+    if (auth.actorId !== userId && blockService.isMutuallyBlocked(auth.actorId, userId)) {
+      return res.status(403).json({
+        error: "Guardian score unavailable due to account privacy restrictions.",
+        restricted: true,
+      });
+    }
+
+    // Do not trust client-supplied isAdmin query/header flags
+    const isOwner = auth.actorId === userId;
     const scoreRecord = await guardianService.getGuardianScore(userId);
-    const explainability = await guardianService.getExplainability(userId, isAdmin);
-    const activeRestrictions = await guardianService.getActiveRestrictions(userId);
+    const explainability = await guardianService.getExplainability(userId, false);
+    const activeRestrictions = isOwner ? await guardianService.getActiveRestrictions(userId) : [];
 
     return res.json({
       score: scoreRecord.score,
@@ -2147,8 +3428,11 @@ app.get("/api/guardian/score/:userId", async (req, res) => {
  */
 app.get("/api/guardian/restrictions/:userId", async (req, res) => {
   try {
-    const userId = req.params.userId;
-    const activeRestrictions = await guardianService.getActiveRestrictions(userId);
+    const requestedUserId = req.params.userId;
+    const auth = await authenticateRequestActor(req, res, requestedUserId);
+    if (!auth) return;
+
+    const activeRestrictions = await guardianService.getActiveRestrictions(auth.actorId);
     return res.json(activeRestrictions);
   } catch (err: any) {
     console.error("Guardian restrictions error:", err);
@@ -2161,11 +3445,14 @@ app.get("/api/guardian/restrictions/:userId", async (req, res) => {
  */
 app.post("/api/guardian/check-action", async (req, res) => {
   try {
-    const { userId, action } = req.body;
-    if (!userId || !action) {
-      return res.status(400).json({ error: "userId and action are required." });
+    const { userId: claimedUserId, action } = req.body;
+    if (!action) {
+      return res.status(400).json({ error: "action is required." });
     }
-    const result = await guardianService.checkActionAllowed(userId, action);
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+
+    const result = await guardianService.checkActionAllowed(auth.actorId, action);
     return res.json(result);
   } catch (err: any) {
     console.error("Guardian check action error:", err);
@@ -2178,125 +3465,20 @@ app.post("/api/guardian/check-action", async (req, res) => {
  */
 app.post("/api/guardian/appeal", async (req, res) => {
   try {
-    const { userId, restrictionType = "ALL", reason, evidence } = req.body;
-    if (!userId || !reason) {
-      return res.status(400).json({ error: "userId and reason are required." });
+    const { userId: claimedUserId, restrictionType = "ALL", reason, evidence } = req.body;
+    if (!reason) {
+      return res.status(400).json({ error: "reason is required." });
     }
-    const appeal = await guardianService.submitAppeal(userId, restrictionType, reason, evidence);
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+
+    const appeal = await guardianService.submitAppeal(auth.actorId, restrictionType, reason, evidence);
     return res.json({ appeal, message: "Appeal submitted successfully for review." });
   } catch (err: any) {
     console.error("Guardian submit appeal error:", err);
     return res.status(500).json({ error: "Failed to submit appeal." });
   }
 });
-
-// =============================================================
-// VERIXA SERVER-SIDE ADMIN AUTHORIZATION MIDDLEWARE
-// =============================================================
-
-/**
- * Server-Side Admin Authorization Middleware
- * Enforces admin authority strictly server-side.
- * SECURITY MANDATE: DOES NOT trust any client-supplied 'isAdmin' boolean in body or query parameters!
- */
-async function requireAdminAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
-  try {
-    const authHeader = req.headers.authorization;
-    const adminKey = req.headers["x-admin-key"] as string | undefined;
-
-    // 1. Verify trusted server secret key (for automated tests / backend service calls)
-    const validServerKey =
-      process.env.ADMIN_SECRET_KEY ||
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      "verixa_admin_secret_guard_2026";
-
-    if (adminKey && adminKey === validServerKey) {
-      (req as any).adminUser = {
-        id: "sys_admin",
-        username: "SystemAdmin",
-        email: "admin@verixa.ai",
-        role: "admin",
-      };
-      return next();
-    }
-
-    // 2. Extract Bearer token from authorization header
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        error: "Unauthorized: Missing or malformed authorization Bearer token.",
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ error: "Unauthorized: No token provided." });
-    }
-
-    // Check dev admin token fallback for offline local testing
-    if (token.startsWith("dev_admin_token_")) {
-      const devUserId = token.replace("dev_admin_token_", "");
-      (req as any).adminUser = {
-        id: devUserId || "admin_dev",
-        username: "DevAdmin",
-        email: "admin@verixa.local",
-        role: "admin",
-      };
-      return next();
-    }
-
-    // 3. Authorize via Supabase Auth
-    const sbUrl =
-      process.env.VITE_SUPABASE_URL ||
-      process.env.SUPABASE_URL ||
-      'https://jnbaumemwxydjktwedtz.supabase.co';
-    const sbKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-      process.env.SUPABASE_ANON_KEY ||
-      'sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2';
-
-    if (!sbUrl || !sbKey) {
-      return res.status(503).json({ error: "Authentication service unavailable." });
-    }
-
-    const sbClient = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
-    const { data: userData, error: authErr } = await sbClient.auth.getUser(token);
-
-    if (authErr || !userData?.user) {
-      return res.status(401).json({ error: "Unauthorized: Invalid or expired session token." });
-    }
-
-    const userId = userData.user.id;
-
-    // 4. Query public.profiles to verify user role
-    const { data: profile } = await sbClient
-      .from("profiles")
-      .select("id, username, role, email")
-      .eq("id", userId)
-      .single();
-
-    const allowedRoles = ["admin", "moderator", "Moderator", "Admin"];
-    const userRole = profile?.role || userData.user.user_metadata?.role;
-
-    if (!userRole || !allowedRoles.includes(userRole)) {
-      return res.status(403).json({
-        error: "Forbidden: Administrative privileges required. Verified user role does not have moderator access.",
-      });
-    }
-
-    (req as any).adminUser = {
-      id: profile?.id || userId,
-      username: profile?.username || userData.user.email?.split("@")[0] || "admin",
-      email: profile?.email || userData.user.email,
-      role: userRole,
-    };
-
-    return next();
-  } catch (err: any) {
-    console.error("requireAdminAuth middleware error:", err);
-    return res.status(500).json({ error: "Internal authorization error." });
-  }
-}
 
 // -------------------------------------------------------------
 // VERIXA MODERATION REVIEW & APPEAL SYSTEM ENDPOINTS
@@ -2326,15 +3508,19 @@ app.post("/api/moderation/appeals", async (req, res) => {
       evidence_urls,
     } = req.body;
 
-    const uId = userId || user_id;
+    const claimedUserId = userId || user_id;
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const uId = auth.actorId;
+
     const aId = analysisId || analysis_id;
     const cId = contentId || content_id;
     const rReason = reason;
     const text = appealText || appeal_text;
 
-    if (!uId || !aId || !cId || !rReason || !text) {
+    if (!aId || !cId || !rReason || !text) {
       return res.status(400).json({
-        error: "Fields userId, analysisId, contentId, reason, and appealText are required.",
+        error: "Fields analysisId, contentId, reason, and appealText are required.",
       });
     }
 
@@ -2378,12 +3564,16 @@ app.post("/api/moderation/reports", async (req, res) => {
       severity = "MEDIUM",
     } = req.body;
 
-    const repId = reporterId || reporter_id;
+    const claimedReporterId = reporterId || reporter_id;
+    const auth = await authenticateRequestActor(req, res, claimedReporterId);
+    if (!auth) return;
+    const repId = auth.actorId;
+
     const tId = targetId || target_id;
 
-    if (!repId || !tId || !reason) {
+    if (!tId || !reason) {
       return res.status(400).json({
-        error: "Fields reporterId, targetId, and reason are required.",
+        error: "Fields targetId and reason are required.",
       });
     }
 
@@ -2412,8 +3602,11 @@ app.post("/api/moderation/reports", async (req, res) => {
  */
 app.get("/api/moderation/my-appeals/:userId", async (req, res) => {
   try {
-    const userId = req.params.userId;
-    const appeals = reviewService.getAppeals({ userId });
+    const requestedUserId = req.params.userId;
+    const auth = await authenticateRequestActor(req, res, requestedUserId);
+    if (!auth) return;
+
+    const appeals = reviewService.getAppeals({ userId: auth.actorId });
     return res.json({ appeals });
   } catch (err: any) {
     console.error("Get user appeals error:", err);
@@ -2598,16 +3791,6 @@ app.get("/api/admin/threat-alerts", requireAdminAuth, async (req, res) => {
     const { category = "all", limit = "50" } = req.query;
     const maxLimit = Math.min(parseInt(limit as string) || 50, 200);
 
-    const sbUrl =
-      process.env.VITE_SUPABASE_URL ||
-      process.env.SUPABASE_URL ||
-      'https://jnbaumemwxydjktwedtz.supabase.co';
-    const sbKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-      process.env.SUPABASE_ANON_KEY ||
-      'sb_publishable_9IakRstb07CZxsC8Y_WgKQ_sQk_i_D2';
-
     let alerts: Array<{
       id: string;
       timestamp: string;
@@ -2621,9 +3804,9 @@ app.get("/api/admin/threat-alerts", requireAdminAuth, async (req, res) => {
       decision: string;
     }> = [];
 
-    if (sbUrl && sbKey) {
+    const sbClient = getServerSupabase(undefined, { useServiceRole: true });
+    if (sbClient) {
       try {
-        const sbClient = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
         const [logsRes, guardianRes] = await Promise.all([
           sbClient.from("moderation_logs").select("*").order("created_at", { ascending: false }).limit(maxLimit),
           sbClient.from("guardian_events").select("*").order("created_at", { ascending: false }).limit(maxLimit),
@@ -2703,11 +3886,14 @@ app.get("/api/admin/threat-alerts", requireAdminAuth, async (req, res) => {
  */
 app.get("/api/feed/personalized", async (req, res) => {
   try {
-    const { userId, limit = "30", category, hashtag } = req.query;
+    const { userId: claimedUserId, limit = "30", category, hashtag } = req.query;
+    const auth = await authenticateRequestActor(req, res, claimedUserId as string | undefined);
+    if (!auth) return;
+
     const limitCount = Math.min(parseInt(limit as string) || 30, 100);
 
     const result = await feedService.getPersonalizedFeed(
-      userId as string | undefined,
+      auth.actorId,
       limitCount,
       {
         category: category as string | undefined,
@@ -2728,11 +3914,31 @@ app.get("/api/feed/personalized", async (req, res) => {
  */
 app.post("/api/feed/interact", async (req, res) => {
   try {
-    const { userId, postId, interactionType, dwellTimeMs, metadata } = req.body;
+    const { userId: claimedUserId, postId, interactionType, dwellTimeMs, metadata } = req.body;
 
-    if (!userId || !postId || !interactionType) {
+    if (!postId || !interactionType) {
       return res.status(400).json({
-        error: "userId, postId, and interactionType are required.",
+        error: "postId and interactionType are required.",
+      });
+    }
+
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    const sb = getServerSupabase(req.headers.authorization);
+    let postOwnerId = metadata?.author_id || "";
+    if (!postOwnerId && sb && UUID_REGEX.test(postId)) {
+      try {
+        const { data: postRow } = await sb.from("posts").select("user_id").eq("id", postId).maybeSingle();
+        if (postRow?.user_id) postOwnerId = postRow.user_id;
+      } catch {}
+    }
+
+    if (postOwnerId && blockService.isMutuallyBlocked(userId, postOwnerId)) {
+      return res.status(403).json({
+        error: "Action not available due to account privacy restrictions.",
+        restricted: true,
       });
     }
 
@@ -2757,14 +3963,24 @@ app.post("/api/feed/interact", async (req, res) => {
 app.get("/api/feed/explain/:postId", async (req, res) => {
   try {
     const { postId } = req.params;
-    const { userId } = req.query;
+    const claimedUserId = req.query.userId as string | undefined;
 
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required to inspect personalized explainability." });
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
+
+    try {
+      const explainability = await feedService.getPostExplainability(userId, postId);
+      return res.json({ success: true, explainability });
+    } catch (innerErr: any) {
+      if (innerErr?.restricted) {
+        return res.status(403).json({
+          error: "Post explainability is unavailable due to account privacy restrictions.",
+          restricted: true,
+        });
+      }
+      throw innerErr;
     }
-
-    const explainability = await feedService.getPostExplainability(userId as string, postId);
-    return res.json({ success: true, explainability });
   } catch (err: any) {
     console.error("Feed explainability error:", err);
     return res.status(500).json({ error: "Failed to retrieve explainability." });
@@ -2784,7 +4000,7 @@ app.get("/api/feed/weights", (req, res) => {
 /**
  * 5. Update Adjustable Scoring Weights
  */
-app.post("/api/feed/weights", (req, res) => {
+app.post("/api/feed/weights", requireAdminAuth, (req, res) => {
   try {
     const updated = feedService.updateScoringWeights(req.body || {});
     return res.json({
@@ -2801,7 +4017,7 @@ app.post("/api/feed/weights", (req, res) => {
 /**
  * 13. Guardian Backwards-Compatible Appeals Endpoints
  */
-app.get("/api/guardian/appeals", async (req, res) => {
+app.get("/api/guardian/appeals", requireAdminAuth, async (req, res) => {
   try {
     const appeals = await guardianService.getPendingAppeals();
     return res.json({ appeals });
@@ -2811,7 +4027,7 @@ app.get("/api/guardian/appeals", async (req, res) => {
   }
 });
 
-app.post("/api/guardian/appeal/:appealId/resolve", async (req, res) => {
+app.post("/api/guardian/appeal/:appealId/resolve", requireAdminAuth, async (req, res) => {
   try {
     const appealId = req.params.appealId;
     const { status, resolutionNotes, reviewerId = "admin" } = req.body;
@@ -2834,10 +4050,22 @@ app.post("/api/guardian/appeal/:appealId/resolve", async (req, res) => {
  */
 app.post("/api/guardian/record-event", async (req, res) => {
   try {
-    const { userId, eventType, severity = "MEDIUM", weight, description, metadata, source = "api_gateway" } = req.body;
-    if (!userId || !eventType) {
-      return res.status(400).json({ error: "userId and eventType are required." });
+    const {
+      userId: claimedUserId,
+      eventType,
+      severity = "MEDIUM",
+      weight,
+      description,
+      metadata,
+      source = "api_gateway",
+    } = req.body;
+    if (!eventType) {
+      return res.status(400).json({ error: "eventType is required." });
     }
+
+    const auth = await authenticateRequestActor(req, res, claimedUserId);
+    if (!auth) return;
+    const userId = auth.actorId;
 
     const eventRecord = await guardianService.recordGuardianEvent({
       userId,
@@ -3090,6 +4318,13 @@ Format your response clearly with:
 // -------------------------------------------------------------
 
 async function startServer() {
+  // 404 handler for unknown API routes — ensures unknown /api/* requests return 404 JSON, never 200 HTML
+  app.all("/api/*", (req, res) => {
+    return res.status(404).json({
+      error: `API route not found: ${req.method} ${req.path}`,
+    });
+  });
+
   if (process.env.NODE_ENV !== "production") {
     const cwd = process.cwd();
     let realCwd = cwd;

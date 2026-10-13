@@ -390,9 +390,25 @@ export class FeedService {
     total: number;
     served_at: string;
   }> {
-    const candidates = await this.fetchCandidatePosts({
+    const rawCandidates = await this.fetchCandidatePosts({
       ...options,
       limit: limitCount,
+    });
+
+    // Exclude any candidate authored by a user mutually blocked with userId
+    const { blockService } = await import('../moderation/blockService');
+    const restrictedIds = userId
+      ? blockService.getMutuallyRestrictedIds(userId)
+      : new Set<string>();
+
+    const candidates = rawCandidates.filter((cand) => {
+      if (!userId || userId === 'anonymous') return true;
+      if (!cand.user_id || cand.user_id === userId) return true;
+      return (
+        !restrictedIds.has(cand.user_id) &&
+        !blockService.isMutuallyBlocked(userId, cand.user_id) &&
+        !blockService.isMutuallyBlocked(userId, cand.author_username)
+      );
     });
 
     const viewerContext = await this.buildViewerContext(userId);
@@ -469,8 +485,54 @@ export class FeedService {
     userId: string,
     postId: string
   ): Promise<RecommendationExplainability | null> {
-    const post = this.memoryPostPool.get(postId);
+    const { blockService } = await import('../moderation/blockService');
+    let post = this.memoryPostPool.get(postId);
+
+    if (!post) {
+      const sb = getServerSupabase();
+      if (sb) {
+        try {
+          const { data: row } = await sb
+            .from('posts')
+            .select('id, user_id, caption, media_url, media_type, hashtags, likes_count, comments_count, visibility, moderation_status, ai_safety_score, ai_scan_details, created_at')
+            .eq('id', postId)
+            .maybeSingle();
+          if (row) {
+            post = {
+              id: row.id,
+              user_id: row.user_id,
+              caption: row.caption || '',
+              media_url: row.media_url,
+              media_type: row.media_type || 'image',
+              hashtags: row.hashtags || [],
+              category: deriveCategory(row.caption, row.hashtags),
+              likes_count: row.likes_count || 0,
+              comments_count: row.comments_count || 0,
+              shares_count: 0,
+              saves_count: 0,
+              visibility: row.visibility || 'public',
+              moderation_status: row.moderation_status || 'approved',
+              ai_safety_score: row.ai_safety_score ?? 100,
+              ai_scan_details: row.ai_scan_details,
+              created_at: row.created_at,
+            };
+          }
+        } catch {}
+      }
+    }
+
     if (!post) return null;
+
+    if (
+      userId &&
+      post.user_id &&
+      (blockService.isMutuallyBlocked(userId, post.user_id) ||
+        blockService.isMutuallyBlocked(userId, post.author_username))
+    ) {
+      const err: any = new Error('Action not available due to account privacy restrictions.');
+      err.restricted = true;
+      throw err;
+    }
 
     const viewerContext = await this.buildViewerContext(userId);
     const ranked = await this.rankingStrategy.rank([post], viewerContext, this.scoringWeights);

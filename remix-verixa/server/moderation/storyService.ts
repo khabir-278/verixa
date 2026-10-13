@@ -14,6 +14,7 @@ import * as crypto from 'crypto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { moderationGateway } from './moderationGateway';
 import { ModerationState, ModerationStatus } from './types';
+import { blockService } from './blockService';
 
 export interface StoryRecord {
   id: string;
@@ -298,14 +299,31 @@ export class StoryService {
   }
 
   /**
-   * Retrieves active, non-expired, approved stories (< 24 hours old).
+   * Retrieves active, non-expired, approved stories (< 24 hours old),
+   * excluding stories from mutually blocked users.
    */
   getActiveStories(currentUserId?: string): StoryRecord[] {
     const nowMs = Date.now();
+    const restrictedIds = currentUserId
+      ? blockService.getMutuallyRestrictedIds(currentUserId)
+      : new Set<string>();
+
     return storiesMemoryBuffer
       .filter((s) => {
         const expires = s.expires_at || s.expiresAt;
         const isExpired = expires ? new Date(expires).getTime() <= nowMs : false;
+        if (isExpired) return false;
+
+        const authorId = s.user_id || s.user?.id || (s as any).userId;
+        if (
+          currentUserId &&
+          authorId &&
+          authorId !== currentUserId &&
+          (restrictedIds.has(authorId) || blockService.isMutuallyBlocked(currentUserId, authorId))
+        ) {
+          return false;
+        }
+
         // Filter out synthetic/mock test stories from public feed
         const isTestStory =
           s.user_id === 'user_story_test' ||
@@ -328,12 +346,19 @@ export class StoryService {
         return isApproved || isAuthor;
       })
       .map((s) => {
+        const authorId = s.user_id || s.user?.id;
+        const authorRestricted = authorId
+          ? blockService.getMutuallyRestrictedIds(authorId)
+          : new Set<string>();
+
         const mediaUrl = s.mediaUrl || s.media_url || '';
         const mediaType = (s.type || s.mediaType || s.media_type || (mediaUrl.includes('.mp4') ? 'video' : 'image')) as 'image' | 'video';
-        const viewsCount = s.viewsCount ?? s.views_count ?? (s.viewed_by?.length || 0);
-        const viewedBy = s.viewedBy || s.viewed_by || [];
-        const likesCount = s.likesCount ?? s.likes_count ?? (s.liked_by?.length || s.likedBy?.length || 0);
-        const likedBy = s.likedBy || s.liked_by || [];
+        const rawViewedBy = s.viewedBy || s.viewed_by || [];
+        const viewedBy = rawViewedBy.filter((uid) => !authorRestricted.has(uid));
+        const viewsCount = viewedBy.length > 0 ? viewedBy.length : (s.viewsCount ?? s.views_count ?? 0);
+        const rawLikedBy = s.likedBy || s.liked_by || [];
+        const likedBy = rawLikedBy.filter((uid) => !authorRestricted.has(uid));
+        const likesCount = likedBy.length;
         const createdAt = s.createdAt || s.created_at || new Date().toISOString();
         const expiresAt = s.expiresAt || s.expires_at;
         const rawAvatar = s.user?.avatar;
@@ -392,9 +417,17 @@ export class StoryService {
   }
 
   /**
-   * Records a user view on a story idempotently.
+   * Records a user view on a story idempotently (rejecting if mutually blocked).
    */
-  async recordView(storyId: string, viewerUserId: string): Promise<{ success: boolean; viewsCount: number }> {
+  async recordView(
+    storyId: string,
+    viewerUserId: string
+  ): Promise<{ success: boolean; viewsCount: number; restricted?: boolean }> {
+    const memStory = storiesMemoryBuffer.find((s) => s.id === storyId);
+    if (memStory && viewerUserId && blockService.isMutuallyBlocked(memStory.user_id, viewerUserId)) {
+      return { success: false, viewsCount: memStory.views_count || 0, restricted: true };
+    }
+
     let viewsCount = 0;
     const sb = getServerSupabase();
 
@@ -402,11 +435,14 @@ export class StoryService {
       try {
         const { data: dbStory } = await sb
           .from('stories')
-          .select('views_count, viewed_by')
+          .select('user_id, views_count, viewed_by')
           .eq('id', storyId)
           .maybeSingle();
 
         if (dbStory) {
+          if (viewerUserId && blockService.isMutuallyBlocked(dbStory.user_id, viewerUserId)) {
+            return { success: false, viewsCount: dbStory.views_count || 0, restricted: true };
+          }
           const viewedBy: string[] = Array.isArray(dbStory.viewed_by) ? dbStory.viewed_by : [];
           if (!viewedBy.includes(viewerUserId)) {
             viewedBy.push(viewerUserId);
@@ -424,35 +460,65 @@ export class StoryService {
       }
     }
 
-    const story = storiesMemoryBuffer.find((s) => s.id === storyId);
-    if (story) {
-      if (!Array.isArray(story.viewed_by)) {
-        story.viewed_by = [];
+    if (memStory) {
+      if (!Array.isArray(memStory.viewed_by)) {
+        memStory.viewed_by = [];
       }
-      if (!story.viewed_by.includes(viewerUserId)) {
-        story.viewed_by.push(viewerUserId);
+      if (!memStory.viewed_by.includes(viewerUserId)) {
+        memStory.viewed_by.push(viewerUserId);
       }
-      story.views_count = Math.max(viewsCount, story.viewed_by.length);
-      story.viewsCount = story.views_count;
+      memStory.views_count = Math.max(viewsCount, memStory.viewed_by.length);
+      memStory.viewsCount = memStory.views_count;
       saveStoriesToFile();
-      viewsCount = story.views_count;
+      viewsCount = memStory.views_count;
     }
 
     return { success: true, viewsCount: viewsCount || 1 };
   }
 
   /**
-   * Toggles or sets a like on a story by a user with database sync.
+   * Toggles or sets a like on a story by a user with database sync (rejecting if mutually blocked).
    */
   async toggleLike(
     storyId: string,
     userId: string,
     targetLiked?: boolean
-  ): Promise<{ success: boolean; isLiked: boolean; likesCount: number; likedBy: string[] }> {
+  ): Promise<{ success: boolean; isLiked: boolean; likesCount: number; likedBy: string[]; restricted?: boolean }> {
     const story = storiesMemoryBuffer.find((s) => s.id === storyId);
+    if (story && userId && blockService.isMutuallyBlocked(story.user_id, userId)) {
+      return {
+        success: false,
+        isLiked: false,
+        likesCount: story.likes_count || 0,
+        likedBy: story.liked_by || [],
+        restricted: true,
+      };
+    }
+
     let isLiked = false;
     let likesCount = 0;
     let likedBy: string[] = [];
+
+    // Check Supabase story owner if not in memory
+    const sb = getServerSupabase();
+    if (!story && sb) {
+      try {
+        const { data: dbStory } = await sb
+          .from('stories')
+          .select('user_id')
+          .eq('id', storyId)
+          .maybeSingle();
+        if (dbStory && userId && blockService.isMutuallyBlocked(dbStory.user_id, userId)) {
+          return {
+            success: false,
+            isLiked: false,
+            likesCount: 0,
+            likedBy: [],
+            restricted: true,
+          };
+        }
+      } catch {}
+    }
 
     // 1. Maintain memory buffer state first
     if (story) {
@@ -479,7 +545,6 @@ export class StoryService {
     }
 
     // 2. Sync with Supabase if user_id is a valid UUID
-    const sb = getServerSupabase();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
 
     if (sb && isUuid) {

@@ -14,6 +14,7 @@ import * as path from 'path';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { moderationGateway } from './moderationGateway';
 import { ModerationState, ModerationStatus } from './types';
+import { blockService } from './blockService';
 
 export interface ReelRecord {
   id: string;
@@ -215,24 +216,54 @@ export class ReelService {
   }
 
   /**
-   * Retrieves all approved reels for public display.
+   * Retrieves all approved reels for public display (filtering out mutually blocked creators).
    * If currentUserId is passed, includes author's pending/quarantined reels.
    */
   getReels(currentUserId?: string): ReelRecord[] {
+    const restrictedIds = currentUserId
+      ? blockService.getMutuallyRestrictedIds(currentUserId)
+      : new Set<string>();
+
     return reelsMemoryBuffer.filter((r) => {
+      const authorId = r.user_id || r.user?.id;
+      if (
+        currentUserId &&
+        authorId &&
+        authorId !== currentUserId &&
+        (restrictedIds.has(authorId) || blockService.isMutuallyBlocked(currentUserId, authorId))
+      ) {
+        return false;
+      }
       const isApproved = r.moderation_state === 'APPROVED' || r.moderation_status === 'ALLOWED';
       const isAuthor = currentUserId && r.user_id === currentUserId;
       return isApproved || isAuthor;
     });
   }
 
+  getReelById(reelId: string): ReelRecord | undefined {
+    return reelsMemoryBuffer.find((r) => r.id === reelId);
+  }
+
   /**
-   * Toggle like on a reel
+   * Toggle like on a reel (enforcing mutual block check)
    */
-  toggleLike(reelId: string): { success: boolean; likes: number; isLiked: boolean } {
+  toggleLike(
+    reelId: string,
+    userId?: string
+  ): { success: boolean; likes: number; isLiked: boolean; error?: string } {
     const reel = reelsMemoryBuffer.find((r) => r.id === reelId);
     if (!reel) {
       return { success: false, likes: 0, isLiked: false };
+    }
+
+    const authorId = reel.user_id || reel.user?.id;
+    if (userId && authorId && blockService.isMutuallyBlocked(userId, authorId)) {
+      return {
+        success: false,
+        likes: reel.likes,
+        isLiked: false,
+        error: 'Action unavailable due to privacy restrictions.',
+      };
     }
 
     reel.is_liked = !reel.is_liked;

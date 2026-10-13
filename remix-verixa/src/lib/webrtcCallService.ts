@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { checkUserBlockStatus, isClientUserRestricted } from './supabaseServices';
 import { ActiveCallInfo, CallType, User } from '../types';
 
 const ICE_SERVERS: RTCConfiguration = {
@@ -205,9 +206,24 @@ class WebRTCCallService {
 
   // --- INCOMING HANDLERS ---
 
-  private handleIncomingOffer(payload: any) {
-    const { callId, callerId, callerName, callerAvatar, callType, sdp } = payload;
+  private async handleIncomingOffer(payload: any) {
+    const { callId, callerId, callerName, callerAvatar, callType, sdp } = payload || {};
     if (!callId || !callerId) return;
+
+    // Enforce mutual block check BEFORE any busy-state or presence response
+    if (isClientUserRestricted(String(callerId))) {
+      return;
+    }
+    if (this.currentUser?.id) {
+      try {
+        const blockStatus = await checkUserBlockStatus(this.currentUser.id, String(callerId));
+        if (blockStatus.restricted) {
+          return;
+        }
+      } catch {
+        // Proceed with local restriction state if network check fails
+      }
+    }
 
     if (this.activeCall && this.activeCall.state !== 'ended') {
       // User is busy in another call
@@ -301,6 +317,17 @@ class WebRTCCallService {
       this.notifyError('You must be signed in to place a call.');
       return;
     }
+    if (isClientUserRestricted(String(targetUser.id))) {
+      this.notifyError('Calling is unavailable due to account privacy restrictions.');
+      return;
+    }
+    try {
+      const blockStatus = await checkUserBlockStatus(this.currentUser.id, String(targetUser.id));
+      if (blockStatus.restricted) {
+        this.notifyError('Calling is unavailable due to account privacy restrictions.');
+        return;
+      }
+    } catch {}
     if (this.activeCall && this.activeCall.state !== 'ended') {
       this.notifyError('A call is already active or in progress.');
       return;
@@ -394,6 +421,10 @@ class WebRTCCallService {
       this.notifyError(err.message || 'Failed to accept call.');
       this.rejectCall();
     }
+  }
+
+  public dropCallSilently(): void {
+    this.resetCallState();
   }
 
   public async rejectCall(): Promise<void> {

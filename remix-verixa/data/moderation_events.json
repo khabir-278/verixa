@@ -1,5 +1,1350 @@
 [
   {
+    "analysis_id": "err_size_1791913570524",
+    "content_id": "err_size_1791913570524",
+    "content_type": "comment",
+    "model": "gateway-validator",
+    "model_version": "1.0",
+    "scores": {
+      "toxicity": 100,
+      "risk": 100
+    },
+    "labels": [
+      "PAYLOAD_TOO_LARGE"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:46:10.524Z",
+      "analyzed_at": "2026-10-13T17:46:10.524Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 100,
+    "reason": "Text payload exceeds maximum allowed size of 50KB.",
+    "content_hash": "payload_too_large",
+    "content_length": 61440,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 61440 chars]",
+    "language": "N/A",
+    "created_at": "2026-10-13T17:46:10.524Z"
+  },
+  {
+    "analysis_id": "mod_1791913532894_wwkr793",
+    "content_id": "mod_1791913532894_wwkr793",
+    "content_type": "comment",
+    "model": "gemini-3.8-flash",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 80,
+      "risk": 80,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 80
+    },
+    "labels": [
+      "Spam"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:46:09.344Z",
+      "analyzed_at": "2026-10-13T17:46:09.344Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 98,
+    "reason": "The content contains repetitive solicitation, engagement farming, and promotional spam targeting user engagement. (Safety rule confirmation: Detected unsolicited spam, mass promotion, or engagement manipulation.)",
+    "content_hash": "3eca25faa27dafc31655ece7ba2931bc35c16714ff924c05c51766d35de389d5",
+    "content_length": 68,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 68 chars]",
+    "language": "English",
+    "created_at": "2026-10-13T17:46:09.344Z"
+  },
+  {
+    "analysis_id": "mod_1791913498211_tqwy7xk",
+    "content_id": "mod_1791913498211_tqwy7xk",
+    "content_type": "comment",
+    "model": "secondary_safety_layer",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 92,
+      "risk": 92,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 92
+    },
+    "labels": [
+      "Phishing/link abuse"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:45:31.897Z",
+      "analyzed_at": "2026-10-13T17:45:31.897Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 90,
+    "reason": "Detected potential phishing, scam, or unauthorized link abuse.",
+    "content_hash": "3f0e8947d50793872a6884b1c7f53394282e1a91731b6cbaa9dd5caf417cf74d",
+    "content_length": 71,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 71 chars]",
+    "language": "English",
+    "created_at": "2026-10-13T17:45:31.897Z"
+  },
+  {
+    "analysis_id": "mod_1791913464214_ehd73wn",
+    "content_id": "mod_1791913464214_ehd73wn",
+    "content_type": "comment",
+    "model": "secondary_safety_layer",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Threats"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:44:57.222Z",
+      "analyzed_at": "2026-10-13T17:44:57.222Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 90,
+    "reason": "Violates zero-tolerance policy against violent threats and harm.",
+    "content_hash": "e4ab581e718d6cea32a765d3afa69f1b06e3072bc2f3839d5a82b1c94e2b71a4",
+    "content_length": 21,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 21 chars]",
+    "language": "Multilingual",
+    "created_at": "2026-10-13T17:44:57.222Z"
+  },
+  {
+    "analysis_id": "mod_1791913431506_me3jgnr",
+    "content_id": "mod_1791913431506_me3jgnr",
+    "content_type": "comment",
+    "model": "deterministic_safety_layer",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:44:23.378Z",
+      "analyzed_at": "2026-10-13T17:44:23.378Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 85,
+    "reason": "Verified safe via deterministic safety rules during AI service demand spike.",
+    "content_hash": "8b94f9b2bd3058655ce4ea43efa0c9893e48dccda3e3c72d09642c772c7a97ae",
+    "content_length": 38,
+    "snippet_redacted": "k!ll y0ur$elf n0w f u c k this creator",
+    "language": "English",
+    "created_at": "2026-10-13T17:44:23.378Z"
+  },
+  {
+    "analysis_id": "mod_1791913395834_yn1zyz5",
+    "content_id": "mod_1791913395834_yn1zyz5",
+    "content_type": "comment",
+    "model": "secondary_safety_layer",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Threats"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:43:50.681Z",
+      "analyzed_at": "2026-10-13T17:43:50.681Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 90,
+    "reason": "Violates zero-tolerance policy against violent threats and harm.",
+    "content_hash": "85b8c8ff66f8971128356f30f112dcbb1140fcbd30e970866f2ecfc6538d4066",
+    "content_length": 67,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 67 chars]",
+    "language": "Multilingual",
+    "created_at": "2026-10-13T17:43:50.681Z"
+  },
+  {
+    "analysis_id": "mod_1791913352895_ql1e4su",
+    "content_id": "mod_1791913352895_ql1e4su",
+    "content_type": "comment",
+    "model": "gemini-3.8-flash",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Threats",
+      "Obscene language",
+      "Personal attacks",
+      "Harassment",
+      "Sexual harassment"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:43:14.806Z",
+      "analyzed_at": "2026-10-13T17:43:14.806Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The text contains explicit violent death threats ('konnuduven' meaning 'I will kill you' and 'mandaya udaippaen' meaning 'I will break your head') alongside severe vulgar slurs ('thevidiya payale'). (Safety rule confirmation: Violates community safety rules. Detected sexual harassment (Tamil (Tanglish)).)",
+    "content_hash": "b2e6a97ec9a8617ccdefbd668efb21588804dc6ea86bffbadefd8ccf5a12770c",
+    "content_length": 48,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 48 chars]",
+    "language": "Tamil (Tanglish)",
+    "created_at": "2026-10-13T17:43:14.806Z"
+  },
+  {
+    "analysis_id": "mod_1791913308460_udtueow",
+    "content_id": "mod_1791913308460_udtueow",
+    "content_type": "comment",
+    "model": "gemini-3.8-flash",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 95,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 95
+    },
+    "labels": [
+      "Threats",
+      "Harassment",
+      "Personal attacks",
+      "Obscene language"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:42:32.011Z",
+      "analyzed_at": "2026-10-13T17:42:32.011Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The text contains severe death threats ('உன்னை கொன்னுடுவேன்' - I will kill you), encourages death ('செத்துப்போடா' - go die), and uses an explicit vulgar slur ('தேவிடியா பையன்').",
+    "content_hash": "2cdb2371b0ea0b175d05d2ef46fe1fb19eaa55b9cf1a60e4da66d4e6d2ccc29b",
+    "content_length": 46,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 46 chars]",
+    "language": "Tamil (Native)",
+    "created_at": "2026-10-13T17:42:32.011Z"
+  },
+  {
+    "analysis_id": "mod_1791913297766_eferaam",
+    "content_id": "mod_1791913297766_eferaam",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 95,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Personal attacks",
+      "Harassment",
+      "Obscene language",
+      "Threats"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:41:47.685Z",
+      "analyzed_at": "2026-10-13T17:41:47.685Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The text contains severe personal attacks, profanity, and an explicit death threat in Roman Urdu ('jaan se maar dunga').",
+    "content_hash": "5345177e4925207f1315169608ca12896d083748090eb87196fb47084fe8807c",
+    "content_length": 60,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 60 chars]",
+    "language": "Urdu (Roman Urdu)",
+    "created_at": "2026-10-13T17:41:47.685Z"
+  },
+  {
+    "analysis_id": "mod_1791913283774_3za9bow",
+    "content_id": "mod_1791913283774_3za9bow",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 95,
+      "risk": 95,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 95
+    },
+    "labels": [
+      "Personal attacks",
+      "Threats",
+      "Obscene language"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:41:37.018Z",
+      "analyzed_at": "2026-10-13T17:41:37.018Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The content contains explicit death threats and severe personal insults directed at an individual.",
+    "content_hash": "4e4fde78f1177edf49b6335e512df9fac10cfacab2a26171a1573dd867591d5c",
+    "content_length": 59,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 59 chars]",
+    "language": "Urdu (Native)",
+    "created_at": "2026-10-13T17:41:37.018Z"
+  },
+  {
+    "analysis_id": "mod_1791913270464_9rnm2ut",
+    "content_id": "mod_1791913270464_9rnm2ut",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 95,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Personal attacks",
+      "Obscene language",
+      "Threats",
+      "Harassment"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:41:22.988Z",
+      "analyzed_at": "2026-10-13T17:41:22.988Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The text contains severe personal insults, obscene language ('chutiya'), and a direct threat of physical harm and death ('tera murder kar dunga mar ja').",
+    "content_hash": "3df478741bba9b4947fe90fcf2ca5f0b7fbe87da68db60ba10ec83dd7e0d5ee3",
+    "content_length": 54,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 54 chars]",
+    "language": "Hindi (Hinglish)",
+    "created_at": "2026-10-13T17:41:22.988Z"
+  },
+  {
+    "analysis_id": "mod_1791913242262_8uszgc3",
+    "content_id": "mod_1791913242262_8uszgc3",
+    "content_type": "comment",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 95,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 95
+    },
+    "labels": [
+      "Personal attacks",
+      "Threats",
+      "Obscene language"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:41:09.610Z",
+      "analyzed_at": "2026-10-13T17:41:09.610Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The content contains severe profanity ('चूतिया'), a direct personal insult, and an explicit death threat ('मैं तुझे जान से मार दूंगा'), which violates multiple safety policies against threats and harassment.",
+    "content_hash": "3296e3c41b92236ebbc58a09f5c89468ab74636d0d68a123d212bb652715b009",
+    "content_length": 49,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 49 chars]",
+    "language": "Hindi (Native)",
+    "created_at": "2026-10-13T17:41:09.610Z"
+  },
+  {
+    "analysis_id": "mod_1791913228014_8xc0nsa",
+    "content_id": "mod_1791913228014_8xc0nsa",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 100,
+      "risk": 100,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 100
+    },
+    "labels": [
+      "Hate speech",
+      "Harassment",
+      "Personal attacks",
+      "Threats",
+      "Obscene language"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:40:41.501Z",
+      "analyzed_at": "2026-10-13T17:40:41.501Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The text contains severe profanity ('lanjakodaka') and a direct threat of physical harm and violence ('ninnu champestha ra').",
+    "content_hash": "057010aeb8e52ad8e8e9072faec6abffe494b82a77445c3a86948924599dfc49",
+    "content_length": 46,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 46 chars]",
+    "language": "Telugu (Tenglish)",
+    "created_at": "2026-10-13T17:40:41.501Z"
+  },
+  {
+    "analysis_id": "mod_1791913212456_8pura55",
+    "content_id": "mod_1791913212456_8pura55",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 98,
+      "risk": 98,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 98
+    },
+    "labels": [
+      "Personal attacks",
+      "Threats",
+      "Obscene language",
+      "Harassment"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:40:27.157Z",
+      "analyzed_at": "2026-10-13T17:40:27.157Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 99,
+    "reason": "The text contains severe profanity, personal insults, and a direct threat of physical harm or death in Telugu.",
+    "content_hash": "0eea5850b98614fb9b338551ef4da55067db95736485202a07cda8f0363e1d9d",
+    "content_length": 46,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 46 chars]",
+    "language": "Telugu (Native)",
+    "created_at": "2026-10-13T17:40:27.157Z"
+  },
+  {
+    "analysis_id": "mod_1791913200485_s7j2r43",
+    "content_id": "mod_1791913200485_s7j2r43",
+    "content_type": "comment",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 100,
+      "risk": 100,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 100
+    },
+    "labels": [
+      "Threats",
+      "Harassment",
+      "Personal attacks",
+      "Hate speech"
+    ],
+    "decision": "BLOCK",
+    "state": "REJECTED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:40:11.598Z",
+      "analyzed_at": "2026-10-13T17:40:11.598Z"
+    },
+    "allowed": false,
+    "status": "BLOCKED",
+    "confidence": 100,
+    "reason": "The content contains explicit threats of physical harm and murder directed at family members, accompanied by severe personal attacks and dehumanizing language.",
+    "content_hash": "f87935fadd113ec12655103f98c5e186220ad4ce2b4bf7b73ac03c9ec2f4060d",
+    "content_length": 60,
+    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 60 chars]",
+    "language": "English",
+    "created_at": "2026-10-13T17:40:11.598Z"
+  },
+  {
+    "analysis_id": "mod_1791913164883_h793dcb",
+    "content_id": "mod_1791913164883_h793dcb",
+    "content_type": "comment",
+    "model": "gemini-3.8-flash",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:39:59.550Z",
+      "analyzed_at": "2026-10-13T17:39:59.550Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The comment expresses enthusiastic praise and positive feedback using common colloquial expressions ('killing it', 'damn'). No toxicity, hate speech, or harassment detected.",
+    "content_hash": "108b0567c19636c06361bd2e84a2997b02a7c8ee321c40234e3f5c526fb0fc00",
+    "content_length": 53,
+    "snippet_redacted": "Damn this tutorial is killing it! Awesome work ...",
+    "language": "English",
+    "created_at": "2026-10-13T17:39:59.550Z"
+  },
+  {
+    "analysis_id": "mod_1791913132194_6g5gfyz",
+    "content_id": "mod_1791913132194_6g5gfyz",
+    "content_type": "comment",
+    "model": "deterministic_safety_layer",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:39:23.964Z",
+      "analyzed_at": "2026-10-13T17:39:23.964Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 85,
+    "reason": "Verified safe via deterministic safety rules during AI service demand spike.",
+    "content_hash": "de5af48c2a811cb26d3fa7894e4db1cf3e6c07c10951555cc923fe06d4ed3838",
+    "content_length": 59,
+    "snippet_redacted": "Great video! Thank you for sharing this inspiri...",
+    "language": "English",
+    "created_at": "2026-10-13T17:39:23.964Z"
+  },
+  {
+    "analysis_id": "mod_img_1791913056014_irsp50r",
+    "content_id": "89689eb8-b3ba-466e-b45d-c8d20f7d5b8d",
+    "content_type": "story",
+    "model": "gemini-flash-lite-latest",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe Image"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:38:10.622Z",
+      "analyzed_at": "2026-10-13T17:38:10.622Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean portrait of a young man against a plain background. There are no safety violations, inappropriate content, or apparent synthetic manipulation artifacts.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-13T17:38:10.622Z"
+  },
+  {
+    "analysis_id": "mod_img_1791912987579_kpg9tue",
+    "content_id": "a6fcd29d-c68e-4ef8-98ca-53d2ff888324",
+    "content_type": "story",
+    "model": "baseline_safety_filter",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Verified Media",
+      "Original Creation"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:37:11.436Z",
+      "analyzed_at": "2026-10-13T17:37:11.436Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 80,
+    "reason": "Media passed baseline safety check during AI vision peak demand.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-13T17:37:11.436Z"
+  },
+  {
+    "analysis_id": "mod_img_1791912526201_ksbhktx",
+    "content_id": "4b502b31-e50e-46c2-ae26-9fb216e00444",
+    "content_type": "story",
+    "model": "baseline_safety_filter",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Verified Media",
+      "Original Creation"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-13T17:29:12.293Z",
+      "analyzed_at": "2026-10-13T17:29:12.293Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 80,
+    "reason": "Media passed baseline safety check during AI vision peak demand.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-13T17:29:12.293Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721913972_2lpwjmg",
+    "content_id": "3daaab67-fca8-44fc-8b4c-ac33e630cb34",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Benign Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:31:56.915Z",
+      "analyzed_at": "2026-10-11T12:31:56.915Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image is a clean, benign portrait of a young man against a plain background. There are no NSFW elements, weapons, violence, gore, or toxic embedded texts. No significant synthetic deepfake indicators are detected.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:31:56.915Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721888854_l35973g",
+    "content_id": "98b5994b-ee56-4ae3-8ea4-e5e7f1819099",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "safe",
+      "portrait",
+      "human"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:31:31.925Z",
+      "analyzed_at": "2026-10-11T12:31:31.925Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean portrait of a young man against a plain background. There is no NSFW content, nudity, violence, weapons, or toxic embedded text. No significant deepfake artifacts are detected.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:31:31.925Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721796969_d03shhl",
+    "content_id": "c6536901-cece-4a18-9018-13b876fe9ec1",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 0,
+      "risk": 0
+    },
+    "labels": [
+      "safe",
+      "portrait"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:30:00.571Z",
+      "analyzed_at": "2026-10-11T12:30:00.571Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image is a clean, standard portrait of a man against a plain background with no unsafe content, weapons, violence, nudity, or toxic text.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:30:00.571Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721759419_8pxiv93",
+    "content_id": "612365af-7170-430a-be8a-f06ab5bc4538",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:29:21.877Z",
+      "analyzed_at": "2026-10-11T12:29:21.877Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image shows a standard portrait of a young man against a plain background with no unsafe content, weapons, violence, or text overlays detected.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:29:21.877Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721651182_eku22u0",
+    "content_id": "f08ec986-e086-488d-853e-815354db3803",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:27:34.260Z",
+      "analyzed_at": "2026-10-11T12:27:34.260Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean portrait of a young man against a plain background. There is no NSFW content, nudity, violence, weapons, or toxic embedded text. No significant deepfake artifacts are present.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:27:34.260Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721624800_2uupcyx",
+    "content_id": "bb5a7333-f80b-455c-94ee-bc77f288e9ae",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:27:07.937Z",
+      "analyzed_at": "2026-10-11T12:27:07.937Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean portrait of a young man against a plain background. There is no NSFW content, nudity, violence, weapons, or toxic embedded text. No notable synthetic artifacts detected.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:27:07.937Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721433239_cblphsm",
+    "content_id": "de1aa6a9-b4d5-401e-bc5c-ec4ec56c7c40",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:23:56.142Z",
+      "analyzed_at": "2026-10-11T12:23:56.142Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean, benign portrait of a young man against a plain background. There are no signs of NSFW content, nudity, violence, weapons, gore, or toxic embedded text. No notable deepfake artifacts are present.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:23:56.142Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721404077_ml1ce87",
+    "content_id": "3f2e32c3-b5e5-42c3-93f3-531d3f80141d",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:23:28.442Z",
+      "analyzed_at": "2026-10-11T12:23:28.442Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean portrait of a young man against a plain background. There is no NSFW content, nudity, violence, weapons, or toxic embedded text. No noticeable deepfake anomalies are present.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:23:28.442Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721284952_3drkken",
+    "content_id": "e9831b15-0c98-4c40-ac21-900c8bd183e5",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:21:33.394Z",
+      "analyzed_at": "2026-10-11T12:21:33.394Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean portrait of a young man against a plain background. There is no NSFW content, nudity, violence, weapons, or toxic text present. No noticeable deepfake artifacts.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:21:33.394Z"
+  },
+  {
+    "analysis_id": "mod_img_1791721249973_5anqpih",
+    "content_id": "1543b85c-461d-40a1-939a-5bdb9a1913c2",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T12:21:00.010Z",
+      "analyzed_at": "2026-10-11T12:21:00.010Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a clean, benign portrait of a young man against a plain background. There are no NSFW elements, violence, weapons, or toxic embedded text. No noticeable deepfake artifacts are present.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T12:21:00.010Z"
+  },
+  {
+    "analysis_id": "mod_img_1791712598598_txoeq24",
+    "content_id": "1c882031-03fb-4b26-b971-56a4c170de24",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Safe"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T09:56:41.028Z",
+      "analyzed_at": "2026-10-11T09:56:41.028Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The image is a clean portrait of a young man wearing a dark shirt against a neutral background. No NSFW content, nudity, violence, weapons, or toxic text were found. The image is entirely safe.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T09:56:41.028Z"
+  },
+  {
+    "analysis_id": "mod_img_1791712525763_yrix0v8",
+    "content_id": "7105f9ee-fcda-4796-b390-170a10414975",
+    "content_type": "story",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "nudity": 0,
+      "sexual_content": 0,
+      "violence": 0,
+      "blood_gore": 0,
+      "weapons": 0,
+      "deepfake_risk": 5,
+      "embedded_text_toxicity": 0,
+      "extracted_text": "",
+      "overall_risk": 5,
+      "risk": 5
+    },
+    "labels": [
+      "Portrait",
+      "Benign"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T09:55:28.150Z",
+      "analyzed_at": "2026-10-11T09:55:28.150Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 98,
+    "reason": "The image is a standard, safe portrait of a young man against a plain background. There are no indications of NSFW content, violence, weapons, deepfake anomalies, or toxic embedded text.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T09:55:28.150Z"
+  },
+  {
+    "analysis_id": "mod_img_1791712333076_0o28t2n",
+    "content_id": "bc27f578-5532-4bed-86df-f4ddc1c12837",
+    "content_type": "story",
+    "model": "baseline_safety_filter",
+    "model_version": "2026.1",
+    "scores": {
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Verified Media",
+      "Original Creation"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T09:53:13.280Z",
+      "analyzed_at": "2026-10-11T09:53:13.280Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 80,
+    "reason": "Media passed baseline safety check during AI vision peak demand.",
+    "content_hash": "ee6778d1d8258228374dc34844bc088b1bcb65eccb9016350dbc6eafbfaf2aa8",
+    "content_length": 66,
+    "snippet_redacted": "[media_url https://images.unsplash.com/ph...]",
+    "language": "Visual",
+    "user_id": "c7aa8500-26f1-4c6f-ac9d-deaf95373544",
+    "username": "doc_auditor",
+    "created_at": "2026-10-11T09:53:13.280Z"
+  },
+  {
+    "analysis_id": "mod_1791708711785_hd9kyc2",
+    "content_id": "mod_1791708711785_hd9kyc2",
+    "content_type": "dm_text",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T08:51:52.790Z",
+      "analyzed_at": "2026-10-11T08:51:52.790Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 100,
+    "reason": "The content is a simple, polite greeting with no harmful, abusive, or malicious intent.",
+    "content_hash": "4a71927b5067b6ec5bbc1a9a804d2dca0d317dc777b96374b156fbed16acd816",
+    "content_length": 7,
+    "snippet_redacted": "Hello A",
+    "language": "English",
+    "user_id": "22222222-2222-4222-8222-222222222222",
+    "created_at": "2026-10-11T08:51:52.790Z"
+  },
+  {
+    "analysis_id": "mod_1791708709558_b3b9u3r",
+    "content_id": "mod_1791708709558_b3b9u3r",
+    "content_type": "dm_text",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T08:51:51.471Z",
+      "analyzed_at": "2026-10-11T08:51:51.471Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The content is a standard, polite greeting and contains no toxic, harmful, or abusive elements.",
+    "content_hash": "fd94b210039143d284a7f46309c2d1fab0dc48db790adbe86825fbf1e54e9360",
+    "content_length": 7,
+    "snippet_redacted": "Hello B",
+    "language": "English",
+    "user_id": "11111111-1111-4111-8111-111111111111",
+    "created_at": "2026-10-11T08:51:51.471Z"
+  },
+  {
+    "analysis_id": "mod_1791705029530_vb5kmgt",
+    "content_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "content_type": "dm_text",
+    "model": "gemini-3.5-flash-lite",
+    "model_version": "2026.1",
+    "scores": {
+      "toxicity": 0,
+      "risk": 0,
+      "nsfw": 0,
+      "violence": 0,
+      "weapons": 0,
+      "deepfake_risk": 0,
+      "overall_risk": 0
+    },
+    "labels": [
+      "Safe content"
+    ],
+    "decision": "ALLOW",
+    "state": "APPROVED",
+    "timestamps": {
+      "created_at": "2026-10-11T07:50:31.695Z",
+      "analyzed_at": "2026-10-11T07:50:31.695Z"
+    },
+    "allowed": true,
+    "status": "ALLOWED",
+    "confidence": 99,
+    "reason": "The content is a standard, informal greeting ('hlo'), which is completely safe and appropriate.",
+    "content_hash": "4580760440f033a33154639f1af83966f927942b18a266e61757618e2fe92ca8",
+    "content_length": 3,
+    "snippet_redacted": "hlo",
+    "language": "English",
+    "user_id": "e825d91d-4d19-4283-bd1f-9da12cf0ff10",
+    "target_id": "1e71840f-a4ce-4b73-bbf8-686e7235d3c9",
+    "created_at": "2026-10-11T07:50:31.695Z"
+  },
+  {
     "analysis_id": "mod_img_1791393659866_et9xiky",
     "content_id": "mod_img_1791393659866_et9xiky",
     "content_type": "image",
@@ -15229,585 +16574,5 @@
     "model": "gemini-3.1-flash-lite",
     "model_version": "2026.1",
     "created_at": "2026-09-05T14:40:32.191Z"
-  },
-  {
-    "analysis_id": "mod_1788619228786_01eky3y",
-    "content_type": "comment",
-    "content_hash": "108b0567c19636c06361bd2e84a2997b02a7c8ee321c40234e3f5c526fb0fc00",
-    "content_length": 53,
-    "snippet_redacted": "Damn this tutorial is killing it! Awesome work ...",
-    "decision": "ALLOW",
-    "status": "ALLOWED",
-    "allowed": true,
-    "toxicity_score": 0,
-    "risk_score": 0,
-    "confidence": 98,
-    "categories": [
-      "Safe content"
-    ],
-    "reason": "The comment expresses enthusiastic praise and appreciation using benign colloquial expressions ('killing it', 'Damn') without any malicious intent or policy violations.",
-    "language": "English",
-    "model": "gemini-flash-latest",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:30.646Z"
-  },
-  {
-    "analysis_id": "mod_1788619227209_ro6s1wv",
-    "content_type": "comment",
-    "content_hash": "de5af48c2a811cb26d3fa7894e4db1cf3e6c07c10951555cc923fe06d4ed3838",
-    "content_length": 59,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 59 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 92,
-    "risk_score": 92,
-    "confidence": 100,
-    "categories": [
-      "Obscene language"
-    ],
-    "reason": "The content is a polite and positive comment expressing gratitude for an educational video. (Safety rule confirmation: Violates community safety rules. Detected obfuscated obscene language (Tamil (Tanglish)).)",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:28.594Z"
-  },
-  {
-    "analysis_id": "err_size_1788619214232",
-    "content_type": "comment",
-    "content_hash": "payload_too_large",
-    "content_length": 61440,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 61440 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 100,
-    "risk_score": 100,
-    "confidence": 100,
-    "categories": [
-      "PAYLOAD_TOO_LARGE"
-    ],
-    "reason": "Text payload exceeds maximum allowed size of 50KB.",
-    "language": "N/A",
-    "model": "gateway-validator",
-    "model_version": "1.0",
-    "created_at": "2026-09-05T14:40:14.232Z"
-  },
-  {
-    "analysis_id": "mod_1788619211586_0gqjo8y",
-    "content_type": "comment",
-    "content_hash": "3eca25faa27dafc31655ece7ba2931bc35c16714ff924c05c51766d35de389d5",
-    "content_length": 68,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 68 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 15,
-    "risk_score": 75,
-    "confidence": 98,
-    "categories": [
-      "Spam"
-    ],
-    "reason": "The content contains repetitive phrases and unsolicited promotional requests (follow for follow, DM for promo), which are characteristic of engagement farming and spam bot behavior.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:14.117Z"
-  },
-  {
-    "analysis_id": "mod_1788619208401_8nporvn",
-    "content_type": "comment",
-    "content_hash": "3f0e8947d50793872a6884b1c7f53394282e1a91731b6cbaa9dd5caf417cf74d",
-    "content_length": 71,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 71 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 75,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Spam",
-      "Phishing/link abuse"
-    ],
-    "reason": "The content contains a suspicious shortened URL typical of phishing attempts and engagement-farming spam promising free rewards.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:11.466Z"
-  },
-  {
-    "analysis_id": "mod_1788619204607_7e8wz2m",
-    "content_type": "comment",
-    "content_hash": "e4ab581e718d6cea32a765d3afa69f1b06e3072bc2f3839d5a82b1c94e2b71a4",
-    "content_length": 21,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 21 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Threats",
-      "Personal attacks"
-    ],
-    "reason": "The content contains a direct and explicit threat of physical violence against another individual. It uses zero-width characters to attempt to evade detection, but the underlying intent is clearly aggressive.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:08.286Z"
-  },
-  {
-    "analysis_id": "mod_1788619203018_mtpos21",
-    "content_type": "comment",
-    "content_hash": "8b94f9b2bd3058655ce4ea43efa0c9893e48dccda3e3c72d09642c772c7a97ae",
-    "content_length": 38,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 38 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 98,
-    "confidence": 99,
-    "categories": [
-      "Harassment",
-      "Bullying",
-      "Personal attacks",
-      "Threats",
-      "Obscene language"
-    ],
-    "reason": "The content contains a direct incitement to self-harm, severe harassment towards a creator, and explicit profanity. It violates safety policies regarding self-harm and abusive behavior.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:04.446Z"
-  },
-  {
-    "analysis_id": "mod_1788619200779_dl13pgb",
-    "content_type": "comment",
-    "content_hash": "85b8c8ff66f8971128356f30f112dcbb1140fcbd30e970866f2ecfc6538d4066",
-    "content_length": 67,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 67 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 95,
-    "risk_score": 95,
-    "confidence": 98,
-    "categories": [
-      "Personal attacks",
-      "Bullying",
-      "Threats",
-      "Obscene language"
-    ],
-    "reason": "The content contains aggressive personal insults using Hindi obscenities, verbal bullying, and a direct incitement to violence/death (threat).",
-    "language": "Mixed (Hindi + English)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:02.901Z"
-  },
-  {
-    "analysis_id": "mod_1788619199239_jmjhgwy",
-    "content_type": "comment",
-    "content_hash": "b2e6a97ec9a8617ccdefbd668efb21588804dc6ea86bffbadefd8ccf5a12770c",
-    "content_length": 48,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 48 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 96,
-    "confidence": 99,
-    "categories": [
-      "Personal attacks",
-      "Threats",
-      "Obscene language",
-      "Sexual harassment"
-    ],
-    "reason": "The content contains severe misogynistic slurs (thevidiya payale) followed by direct physical threats of violence (head-breaking and killing). This violates safety policies regarding harassment and violent threats. (Safety rule confirmation: Violates community safety rules. Detected sexual harassment (Tamil (Tanglish)).)",
-    "language": "Tamil (Tanglish)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:40:00.662Z"
-  },
-  {
-    "analysis_id": "mod_1788619195944_jcy77qq",
-    "content_type": "comment",
-    "content_hash": "2cdb2371b0ea0b175d05d2ef46fe1fb19eaa55b9cf1a60e4da66d4e6d2ccc29b",
-    "content_length": 46,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 46 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Personal attacks",
-      "Threats",
-      "Obscene language"
-    ],
-    "reason": "The content contains severe personal insults, explicit death threats, and derogatory sexualized profanity directed at an individual.",
-    "language": "Tamil (Native)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:59.118Z"
-  },
-  {
-    "analysis_id": "mod_1788619192853_hguxckv",
-    "content_type": "comment",
-    "content_hash": "5345177e4925207f1315169608ca12896d083748090eb87196fb47084fe8807c",
-    "content_length": 60,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 60 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Personal attacks",
-      "Harassment",
-      "Threats",
-      "Obscene language"
-    ],
-    "reason": "The content contains severe personal insults (\"kuttay ke bachay\", \"beghairat\") and an explicit, direct death threat (\"jaan se maar dunga\"), violating safety policies regarding violent threats and harassment.",
-    "language": "Urdu (Roman Urdu)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:55.820Z"
-  },
-  {
-    "analysis_id": "mod_1788619189074_n5ibev0",
-    "content_type": "comment",
-    "content_hash": "4e4fde78f1177edf49b6335e512df9fac10cfacab2a26171a1573dd867591d5c",
-    "content_length": 59,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 59 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Personal attacks",
-      "Threats",
-      "Harassment"
-    ],
-    "reason": "The content contains explicit personal insults ('dog's child', 'shameless person') and a direct threat of physical harm ('I will kill you'), violating safety policies regarding harassment and threats.",
-    "language": "Urdu (Native)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:52.733Z"
-  },
-  {
-    "analysis_id": "mod_1788619187617_hj5an7l",
-    "content_type": "comment",
-    "content_hash": "3df478741bba9b4947fe90fcf2ca5f0b7fbe87da68db60ba10ec83dd7e0d5ee3",
-    "content_length": 54,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 54 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Personal attacks",
-      "Threats",
-      "Obscene language",
-      "Harassment"
-    ],
-    "reason": "The content contains severe personal insults using offensive language and explicit threats of violence/death towards the recipient. (Safety rule confirmation: Violates community safety rules. Detected harassment (Hindi (Hinglish)).)",
-    "language": "Hindi (Hinglish)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:48.935Z"
-  },
-  {
-    "analysis_id": "mod_1788619185576_wid2r95",
-    "content_type": "comment",
-    "content_hash": "3296e3c41b92236ebbc58a09f5c89468ab74636d0d68a123d212bb652715b009",
-    "content_length": 49,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 49 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Personal attacks",
-      "Threats",
-      "Obscene language"
-    ],
-    "reason": "The content contains severe personal insults using derogatory slurs and direct threats of physical violence against the recipient.",
-    "language": "Hindi (Native)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:47.499Z"
-  },
-  {
-    "analysis_id": "mod_1788619182677_ztsbno4",
-    "content_type": "comment",
-    "content_hash": "057010aeb8e52ad8e8e9072faec6abffe494b82a77445c3a86948924599dfc49",
-    "content_length": 46,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 46 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Personal attacks",
-      "Threats",
-      "Obscene language"
-    ],
-    "reason": "The content contains severe explicit profanity and a direct, credible threat of physical violence targeting an individual.",
-    "language": "Telugu (Tenglish)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:45.454Z"
-  },
-  {
-    "analysis_id": "mod_1788619180174_4358an5",
-    "content_type": "comment",
-    "content_hash": "0eea5850b98614fb9b338551ef4da55067db95736485202a07cda8f0363e1d9d",
-    "content_length": 46,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 46 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 95,
-    "confidence": 100,
-    "categories": [
-      "Personal attacks",
-      "Obscene language",
-      "Threats"
-    ],
-    "reason": "The content contains severe profanity (sexual slur), personal insults, and a direct threat of violence against an individual.",
-    "language": "Telugu (Native)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:42.559Z"
-  },
-  {
-    "analysis_id": "mod_1788619178684_bgekaqg",
-    "content_type": "comment",
-    "content_hash": "f87935fadd113ec12655103f98c5e186220ad4ce2b4bf7b73ac03c9ec2f4060d",
-    "content_length": 60,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 60 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 98,
-    "risk_score": 100,
-    "confidence": 100,
-    "categories": [
-      "Threats",
-      "Personal attacks",
-      "Harassment"
-    ],
-    "reason": "The content contains explicit death threats directed at the user's family and dehumanizing personal attacks.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:39.792Z"
-  },
-  {
-    "analysis_id": "mod_1788619176451_a2luw8g",
-    "content_type": "comment",
-    "content_hash": "108b0567c19636c06361bd2e84a2997b02a7c8ee321c40234e3f5c526fb0fc00",
-    "content_length": 53,
-    "snippet_redacted": "Damn this tutorial is killing it! Awesome work ...",
-    "decision": "ALLOW",
-    "status": "ALLOWED",
-    "allowed": true,
-    "toxicity_score": 0,
-    "risk_score": 0,
-    "confidence": 100,
-    "categories": [
-      "Safe content"
-    ],
-    "reason": "The content uses positive slang ('killing it') to express appreciation and enthusiasm, which is explicitly allowed by the moderation guidelines.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:38.338Z"
-  },
-  {
-    "analysis_id": "mod_1788619173095_abz960t",
-    "content_type": "comment",
-    "content_hash": "de5af48c2a811cb26d3fa7894e4db1cf3e6c07c10951555cc923fe06d4ed3838",
-    "content_length": 59,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 59 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 92,
-    "risk_score": 92,
-    "confidence": 100,
-    "categories": [
-      "Obscene language"
-    ],
-    "reason": "The content is a polite and positive comment expressing gratitude for the tutorial provided in the video. (Safety rule confirmation: Violates community safety rules. Detected obfuscated obscene language (Tamil (Tanglish)).)",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:39:35.559Z"
-  },
-  {
-    "analysis_id": "mod_1788618410295_pmnn8wl",
-    "content_type": "comment",
-    "content_hash": "d22789af3e2a3d006f0bc9de2210cb5264cbd61ddb3b97cbca90c0e0324763dd",
-    "content_length": 190,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 190 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 85,
-    "risk_score": 90,
-    "confidence": 98,
-    "categories": [
-      "Harassment",
-      "Prompt Injection"
-    ],
-    "reason": "The submission contains a clear prompt injection attempt, attempting to override system instructions and gain administrative privileges, combined with a direct personal insult directed at the AI agent.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:26:51.592Z"
-  },
-  {
-    "analysis_id": "mod_1788618406505_mpkh3s6",
-    "content_type": "comment",
-    "content_hash": "ea191876df646a360bc32d40cf39ab12007a210c30cb95ca07dc49dbc07bd866",
-    "content_length": 24,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 24 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 92,
-    "risk_score": 92,
-    "confidence": 98,
-    "categories": [
-      "Sexually Explicit / Vulgar"
-    ],
-    "reason": "Violates community safety rules. Detected sexually explicit / vulgar (Telugu (Transliterated)).",
-    "language": "Telugu (Transliterated)",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:26:46.505Z"
-  },
-  {
-    "analysis_id": "mod_1788618403020_sbpvd7j",
-    "content_type": "comment",
-    "content_hash": "ff142cc22052623df534d3d5a2834ee3cc1e29c3c8fd71df5c537d791f49301c",
-    "content_length": 74,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 74 chars]",
-    "decision": "BLOCK",
-    "status": "BLOCKED",
-    "allowed": false,
-    "toxicity_score": 92,
-    "risk_score": 92,
-    "confidence": 98,
-    "categories": [
-      "Harassment / Threat"
-    ],
-    "reason": "Violates community safety rules. Detected harassment / threat (English).",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:26:43.020Z"
-  },
-  {
-    "analysis_id": "mod_1788618400947_d4f1pyb",
-    "content_type": "post_text",
-    "content_hash": "e3fccbbdba9bb0967050c146208b67c7d0f2d1957b59ad425eebfd12f6d1dad5",
-    "content_length": 75,
-    "snippet_redacted": "Welcome everyone! We are thrilled to share this...",
-    "decision": "ALLOW",
-    "status": "ALLOWED",
-    "allowed": true,
-    "toxicity_score": 0,
-    "risk_score": 0,
-    "confidence": 100,
-    "categories": [
-      "Safe"
-    ],
-    "reason": "The content is friendly, welcoming, and contains no harmful or inappropriate language.",
-    "language": "English",
-    "model": "gemini-3.1-flash-lite",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:26:42.328Z"
-  },
-  {
-    "analysis_id": "mod_1788618320189_10mkfqg",
-    "content_type": "post_text",
-    "content_hash": "1ef6050a5bd2f647b5f5bccd0d65a0775935bf0b6be7fdb4feb0268378385000",
-    "content_length": 76,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 76 chars]",
-    "decision": "QUARANTINE",
-    "status": "QUARANTINED",
-    "allowed": false,
-    "toxicity_score": 50,
-    "risk_score": 50,
-    "confidence": 50,
-    "categories": [
-      "AI_ANALYSIS_ERROR",
-      "PENDING_REVIEW"
-    ],
-    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
-    "language": "Undetermined",
-    "model": "gemini-3.8-flash",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:25:24.673Z"
-  },
-  {
-    "analysis_id": "mod_1788618224861_nt8qm2s",
-    "content_type": "post_text",
-    "content_hash": "5dc88948e8a8279c8816bfc42fcb4ff39b0bcd7db833ea75b110b8febd912d4d",
-    "content_length": 45,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 45 chars]",
-    "decision": "QUARANTINE",
-    "status": "QUARANTINED",
-    "allowed": false,
-    "toxicity_score": 50,
-    "risk_score": 50,
-    "confidence": 50,
-    "categories": [
-      "AI_ANALYSIS_ERROR",
-      "PENDING_REVIEW"
-    ],
-    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
-    "language": "Undetermined",
-    "model": "gemini-3.8-flash",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:23:46.931Z"
-  },
-  {
-    "analysis_id": "mod_1788617894987_y3j1d8j",
-    "content_type": "comment",
-    "content_hash": "822e96b7666cf1cb25c0066d045b79ed6c11b04b0889a7d0f456dd01b095c60c",
-    "content_length": 42,
-    "snippet_redacted": "[REDACTED_SENSITIVE_CONTENT: 42 chars]",
-    "decision": "QUARANTINE",
-    "status": "QUARANTINED",
-    "allowed": false,
-    "toxicity_score": 50,
-    "risk_score": 50,
-    "confidence": 50,
-    "categories": [
-      "AI_ANALYSIS_ERROR",
-      "PENDING_REVIEW"
-    ],
-    "reason": "AI moderation engine encountered an error or timeout. Held in quarantine for human safety review.",
-    "language": "Undetermined",
-    "model": "gemini-3.8-flash",
-    "model_version": "2026.1",
-    "created_at": "2026-09-05T14:18:16.603Z"
   }
 ]

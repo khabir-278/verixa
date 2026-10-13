@@ -1506,5 +1506,186 @@ drop policy if exists "Users can update message delivery/read/reactions" on publ
 create policy "Users can update message delivery/read/reactions" on public.messages
   for update using (auth.uid() = receiver_id or auth.uid() = sender_id);
 
+-- ====================================================================
+-- BLOCKED USERS TABLE, MUTUAL BLOCK ORACLE & RLS POLICIES
+-- Table: public.blocked_users
+-- ====================================================================
 
+create table if not exists public.blocked_users (
+  id uuid primary key default gen_random_uuid(),
+  blocker_id uuid not null references public.profiles(id) on delete cascade,
+  blocked_id uuid not null references public.profiles(id) on delete cascade,
+  reason text default 'Blocked by user',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint no_self_block check (blocker_id != blocked_id),
+  constraint unique_blocker_blocked unique(blocker_id, blocked_id)
+);
+
+create index if not exists idx_blocked_users_blocker on public.blocked_users (blocker_id, created_at desc);
+create index if not exists idx_blocked_users_blocked on public.blocked_users (blocked_id);
+create index if not exists idx_blocked_users_pair_forward on public.blocked_users (blocker_id, blocked_id);
+create index if not exists idx_blocked_users_pair_reverse on public.blocked_users (blocked_id, blocker_id);
+
+alter table public.blocked_users enable row level security;
+
+drop policy if exists "Users can view their own blocked users" on public.blocked_users;
+create policy "Users can view their own blocked users" on public.blocked_users
+  for select using (auth.uid() = blocker_id or auth.uid() = blocked_id);
+
+drop policy if exists "Users can block other users" on public.blocked_users;
+create policy "Users can block other users" on public.blocked_users
+  for insert with check (auth.uid() = blocker_id and blocker_id != blocked_id);
+
+drop policy if exists "Users can unblock users" on public.blocked_users;
+create policy "Users can unblock users" on public.blocked_users
+  for delete using (auth.uid() = blocker_id);
+
+-- Authoritative Mutual Block SQL Helper Function:
+-- Returns true if user_a blocked user_b OR user_b blocked user_a
+create or replace function public.is_blocked(user_a uuid, user_b uuid)
+returns boolean as $$
+begin
+  if user_a is null or user_b is null or user_a = user_b then
+    return false;
+  end if;
+  return exists (
+    select 1
+    from public.blocked_users b
+    where (b.blocker_id = user_a and b.blocked_id = user_b)
+       or (b.blocker_id = user_b and b.blocked_id = user_a)
+  );
+end;
+$$ language plpgsql security definer stable set search_path = public, pg_temp;
+
+-- Trigger to automatically sever mutual follows & purge cross-notifications on block
+create or replace function public.on_user_blocked_cleanup()
+returns trigger as $$
+begin
+  -- Sever follow relationships in both directions
+  delete from public.follows
+  where (follower_id = new.blocker_id and following_id = new.blocked_id)
+     or (follower_id = new.blocked_id and following_id = new.blocker_id);
+
+  -- Remove cross-account notifications
+  delete from public.notifications
+  where (recipient_id = new.blocker_id and sender_id = new.blocked_id)
+     or (recipient_id = new.blocked_id and sender_id = new.blocker_id);
+
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+drop trigger if exists trg_on_user_blocked_cleanup on public.blocked_users;
+create trigger trg_on_user_blocked_cleanup
+  after insert on public.blocked_users
+  for each row execute function public.on_user_blocked_cleanup();
+
+-- Mutual Block RLS Enforcement Policies across Social, Content, Messaging & Storage Tables
+drop policy if exists "Profiles are viewable by everyone" on public.profiles;
+create policy "Profiles are viewable by everyone" on public.profiles
+  for select using (auth.uid() is null or auth.uid() = id or not public.is_blocked(auth.uid(), id));
+
+drop policy if exists "Approved posts are viewable by everyone" on public.posts;
+create policy "Approved posts are viewable by everyone" on public.posts
+  for select using (
+    (moderation_status in ('approved', 'APPROVED', 'allowed', 'ALLOWED') or auth.uid() = user_id)
+    and (auth.uid() is null or auth.uid() = user_id or not public.is_blocked(auth.uid(), user_id))
+  );
+
+drop policy if exists "Approved comments are viewable by everyone" on public.comments;
+create policy "Approved comments are viewable by everyone" on public.comments
+  for select using (
+    (moderation_status in ('approved', 'APPROVED', 'allowed', 'ALLOWED') or auth.uid() = user_id)
+    and (auth.uid() is null or auth.uid() = user_id or not public.is_blocked(auth.uid(), user_id))
+  );
+
+drop policy if exists "Authenticated users can add comments" on public.comments;
+create policy "Authenticated users can add comments" on public.comments
+  for insert with check (
+    auth.uid() = user_id
+    and (
+      post_id is null
+      or not exists (
+        select 1 from public.posts p
+        where p.id = post_id and public.is_blocked(auth.uid(), p.user_id)
+      )
+    )
+    and (
+      reel_id is null
+      or not exists (
+        select 1 from public.reels r
+        where r.id = reel_id and public.is_blocked(auth.uid(), r.user_id)
+      )
+    )
+  );
+
+drop policy if exists "Approved active stories are viewable by everyone" on public.stories;
+create policy "Approved active stories are viewable by everyone" on public.stories
+  for select using (auth.uid() is null or auth.uid() = user_id or not public.is_blocked(auth.uid(), user_id));
+
+drop policy if exists "Approved reels are viewable by everyone" on public.reels;
+create policy "Approved reels are viewable by everyone" on public.reels
+  for select using (auth.uid() is null or auth.uid() = user_id or not public.is_blocked(auth.uid(), user_id));
+
+drop policy if exists "Users can toggle their own likes" on public.likes;
+create policy "Users can toggle their own likes" on public.likes
+  for insert with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from public.posts p
+      where p.id = post_id and public.is_blocked(auth.uid(), p.user_id)
+    )
+  );
+
+drop policy if exists "Users can toggle their own post likes" on public.post_likes;
+create policy "Users can toggle their own post likes" on public.post_likes
+  for insert with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from public.posts p
+      where p.id = post_id and public.is_blocked(auth.uid(), p.user_id)
+    )
+  );
+
+drop policy if exists "Users can follow others" on public.follows;
+create policy "Users can follow others" on public.follows
+  for insert with check (
+    auth.uid() = follower_id
+    and follower_id != following_id
+    and not public.is_blocked(follower_id, following_id)
+  );
+
+drop policy if exists "Users can send messages" on public.messages;
+create policy "Users can send messages" on public.messages
+  for insert with check (
+    auth.uid() = sender_id
+    and not public.is_blocked(sender_id, receiver_id)
+  );
+
+drop policy if exists "Users can update message delivery/read/reactions" on public.messages;
+create policy "Users can update message delivery/read/reactions" on public.messages
+  for update using (
+    (auth.uid() = receiver_id or auth.uid() = sender_id)
+    and not public.is_blocked(sender_id, receiver_id)
+  );
+
+drop policy if exists "Public can view app-files" on storage.objects;
+create policy "Public can view app-files" on storage.objects
+  for select using (
+    bucket_id = 'app-files'
+    and (
+      auth.uid() is null
+      or (storage.foldername(name))[1] = auth.uid()::text
+      or not (
+        (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        and public.is_blocked(auth.uid(), ((storage.foldername(name))[1])::uuid)
+      )
+    )
+  );
+
+do $$
+begin
+  alter publication supabase_realtime add table public.blocked_users;
+exception when others then null;
+end $$;
 

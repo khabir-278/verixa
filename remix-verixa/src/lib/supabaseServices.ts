@@ -3,86 +3,301 @@ import { User, Post, Comment, Notification, ChatMessage, RecommendationExplainab
 
 // ================= STORAGE HELPERS & SIGNED URL RESOLVER ================= //
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Default short-lived signed URL TTL (5 minutes) to bound post-block exposure window
+export const DEFAULT_SIGNED_URL_TTL_SECONDS = 300;
+const MIN_SIGNED_URL_TTL_SECONDS = 60;
+const MAX_SIGNED_URL_TTL_SECONDS = 900;
+
 // In-memory cache for signed URLs to avoid redundant Supabase Storage network requests
 const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
 
+// Client-side synchronized set of mutually restricted user IDs (blocked by viewer OR blocked viewer)
+let activeViewerUserId: string | null = null;
+const activeRestrictedUserIds = new Set<string>();
+
+export function clearSignedUrlCache(): void {
+  signedUrlCache.clear();
+}
+
+export function evictSignedUrlsForUser(userId: string): void {
+  if (!userId) return;
+  for (const key of Array.from(signedUrlCache.keys())) {
+    if (key.includes(`:${userId}/`) || key.startsWith(`${userId}/`)) {
+      signedUrlCache.delete(key);
+    }
+  }
+}
+
+export function setClientRestrictedUserIds(viewerId: string | null, restrictedIds: string[]): void {
+  activeViewerUserId = viewerId;
+  activeRestrictedUserIds.clear();
+  for (const id of restrictedIds) {
+    if (id && id !== viewerId) {
+      activeRestrictedUserIds.add(id);
+      evictSignedUrlsForUser(id);
+    }
+  }
+}
+
+export function getClientRestrictedUserIds(): string[] {
+  return Array.from(activeRestrictedUserIds);
+}
+
+export function isClientUserRestricted(targetUserId?: string | null): boolean {
+  if (!targetUserId) return false;
+  if (activeViewerUserId && targetUserId === activeViewerUserId) return false;
+  return activeRestrictedUserIds.has(targetUserId);
+}
+
+/**
+ * Classifies a media reference into either a protected Supabase Storage object
+ * (`isProtected: true`, with normalized `bucketName` and `objectPath`) or an
+ * intentionally public external/static asset (`isProtected: false`).
+ */
+export function extractStorageObjectTarget(pathOrUrl?: string | null): {
+  isProtected: boolean;
+  bucketName: string;
+  objectPath: string;
+} {
+  if (!pathOrUrl) {
+    return { isProtected: false, bucketName: '', objectPath: '' };
+  }
+  const trimmed = pathOrUrl.trim();
+  if (!trimmed) {
+    return { isProtected: false, bucketName: '', objectPath: '' };
+  }
+
+  // 1. Explicit Supabase storage URL (signed, public, or authenticated endpoint)
+  if (trimmed.includes('/storage/v1/object/')) {
+    const match = trimmed.match(/\/storage\/v1\/object\/(?:sign|public|authenticated)\/([^/?#]+)\/([^?#]+)/);
+    if (match) {
+      return {
+        isProtected: true,
+        bucketName: match[1],
+        objectPath: decodeURIComponent(match[2]).replace(/^\/+/, ''),
+      };
+    }
+    return { isProtected: true, bucketName: 'app-files', objectPath: '' };
+  }
+
+  // 2. Intentionally public external URLs (OAuth avatars, UI-Avatars, Unsplash) or local blob/data/static public assets
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:') ||
+    (trimmed.startsWith('/') && !trimmed.startsWith('//'))
+  ) {
+    return { isProtected: false, bucketName: '', objectPath: '' };
+  }
+
+  // 3. Bucket-prefixed relative path (`app-files:userId/posts/file.jpg`)
+  if (trimmed.includes(':')) {
+    const parts = trimmed.split(':');
+    return {
+      isProtected: true,
+      bucketName: parts[0] || 'app-files',
+      objectPath: parts.slice(1).join(':').replace(/^\/+/, ''),
+    };
+  }
+
+  // 4. Standard relative storage object path (`userId/posts/file.jpg`)
+  return {
+    isProtected: true,
+    bucketName: 'app-files',
+    objectPath: trimmed.replace(/^\/+/, ''),
+  };
+}
+
+export function isProtectedStorageMedia(pathOrUrl?: string | null): boolean {
+  return extractStorageObjectTarget(pathOrUrl).isProtected;
+}
+
+/**
+ * Inspects a Supabase Storage signed URL (`.../storage/v1/object/sign/...?token=...`)
+ * and returns true if its embedded JWT `exp` claim is expired or within `bufferSeconds` of expiry.
+ */
+export function isSignedStorageUrlExpired(url?: string | null, bufferSeconds: number = 15): boolean {
+  if (!url || typeof url !== 'string') return true;
+  if (!url.includes('/storage/v1/object/sign/')) return false;
+  try {
+    const qIdx = url.indexOf('?');
+    if (qIdx === -1) return true;
+    const params = new URLSearchParams(url.slice(qIdx + 1));
+    const token = params.get('token');
+    if (!token) return true;
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const jsonStr =
+      typeof atob === 'function'
+        ? atob(padded)
+        : Buffer.from(padded, 'base64').toString('utf-8');
+    const payload = JSON.parse(jsonStr);
+    if (typeof payload.exp !== 'number') return true;
+    const nowSec = Math.floor(Date.now() / 1000);
+    return payload.exp <= nowSec + bufferSeconds;
+  } catch {
+    return true;
+  }
+}
+
+export function hasValidStorageObjectPath(
+  objectPath: string,
+  expectedOwnerId?: string
+): {
+  valid: boolean;
+  ownerId: string;
+} {
+  if (!objectPath || typeof objectPath !== 'string') {
+    return { valid: false, ownerId: '' };
+  }
+  const clean = objectPath.trim().replace(/^\/+/, '');
+  const segments = clean.split('/');
+  if (
+    segments.length < 2 ||
+    segments.some((s) => !s || s === '.' || s === '..' || s.includes('\\'))
+  ) {
+    return { valid: false, ownerId: '' };
+  }
+  const ownerId = segments[0];
+  if (!UUID_REGEX.test(ownerId)) {
+    return { valid: false, ownerId: '' };
+  }
+  if (expectedOwnerId && ownerId.toLowerCase() !== expectedOwnerId.trim().toLowerCase()) {
+    return { valid: false, ownerId };
+  }
+  return { valid: true, ownerId };
+}
+
+/**
+ * Resolves a protected storage path (or legacy/expired storage URL) to a short-lived
+ * signed URL. Never falls back to `getPublicUrl` or raw paths on error or block restriction.
+ */
 export async function getSignedMediaUrl(
   pathOrUrl?: string | null,
-  expiresIn: number = 3600
+  expiresIn: number = DEFAULT_SIGNED_URL_TTL_SECONDS
 ): Promise<string> {
   if (!pathOrUrl) return '';
   const trimmed = pathOrUrl.trim();
   if (!trimmed) return '';
 
-  let bucketName = 'app-files';
-  let objectPath = trimmed;
-
-  // 1. If it's a Supabase storage URL (signed or public), extract the clean object path to re-sign fresh
-  if (trimmed.includes('/storage/v1/object/')) {
-    const match = trimmed.match(/\/storage\/v1\/object\/(?:sign|public)\/([^/?#]+)\/([^?#]+)/);
-    if (match) {
-      bucketName = match[1];
-      objectPath = decodeURIComponent(match[2]);
-    }
-  } else if (
-    trimmed.startsWith('http://') ||
-    trimmed.startsWith('https://') ||
-    trimmed.startsWith('blob:') ||
-    trimmed.startsWith('data:')
-  ) {
-    // Non-Supabase external URL (e.g. external CDN, blob)
+  const target = extractStorageObjectTarget(trimmed);
+  if (!target.isProtected) {
     return trimmed;
-  } else if (trimmed.includes(':') && !trimmed.startsWith('http')) {
-    const parts = trimmed.split(':');
-    bucketName = parts[0];
-    objectPath = parts.slice(1).join(':');
   }
 
-  // 2. Check in-memory cache for the object path (with 120s safety buffer before expiry)
+  const { bucketName, objectPath } = target;
+  const pathCheck = hasValidStorageObjectPath(objectPath);
+  if (!pathCheck.valid) {
+    return '';
+  }
+
+  // Enforce mutual block policy on private media object paths (${ownerUserId}/${folder}/...)
+  const ownerPrefix = pathCheck.ownerId;
+  if (isClientUserRestricted(ownerPrefix)) {
+    evictSignedUrlsForUser(ownerPrefix);
+    return '';
+  }
+
+  const effectiveTtl = Math.min(
+    Math.max(Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : DEFAULT_SIGNED_URL_TTL_SECONDS, MIN_SIGNED_URL_TTL_SECONDS),
+    MAX_SIGNED_URL_TTL_SECONDS
+  );
+  const safetyBufferMs = Math.min(30_000, Math.floor((effectiveTtl * 1000) / 3));
+
+  // Check in-memory cache for the object path, verifying both timestamp and token expiry
   const cacheKey = `${bucketName}:${objectPath}`;
   const cached = signedUrlCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now() + 120_000) {
+  if (
+    cached &&
+    cached.expiresAt > Date.now() + safetyBufferMs &&
+    !isSignedStorageUrlExpired(cached.url, Math.ceil(safetyBufferMs / 1000))
+  ) {
     return cached.url;
+  }
+  if (cached) {
+    signedUrlCache.delete(cacheKey);
   }
 
   try {
     const { data, error } = await supabase.storage
       .from(bucketName)
-      .createSignedUrl(objectPath, expiresIn);
+      .createSignedUrl(objectPath, effectiveTtl);
 
     if (error || !data?.signedUrl) {
-      // Fallback: Check if public URL exists
-      const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(objectPath);
-      if (publicData?.publicUrl) {
-        return publicData.publicUrl;
-      }
-      console.warn('Notice: Could not create signed URL for path:', trimmed, error?.message);
-      return trimmed;
+      signedUrlCache.delete(cacheKey);
+      return '';
+    }
+
+    // Re-check restriction in case a block occurred while createSignedUrl was in flight
+    if (isClientUserRestricted(ownerPrefix)) {
+      evictSignedUrlsForUser(ownerPrefix);
+      return '';
     }
 
     signedUrlCache.set(cacheKey, {
       url: data.signedUrl,
-      expiresAt: Date.now() + expiresIn * 1000,
+      expiresAt: Date.now() + effectiveTtl * 1000,
     });
     return data.signedUrl;
   } catch (err: any) {
-    console.warn('getSignedMediaUrl error:', err.message);
-    return trimmed;
+    signedUrlCache.delete(cacheKey);
+    console.warn('getSignedMediaUrl error:', err?.message || err);
+    return '';
   }
 }
 
+/**
+ * Evicts any cached signed URL for the given storage path or expired signed URL
+ * and requests a fresh short-lived signed URL after re-verifying block restrictions.
+ */
+export async function refreshSignedMediaUrl(
+  pathOrExpiredSignedUrl?: string | null,
+  expiresIn: number = DEFAULT_SIGNED_URL_TTL_SECONDS
+): Promise<string> {
+  if (!pathOrExpiredSignedUrl) return '';
+  const target = extractStorageObjectTarget(pathOrExpiredSignedUrl);
+  if (!target.isProtected) {
+    return pathOrExpiredSignedUrl.trim();
+  }
+  const pathCheck = hasValidStorageObjectPath(target.objectPath);
+  if (!pathCheck.valid) {
+    return '';
+  }
+  const cacheKey = `${target.bucketName}:${target.objectPath}`;
+  signedUrlCache.delete(cacheKey);
+  if (isClientUserRestricted(pathCheck.ownerId)) {
+    evictSignedUrlsForUser(pathCheck.ownerId);
+    return '';
+  }
+  return getSignedMediaUrl(`${target.bucketName}:${target.objectPath}`, expiresIn);
+}
+
+function buildFallbackInitialsAvatar(nameOrUsername?: string): string {
+  const cleanName = encodeURIComponent(nameOrUsername || 'User');
+  return `https://ui-avatars.com/api/?name=${cleanName}&background=4285F4&color=fff&size=256&bold=true`;
+}
+
 export async function resolvePostSignedUrls(post: Post): Promise<Post> {
+  const rawMedia = post.mediaUrl || '';
+  const rawAvatar = post.user?.avatar || '';
   const [resolvedMedia, resolvedAvatar] = await Promise.all([
-    post.mediaUrl ? getSignedMediaUrl(post.mediaUrl) : Promise.resolve(undefined),
-    post.user?.avatar ? getSignedMediaUrl(post.user.avatar) : Promise.resolve(post.user?.avatar),
+    rawMedia ? getSignedMediaUrl(rawMedia) : Promise.resolve(''),
+    rawAvatar ? getSignedMediaUrl(rawAvatar) : Promise.resolve(''),
   ]);
+
+  const fallbackAvatar = buildFallbackInitialsAvatar(post.user?.name || post.user?.username);
 
   return {
     ...post,
-    mediaUrl: resolvedMedia,
+    mediaUrl: resolvedMedia || undefined,
     user: {
       ...post.user,
-      avatar: resolvedAvatar || post.user?.avatar,
+      avatar: resolvedAvatar || (isProtectedStorageMedia(rawAvatar) ? fallbackAvatar : (rawAvatar || fallbackAvatar)),
     },
   };
 }
@@ -92,22 +307,90 @@ export async function resolvePostsSignedUrls(posts: Post[]): Promise<Post[]> {
 }
 
 export async function resolveUserProfileSignedUrls(user: User): Promise<User> {
+  const rawAvatar = user.avatar || '';
+  const rawCover = user.cover || '';
   const [resolvedAvatar, resolvedCover] = await Promise.all([
-    user.avatar ? getSignedMediaUrl(user.avatar) : Promise.resolve(user.avatar),
-    user.cover ? getSignedMediaUrl(user.cover) : Promise.resolve(user.cover),
+    rawAvatar ? getSignedMediaUrl(rawAvatar) : Promise.resolve(''),
+    rawCover ? getSignedMediaUrl(rawCover) : Promise.resolve(''),
   ]);
+  const fallbackAvatar = buildFallbackInitialsAvatar(user.name || user.username);
   return {
     ...user,
-    avatar: resolvedAvatar || user.avatar,
-    cover: resolvedCover || user.cover,
+    avatar: resolvedAvatar || (isProtectedStorageMedia(rawAvatar) ? fallbackAvatar : (rawAvatar || fallbackAvatar)),
+    cover: resolvedCover || (isProtectedStorageMedia(rawCover) ? undefined : (rawCover || undefined)),
   };
+}
+
+export async function resolveReelSignedUrls(reelInput: any): Promise<Reel | null> {
+  if (!reelInput) return null;
+  const authorId = String(reelInput.user?.id || reelInput.user_id || '');
+  if (authorId && isClientUserRestricted(authorId)) {
+    return null;
+  }
+
+  const rawVideo = String(reelInput.videoUrl || reelInput.video_url || '').trim();
+  if (!rawVideo) return null;
+
+  const resolvedVideo = await getSignedMediaUrl(rawVideo);
+  if (!resolvedVideo) {
+    // Never fall back to rawVideo when signed URL resolution fails or author is blocked
+    return null;
+  }
+
+  const rawAvatar = String(reelInput.user?.avatar || reelInput.user_avatar || '').trim();
+  const resolvedAvatar = rawAvatar ? await getSignedMediaUrl(rawAvatar) : '';
+  const authorName = reelInput.user?.name || reelInput.user_name || reelInput.user?.username || reelInput.username || 'Creator';
+  const authorUsername = reelInput.user?.username || reelInput.username || 'user';
+  const fallbackAvatar = buildFallbackInitialsAvatar(authorName || authorUsername);
+  const finalAvatar =
+    resolvedAvatar ||
+    (isProtectedStorageMedia(rawAvatar) ? fallbackAvatar : (rawAvatar || fallbackAvatar));
+
+  const normalized: Reel = {
+    ...reelInput,
+    id: reelInput.id,
+    user: {
+      id: authorId || 'unknown',
+      username: authorUsername,
+      name: authorName,
+      avatar: finalAvatar,
+      bio: reelInput.user?.bio || '',
+      verified: reelInput.user?.verified ?? true,
+      aiTrustBadge: reelInput.user?.aiTrustBadge || reelInput.ai_trust_badge || 'Verified Creator',
+      safetyScore: reelInput.user?.safetyScore ?? 100,
+      followersCount: reelInput.user?.followersCount ?? 0,
+      followingCount: reelInput.user?.followingCount ?? 0,
+      postsCount: reelInput.user?.postsCount ?? 0,
+    },
+    caption: reelInput.caption || '',
+    videoUrl: resolvedVideo,
+    audioTitle: reelInput.audioTitle || reelInput.audio_title || 'Original Audio • Verified Clean',
+    likes: reelInput.likes ?? reelInput.likes_count ?? 0,
+    isLiked: Boolean(reelInput.isLiked ?? reelInput.is_liked),
+    commentsCount: reelInput.commentsCount ?? reelInput.comments_count ?? 0,
+    sharesCount: reelInput.sharesCount ?? reelInput.shares_count ?? 0,
+    aiTrustBadge: reelInput.aiTrustBadge || reelInput.ai_trust_badge || 'Verified Reel',
+    deepfakeRisk: reelInput.deepfakeRisk ?? reelInput.deepfake_risk ?? 0,
+    tags: Array.isArray(reelInput.tags) ? reelInput.tags : ['Reels', 'VERIXA'],
+  };
+  (normalized as any).video_url = resolvedVideo;
+  return normalized;
+}
+
+export async function resolveReelsSignedUrls(reelsList: any[]): Promise<Reel[]> {
+  if (!Array.isArray(reelsList) || reelsList.length === 0) return [];
+  const resolved = await Promise.all(reelsList.map((r) => resolveReelSignedUrls(r)));
+  return resolved.filter((r): r is Reel => r !== null);
 }
 
 // ================= USER PROFILES ================= //
 
 export function getSafeAvatar(avatarUrl?: string | null, nameOrUsername?: string, userId?: string): string {
-  if (avatarUrl && !avatarUrl.includes('unsplash.com')) {
-    if (userId && typeof window !== 'undefined') {
+  if (userId && isClientUserRestricted(userId)) {
+    return buildFallbackInitialsAvatar(nameOrUsername);
+  }
+  if (avatarUrl && !avatarUrl.includes('unsplash.com') && ! avatarUrl.includes('/storage/v1/object/public/')) {
+    if (userId && typeof window !== 'undefined' && !isProtectedStorageMedia(avatarUrl)) {
       try {
         localStorage.setItem(`verixa_user_avatar_${userId}`, avatarUrl);
       } catch {}
@@ -117,13 +400,12 @@ export function getSafeAvatar(avatarUrl?: string | null, nameOrUsername?: string
   if (userId && typeof window !== 'undefined') {
     try {
       const cached = localStorage.getItem(`verixa_user_avatar_${userId}`);
-      if (cached && !cached.includes('unsplash.com')) {
+      if (cached && !cached.includes('unsplash.com') && !isProtectedStorageMedia(cached)) {
         return cached;
       }
     } catch {}
   }
-  const cleanName = encodeURIComponent(nameOrUsername || 'User');
-  return `https://ui-avatars.com/api/?name=${cleanName}&background=4285F4&color=fff&size=256&bold=true`;
+  return buildFallbackInitialsAvatar(nameOrUsername);
 }
 
 export async function saveUserProfile(userData: {
@@ -206,8 +488,55 @@ export async function saveUserProfile(userData: {
   }
 }
 
-export async function getUserProfile(uid: string): Promise<User | null> {
+export async function getUserProfile(uid: string, viewerId?: string): Promise<User | null> {
   try {
+    const effectiveViewerId = viewerId || activeViewerUserId || undefined;
+    if (effectiveViewerId && uid !== effectiveViewerId && isClientUserRestricted(uid)) {
+      return null;
+    }
+
+    // 1. Check authoritative server profile endpoint which enforces mutual block policy
+    try {
+      const params = effectiveViewerId ? `?viewerId=${encodeURIComponent(effectiveViewerId)}` : '';
+      const res = await fetch(`/api/users/${encodeURIComponent(uid)}/profile${params}`);
+      if (res.status === 403) {
+        return null;
+      }
+      if (res.ok) {
+        const body = await res.json();
+        if (body?.restricted) {
+          return null;
+        }
+        if (body?.profile) {
+          const p = body.profile;
+          if (effectiveViewerId && p.id !== effectiveViewerId && isClientUserRestricted(p.id)) {
+            return null;
+          }
+          const finalAvatar = getSafeAvatar(p.avatar, p.name || p.username, p.id);
+          const mapped: User = {
+            id: p.id,
+            username: p.username,
+            name: p.name,
+            email: p.email,
+            avatar: finalAvatar,
+            bio: p.bio || '',
+            verified: p.verified ?? true,
+            aiTrustBadge: p.aiTrustBadge || p.ai_trust_badge || 'Verified Human',
+            safetyScore: p.safetyScore ?? p.safety_score ?? 100,
+            followersCount: p.followersCount ?? p.followers_count ?? 0,
+            followingCount: p.followingCount ?? p.following_count ?? 0,
+            postsCount: p.postsCount ?? p.posts_count ?? 0,
+            role: p.role || 'Member',
+            joinedDate: p.joinedDate || (p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Joined Recently'),
+            website: p.website,
+            location: p.location,
+            cover: p.cover,
+          };
+          return await resolveUserProfileSignedUrls(mapped);
+        }
+      }
+    } catch {}
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -216,6 +545,16 @@ export async function getUserProfile(uid: string): Promise<User | null> {
 
     if (error || !data) {
       return null;
+    }
+
+    if (effectiveViewerId && data.id !== effectiveViewerId) {
+      if (isClientUserRestricted(data.id)) {
+        return null;
+      }
+      const blockStatus = await checkUserBlockStatus(effectiveViewerId, data.id);
+      if (blockStatus.restricted) {
+        return null;
+      }
     }
 
     let realFollowersCount = data.followers_count ?? 0;
@@ -432,36 +771,43 @@ export async function fetchFeedPosts(
 
       if (rawError || !rawData) return [];
 
-      const simplePosts: Post[] = rawData.map((row: any) => ({
-        id: row.id,
-        user: {
-          id: row.user_id || 'unknown',
-          username: 'user',
-          name: 'VERIXA User',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-          bio: 'Safe social media explorer 🛡️',
-          verified: true,
-          aiTrustBadge: 'Verified Member',
-          safetyScore: 100,
-          followersCount: 0,
-          followingCount: 0,
-          postsCount: 0,
-          role: 'Verified Member',
-          joinedDate: 'Joined Today',
-        },
-        caption: row.caption || '',
-        mediaUrl: row.media_url || undefined,
-        mediaType: row.media_type || 'image',
-        likes: row.likes_count || 0,
-        comments: [],
-        shares: 0,
-        timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-        tags: row.hashtags || ['VERIXA'],
-        aiSafetyScore: row.ai_safety_score || 99,
-        aiScanDetails: row.ai_scan_details || { nsfwScore: 0, violenceScore: 0, fakeConfidence: 0, labels: [], summary: 'Verified safe', safe: true },
-      }));
+      const simplePosts: Post[] = rawData
+        .filter((row: any) => !isClientUserRestricted(row.user_id))
+        .map((row: any) => ({
+          id: row.id,
+          user: {
+            id: row.user_id || 'unknown',
+            username: 'user',
+            name: 'VERIXA User',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+            bio: 'Safe social media explorer 🛡️',
+            verified: true,
+            aiTrustBadge: 'Verified Member',
+            safetyScore: 100,
+            followersCount: 0,
+            followingCount: 0,
+            postsCount: 0,
+            role: 'Verified Member',
+            joinedDate: 'Joined Today',
+          },
+          caption: row.caption || '',
+          mediaUrl: row.media_url || undefined,
+          mediaType: row.media_type || 'image',
+          likes: row.likes_count || 0,
+          comments: [],
+          shares: 0,
+          timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+          tags: row.hashtags || ['VERIXA'],
+          aiSafetyScore: row.ai_safety_score || 99,
+          aiScanDetails: row.ai_scan_details || { nsfwScore: 0, violenceScore: 0, fakeConfidence: 0, labels: [], summary: 'Verified safe', safe: true },
+        }));
       return await resolvePostsSignedUrls(simplePosts);
     }
+
+    const visibleRows = data.filter((row: any) => {
+      const authorId = row.profiles?.id || row.user_id;
+      return !isClientUserRestricted(authorId);
+    });
 
     // Parallel fetch current user's likes and saves
     const likedPostIds = new Set<string>();
@@ -481,7 +827,7 @@ export async function fetchFeedPosts(
     }
 
     // Parallel fetch recent comments for these posts
-    const postIds = data.map((p) => p.id);
+    const postIds = visibleRows.map((p) => p.id);
     const commentsByPost: Record<string, Comment[]> = {};
 
     if (postIds.length > 0) {
@@ -491,6 +837,7 @@ export async function fetchFeedPosts(
           .select(`
             id,
             post_id,
+            user_id,
             text,
             toxicity_score,
             moderation_status,
@@ -512,11 +859,14 @@ export async function fetchFeedPosts(
         if (commentsData) {
           commentsData.forEach((c: any) => {
             const author = c.profiles || {};
+            const authorId = author.id || c.user_id || 'unknown';
+            if (isClientUserRestricted(authorId)) return;
+
             const commentObj: Comment = {
               id: c.id,
               postId: c.post_id,
               user: {
-                id: author.id || c.user_id || 'unknown',
+                id: authorId,
                 username: author.username || 'user',
                 name: author.name || author.username || 'Member',
                 avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
@@ -548,7 +898,7 @@ export async function fetchFeedPosts(
       }
     }
 
-    const postsList: Post[] = data.map((row: any) => {
+    const postsList: Post[] = visibleRows.map((row: any) => {
       const author = row.profiles || {};
       return {
         id: row.id,
@@ -627,6 +977,15 @@ export async function fetchPostById(
 
     if (error || !row) return null;
 
+    const author = (row as any).profiles || {};
+    const authorId = author.id || row.user_id;
+    const viewerId = currentUserId || activeViewerUserId || undefined;
+    if (viewerId && authorId && viewerId !== authorId) {
+      if (isClientUserRestricted(authorId)) return null;
+      const status = await checkUserBlockStatus(viewerId, authorId);
+      if (status.restricted) return null;
+    }
+
     let isLiked = false;
     if (currentUserId) {
       const { data: likeData } = await supabase
@@ -643,6 +1002,7 @@ export async function fetchPostById(
       .select(`
         id,
         post_id,
+        user_id,
         text,
         toxicity_score,
         moderation_status,
@@ -661,40 +1021,41 @@ export async function fetchPostById(
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
 
-    const comments: Comment[] = (commentsData || []).map((c: any) => {
-      const author = c.profiles || {};
-      return {
-        id: c.id,
-        postId: c.post_id,
-        user: {
-          id: author.id || c.user_id || 'unknown',
-          username: author.username || 'user',
-          name: author.name || author.username || 'Member',
-          avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-          bio: author.bio || '',
-          verified: author.verified ?? true,
-          aiTrustBadge: author.ai_trust_badge || 'Verified Member',
-          safetyScore: author.safety_score ?? 100,
-          followersCount: 0,
-          followingCount: 0,
-          postsCount: 0,
-          role: 'Member',
-          joinedDate: '',
-        },
-        content: c.text,
-        timestamp: c.created_at ? new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-        toxicityScore: c.toxicity_score || 0,
-        categories: ['Verified Safe'],
-        aiStatus: 'safe',
-        likes: 0,
-      };
-    });
+    const comments: Comment[] = (commentsData || [])
+      .filter((c: any) => !isClientUserRestricted(c.profiles?.id || c.user_id))
+      .map((c: any) => {
+        const cAuthor = c.profiles || {};
+        return {
+          id: c.id,
+          postId: c.post_id,
+          user: {
+            id: cAuthor.id || c.user_id || 'unknown',
+            username: cAuthor.username || 'user',
+            name: cAuthor.name || cAuthor.username || 'Member',
+            avatar: cAuthor.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+            bio: cAuthor.bio || '',
+            verified: cAuthor.verified ?? true,
+            aiTrustBadge: cAuthor.ai_trust_badge || 'Verified Member',
+            safetyScore: cAuthor.safety_score ?? 100,
+            followersCount: 0,
+            followingCount: 0,
+            postsCount: 0,
+            role: 'Member',
+            joinedDate: '',
+          },
+          content: c.text,
+          timestamp: c.created_at ? new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+          toxicityScore: c.toxicity_score || 0,
+          categories: ['Verified Safe'],
+          aiStatus: 'safe',
+          likes: 0,
+        };
+      });
 
-    const author = (row as any).profiles || {};
     const post: Post = {
       id: row.id,
       user: {
-        id: author.id || row.user_id,
+        id: authorId,
         username: author.username || 'user',
         name: author.name || author.username || 'VERIXA Member',
         avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
@@ -766,13 +1127,22 @@ export async function fetchReelById(
     if (error || !row) return null;
 
     const author = (row as any).profiles || {};
-    const signedVideo = row.video_url ? await getSignedMediaUrl(row.video_url) : row.video_url;
-    const signedAvatar = author.avatar ? await getSignedMediaUrl(author.avatar) : author.avatar;
+    const authorId = author.id || row.user_id;
+    const viewerId = currentUserId || activeViewerUserId || undefined;
+    if (viewerId && authorId && viewerId !== authorId) {
+      if (isClientUserRestricted(authorId)) return null;
+      const status = await checkUserBlockStatus(viewerId, authorId);
+      if (status.restricted) return null;
+    }
+
+    const signedVideo = row.video_url ? await getSignedMediaUrl(row.video_url) : '';
+    if (!signedVideo) return null;
+    const signedAvatar = author.avatar ? await getSignedMediaUrl(author.avatar) : '';
 
     const reel: Reel = {
       id: row.id,
       user: {
-        id: author.id || row.user_id,
+        id: authorId,
         username: author.username || 'user',
         name: author.name || author.username || 'Creator',
         avatar: signedAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
@@ -864,13 +1234,40 @@ export async function togglePostLike(
 ): Promise<PostLikeSyncResult> {
   const shouldLike = targetLiked !== undefined ? targetLiked : true;
 
+  // Enforce client & server block check on post owner before liking
+  try {
+    const { data: postOwner } = await supabase.from('posts').select('user_id').eq('id', postId).maybeSingle();
+    if (postOwner?.user_id && postOwner.user_id !== userId) {
+      if (isClientUserRestricted(postOwner.user_id)) {
+        throw new Error('Action not available due to account privacy restrictions.');
+      }
+      const status = await checkUserBlockStatus(userId, postOwner.user_id);
+      if (status.restricted) {
+        throw new Error('Action not available due to account privacy restrictions.');
+      }
+    }
+  } catch (err: any) {
+    if (err?.message?.includes('privacy restrictions')) {
+      throw err;
+    }
+  }
+
   // 1. Authoritative server sync
   try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (sessionData?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    }
+
     const res = await fetch(`/api/posts/${postId}/like`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ userId, targetLiked: shouldLike }),
     });
+    if (res.status === 403) {
+      throw new Error('Action not available due to account privacy restrictions.');
+    }
     if (res.ok) {
       const data = await res.json();
       if (typeof data.isLiked === 'boolean') {
@@ -881,35 +1278,39 @@ export async function togglePostLike(
       }
     }
   } catch (err: any) {
+    if (err?.message?.includes('privacy restrictions')) {
+      throw err;
+    }
     console.warn('Server togglePostLike notice:', err?.message || err);
   }
 
-  // 2. Best-effort Supabase sync (does not throw if RLS / anon permissions are restricted)
-  try {
-    if (!shouldLike) {
-      await Promise.allSettled([
-        supabase.from('likes').delete().eq('post_id', postId).eq('user_id', userId),
-        supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId),
-      ]);
-      return { isLiked: false };
-    } else {
-      await Promise.allSettled([
-        supabase.from('likes').upsert({
-          post_id: postId,
-          user_id: userId,
-          created_at: new Date().toISOString(),
-        }, { onConflict: 'post_id,user_id' }),
-        supabase.from('post_likes').upsert({
-          post_id: postId,
-          user_id: userId,
-          created_at: new Date().toISOString(),
-        }, { onConflict: 'post_id,user_id' }),
-      ]);
-      return { isLiked: true };
+  // 2. Direct Supabase sync (must succeed on primary likes table; never report false success on DB failure)
+  if (!shouldLike) {
+    const [likesRes] = await Promise.all([
+      supabase.from('likes').delete().eq('post_id', postId).eq('user_id', userId),
+      supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId),
+    ]);
+    if (likesRes.error) {
+      throw new Error(`Failed to remove post like: ${likesRes.error.message}`);
     }
-  } catch (err: any) {
-    console.warn('Supabase togglePostLike notice (permission restricted):', err?.message || err);
-    return { isLiked: shouldLike };
+    return { isLiked: false };
+  } else {
+    const [likesRes] = await Promise.all([
+      supabase.from('likes').upsert({
+        post_id: postId,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'post_id,user_id' }),
+      supabase.from('post_likes').upsert({
+        post_id: postId,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'post_id,user_id' }),
+    ]);
+    if (likesRes.error) {
+      throw new Error(`Failed to save post like: ${likesRes.error.message}`);
+    }
+    return { isLiked: true };
   }
 }
 
@@ -924,19 +1325,21 @@ export async function fetchPostLikedUsers(postId: string): Promise<User[]> {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data.users)) {
-        return data.users.map((u: any) => ({
-          id: u.id,
-          name: u.name || 'User',
-          username: u.username || 'user',
-          avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
-          bio: u.bio || '',
-          verified: Boolean(u.verified),
-          aiTrustBadge: u.aiTrustBadge || 'Verified Member',
-          safetyScore: u.safetyScore || 98,
-          followersCount: u.followersCount || 0,
-          followingCount: u.followingCount || 0,
-          postsCount: u.postsCount || 0,
-        }));
+        return data.users
+          .filter((u: any) => !isClientUserRestricted(u.id))
+          .map((u: any) => ({
+            id: u.id,
+            name: u.name || 'User',
+            username: u.username || 'user',
+            avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=4285F4&color=fff&size=256&bold=true`,
+            bio: u.bio || '',
+            verified: Boolean(u.verified),
+            aiTrustBadge: u.aiTrustBadge || 'Verified Member',
+            safetyScore: u.safetyScore || 98,
+            followersCount: u.followersCount || 0,
+            followingCount: u.followingCount || 0,
+            postsCount: u.postsCount || 0,
+          }));
       }
     }
   } catch (err) {
@@ -953,12 +1356,12 @@ export async function fetchPostLikedUsers(postId: string): Promise<User[]> {
     const userIds: string[] = [];
     if (likesRes.status === 'fulfilled' && likesRes.value?.data) {
       likesRes.value.data.forEach((r: any) => {
-        if (r.user_id) userIds.push(r.user_id);
+        if (r.user_id && !isClientUserRestricted(r.user_id)) userIds.push(r.user_id);
       });
     }
     if (postLikesRes.status === 'fulfilled' && postLikesRes.value?.data) {
       postLikesRes.value.data.forEach((r: any) => {
-        if (r.user_id) userIds.push(r.user_id);
+        if (r.user_id && !isClientUserRestricted(r.user_id)) userIds.push(r.user_id);
       });
     }
 
@@ -971,21 +1374,23 @@ export async function fetchPostLikedUsers(postId: string): Promise<User[]> {
       .in('id', uniqueIds);
 
     if (profiles && profiles.length > 0) {
-      return profiles.map((p: any) => ({
-        id: p.id,
-        name: p.name || p.username || 'User',
-        username: p.username || 'user',
-        avatar:
-          p.avatar ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=6366F1&color=fff&size=256&bold=true`,
-        bio: p.bio || '',
-        verified: Boolean(p.verified),
-        aiTrustBadge: p.ai_trust_badge || 'Verified Member',
-        safetyScore: p.safety_score || 98,
-        followersCount: p.followers_count || 0,
-        followingCount: p.following_count || 0,
-        postsCount: p.posts_count || 0,
-      }));
+      return profiles
+        .filter((p: any) => !isClientUserRestricted(p.id))
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name || p.username || 'User',
+          username: p.username || 'user',
+          avatar:
+            p.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || p.username || 'User')}&background=6366F1&color=fff&size=256&bold=true`,
+          bio: p.bio || '',
+          verified: Boolean(p.verified),
+          aiTrustBadge: p.ai_trust_badge || 'Verified Member',
+          safetyScore: p.safety_score || 98,
+          followersCount: p.followers_count || 0,
+          followingCount: p.following_count || 0,
+          postsCount: p.posts_count || 0,
+        }));
     }
   } catch (err) {
     console.warn('Notice querying Supabase directly for post likes:', err);
@@ -1031,6 +1436,24 @@ export async function addComment(
   text: string,
   toxicityScore: number = 0
 ): Promise<string> {
+  // Check if post owner is mutually restricted with commenter
+  try {
+    const { data: postOwner } = await supabase.from('posts').select('user_id').eq('id', postId).maybeSingle();
+    if (postOwner?.user_id && postOwner.user_id !== userId) {
+      if (isClientUserRestricted(postOwner.user_id)) {
+        throw new Error('Action not available due to account privacy restrictions.');
+      }
+      const status = await checkUserBlockStatus(userId, postOwner.user_id);
+      if (status.restricted) {
+        throw new Error('Action not available due to account privacy restrictions.');
+      }
+    }
+  } catch (err: any) {
+    if (err?.message?.includes('privacy restrictions')) {
+      throw err;
+    }
+  }
+
   const commentId = crypto.randomUUID();
   try {
     const payload = {
@@ -1070,6 +1493,7 @@ export function subscribePostComments(
         .select(`
           id,
           post_id,
+          user_id,
           text,
           toxicity_score,
           moderation_status,
@@ -1096,65 +1520,69 @@ export function subscribePostComments(
           .order('created_at', { ascending: true });
 
         if (rawComments && isSubscribed) {
-          const list: Comment[] = rawComments.map((row) => ({
-            id: row.id,
-            postId,
-            user: {
-              id: row.user_id,
-              username: 'user',
-              name: 'Member',
-              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-              bio: '',
-              verified: true,
-              aiTrustBadge: 'Verified Human',
-              safetyScore: 100,
-              followersCount: 0,
-              followingCount: 0,
-              postsCount: 0,
-              role: 'Member',
-              joinedDate: '',
-            },
-            content: row.text,
-            timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-            toxicityScore: row.toxicity_score || 0,
-            categories: ['SAFE_CONTENT'],
-            aiStatus: 'safe',
-            likes: 0,
-          }));
+          const list: Comment[] = rawComments
+            .filter((row) => !isClientUserRestricted(row.user_id))
+            .map((row) => ({
+              id: row.id,
+              postId,
+              user: {
+                id: row.user_id,
+                username: 'user',
+                name: 'Member',
+                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+                bio: '',
+                verified: true,
+                aiTrustBadge: 'Verified Human',
+                safetyScore: 100,
+                followersCount: 0,
+                followingCount: 0,
+                postsCount: 0,
+                role: 'Member',
+                joinedDate: '',
+              },
+              content: row.text,
+              timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+              toxicityScore: row.toxicity_score || 0,
+              categories: ['SAFE_CONTENT'],
+              aiStatus: 'safe',
+              likes: 0,
+            }));
           callback(list);
         }
         return;
       }
 
       if (data && isSubscribed) {
-        const list: Comment[] = data.map((row: any) => {
-          const author = row.profiles || {};
-          return {
-            id: row.id,
-            postId,
-            user: {
-              id: author.id || row.user_id,
-              username: author.username || 'user',
-              name: author.name || author.username || 'Member',
-              avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-              bio: author.bio || '',
-              verified: author.verified ?? true,
-              aiTrustBadge: author.ai_trust_badge || 'Verified Human',
-              safetyScore: author.safety_score ?? 100,
-              followersCount: 0,
-              followingCount: 0,
-              postsCount: 0,
-              role: 'Member',
-              joinedDate: '',
-            },
-            content: row.text,
-            timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-            toxicityScore: row.toxicity_score || 0,
-            categories: ['SAFE_CONTENT'],
-            aiStatus: 'safe',
-            likes: 0,
-          };
-        });
+        const list: Comment[] = data
+          .filter((row: any) => !isClientUserRestricted(row.profiles?.id || row.user_id))
+          .map((row: any) => {
+            const author = row.profiles || {};
+            return {
+              id: row.id,
+              postId,
+              user: {
+                id: author.id || row.user_id,
+                username: author.username || 'user',
+                name: author.name || author.username || 'Member',
+                avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+                bio: author.bio || '',
+                verified: author.verified ?? true,
+                aiTrustBadge: author.ai_trust_badge || 'Verified Human',
+                safetyScore: author.safety_score ?? 100,
+                followersCount: 0,
+                followingCount: 0,
+                postsCount: 0,
+                role: 'Member',
+                joinedDate: '',
+              },
+              content: row.text,
+              timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+              toxicityScore: row.toxicity_score || 0,
+              categories: ['SAFE_CONTENT'],
+              aiStatus: 'safe',
+              likes: 0,
+            };
+          });
         callback(list);
       }
     } catch (err: any) {
@@ -1196,6 +1624,7 @@ export async function fetchReelComments(reelId: string): Promise<Comment[]> {
       .select(`
         id,
         post_id,
+        user_id,
         text,
         toxicity_score,
         moderation_status,
@@ -1216,34 +1645,36 @@ export async function fetchReelComments(reelId: string): Promise<Comment[]> {
     try {
       const { data, error } = await query.or(`post_id.eq.${reelId},reel_id.eq.${reelId}`).order('created_at', { ascending: true });
       if (!error && data) {
-        return data.map((row: any) => {
-          const author = row.profiles || {};
-          return {
-            id: row.id,
-            postId: reelId,
-            user: {
-              id: author.id || row.user_id,
-              username: author.username || 'user',
-              name: author.name || author.username || 'Member',
-              avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-              bio: author.bio || '',
-              verified: author.verified ?? true,
-              aiTrustBadge: author.ai_trust_badge || 'Verified Member',
-              safetyScore: author.safety_score ?? 100,
-              followersCount: 0,
-              followingCount: 0,
-              postsCount: 0,
-              role: 'Member',
-              joinedDate: '',
-            },
-            content: row.text,
-            timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-            toxicityScore: row.toxicity_score || 0,
-            categories: ['SAFE_CONTENT'],
-            aiStatus: 'safe',
-            likes: 0,
-          };
-        });
+        return data
+          .filter((row: any) => !isClientUserRestricted(row.profiles?.id || row.user_id))
+          .map((row: any) => {
+            const author = row.profiles || {};
+            return {
+              id: row.id,
+              postId: reelId,
+              user: {
+                id: author.id || row.user_id,
+                username: author.username || 'user',
+                name: author.name || author.username || 'Member',
+                avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+                bio: author.bio || '',
+                verified: author.verified ?? true,
+                aiTrustBadge: author.ai_trust_badge || 'Verified Member',
+                safetyScore: author.safety_score ?? 100,
+                followersCount: 0,
+                followingCount: 0,
+                postsCount: 0,
+                role: 'Member',
+                joinedDate: '',
+              },
+              content: row.text,
+              timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+              toxicityScore: row.toxicity_score || 0,
+              categories: ['SAFE_CONTENT'],
+              aiStatus: 'safe',
+              likes: 0,
+            };
+          });
       }
     } catch {}
 
@@ -1255,31 +1686,33 @@ export async function fetchReelComments(reelId: string): Promise<Comment[]> {
       .order('created_at', { ascending: true });
 
     if (fallbackData) {
-      return fallbackData.map((row: any) => ({
-        id: row.id,
-        postId: reelId,
-        user: {
-          id: row.user_id,
-          username: 'user',
-          name: 'Member',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-          bio: '',
-          verified: true,
-          aiTrustBadge: 'Verified Member',
-          safetyScore: 100,
-          followersCount: 0,
-          followingCount: 0,
-          postsCount: 0,
-          role: 'Member',
-          joinedDate: '',
-        },
-        content: row.text,
-        timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-        toxicityScore: row.toxicity_score || 0,
-        categories: ['SAFE_CONTENT'],
-        aiStatus: 'safe',
-        likes: 0,
-      }));
+      return fallbackData
+        .filter((row: any) => !isClientUserRestricted(row.user_id))
+        .map((row: any) => ({
+          id: row.id,
+          postId: reelId,
+          user: {
+            id: row.user_id,
+            username: 'user',
+            name: 'Member',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+            bio: '',
+            verified: true,
+            aiTrustBadge: 'Verified Member',
+            safetyScore: 100,
+            followersCount: 0,
+            followingCount: 0,
+            postsCount: 0,
+            role: 'Member',
+            joinedDate: '',
+          },
+          content: row.text,
+          timestamp: row.created_at ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+          toxicityScore: row.toxicity_score || 0,
+          categories: ['SAFE_CONTENT'],
+          aiStatus: 'safe',
+          likes: 0,
+        }));
     }
     return [];
   } catch (err: any) {
@@ -1296,12 +1729,29 @@ export async function addReelComment(
   text: string,
   toxicityScore: number = 0
 ): Promise<string> {
+  try {
+    const { data: reelRow } = await supabase.from('reels').select('user_id').eq('id', reelId).maybeSingle();
+    if (reelRow?.user_id && reelRow.user_id !== userId) {
+      if (isClientUserRestricted(reelRow.user_id)) {
+        throw new Error('Action not available due to account privacy restrictions.');
+      }
+      const status = await checkUserBlockStatus(userId, reelRow.user_id);
+      if (status.restricted) {
+        throw new Error('Action not available due to account privacy restrictions.');
+      }
+    }
+  } catch (err: any) {
+    if (err?.message?.includes('privacy restrictions')) {
+      throw err;
+    }
+  }
+
   const commentId = crypto.randomUUID();
   try {
-    // Attempt insert into comments
-    const { error: insertErr } = await supabase.from('comments').insert({
+    // Primary insert using reel_id column (supported by comments_insert_auth policy)
+    const { error: reelErr } = await supabase.from('comments').insert({
       id: commentId,
-      post_id: reelId,
+      reel_id: reelId,
       user_id: userId,
       text,
       toxicity_score: toxicityScore,
@@ -1309,32 +1759,27 @@ export async function addReelComment(
       created_at: new Date().toISOString(),
     });
 
-    if (insertErr) {
-      // If post_id FK failed, attempt with reel_id
-      const { error: reelErr } = await supabase.from('comments').insert({
-        id: commentId,
-        user_id: userId,
-        text,
-        toxicity_score: toxicityScore,
-        moderation_status: 'approved',
-        created_at: new Date().toISOString(),
-        reel_id: reelId,
-      });
-      if (reelErr) {
-        console.warn('Notice inserting reel comment to Supabase:', reelErr.message);
+    if (reelErr) {
+      // Fallback only if reel_id column is absent in legacy schema
+      if (reelErr.message?.includes('reel_id') || reelErr.message?.includes('column')) {
+        const { error: insertErr } = await supabase.from('comments').insert({
+          id: commentId,
+          post_id: reelId,
+          user_id: userId,
+          text,
+          toxicity_score: toxicityScore,
+          moderation_status: 'approved',
+          created_at: new Date().toISOString(),
+        });
+        if (insertErr) {
+          throw new Error(`Failed to save reel comment: ${insertErr.message}`);
+        }
+      } else {
+        throw new Error(`Failed to save reel comment: ${reelErr.message}`);
       }
     }
 
-    // Atomically increment reel comments_count in Supabase reels table if available
-    try {
-      const { data: curReel } = await supabase.from('reels').select('comments_count').eq('id', reelId).maybeSingle();
-      if (curReel) {
-        await supabase.from('reels').update({
-          comments_count: (curReel.comments_count || 0) + 1,
-        }).eq('id', reelId);
-      }
-    } catch {}
-
+    // Note: reel comments_count is maintained atomically by database trigger (on_comment_added_or_removed)
     return commentId;
   } catch (err: any) {
     console.error('Error inserting reel comment:', err);
@@ -1376,6 +1821,7 @@ export function subscribeReelComments(
 
 export async function checkIsFollowing(followerId: string, followingId: string): Promise<boolean> {
   if (!followerId || !followingId || followerId === followingId) return false;
+  if (isClientUserRestricted(followingId)) return false;
   try {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     let resolvedFollowerId = followerId;
@@ -1397,6 +1843,8 @@ export async function checkIsFollowing(followerId: string, followingId: string):
         .maybeSingle();
       if (fingProfile?.id) resolvedFollowingId = fingProfile.id;
     }
+
+    if (isClientUserRestricted(resolvedFollowingId)) return false;
 
     const { data } = await supabase
       .from('follows')
@@ -1424,27 +1872,35 @@ export async function getUserFollowers(userId: string): Promise<User[]> {
       if (p?.id) targetId = p.id;
     }
 
+    if (activeViewerUserId && targetId !== activeViewerUserId && isClientUserRestricted(targetId)) {
+      return [];
+    }
+
     // Try backend server endpoint first
     try {
-      const res = await fetch(`/api/users/${targetId}/followers`);
+      const viewerQuery = activeViewerUserId ? `?viewerId=${encodeURIComponent(activeViewerUserId)}` : '';
+      const res = await fetch(`/api/users/${targetId}/followers${viewerQuery}`);
+      if (res.status === 403) return [];
       if (res.ok) {
         const body = await res.json();
         if (body && Array.isArray(body.followers) && body.followers.length > 0) {
-          const mapped: User[] = body.followers.map((p: any) => ({
-            id: p.id,
-            username: p.username || 'user',
-            name: p.name || p.username || 'Member',
-            avatar: getSafeAvatar(p.avatar, p.name || p.username, p.id),
-            bio: p.bio || '',
-            verified: p.verified ?? true,
-            aiTrustBadge: p.ai_trust_badge || 'Verified Human',
-            safetyScore: p.safety_score ?? 100,
-            followersCount: p.followers_count ?? 0,
-            followingCount: p.following_count ?? 0,
-            postsCount: p.posts_count ?? 0,
-            role: p.role || 'Member',
-            joinedDate: '',
-          }));
+          const mapped: User[] = body.followers
+            .filter((p: any) => !isClientUserRestricted(p.id))
+            .map((p: any) => ({
+              id: p.id,
+              username: p.username || 'user',
+              name: p.name || p.username || 'Member',
+              avatar: getSafeAvatar(p.avatar, p.name || p.username, p.id),
+              bio: p.bio || '',
+              verified: p.verified ?? true,
+              aiTrustBadge: p.ai_trust_badge || 'Verified Human',
+              safetyScore: p.safety_score ?? 100,
+              followersCount: p.followers_count ?? 0,
+              followingCount: p.following_count ?? 0,
+              postsCount: p.posts_count ?? 0,
+              role: p.role || 'Member',
+              joinedDate: '',
+            }));
           return await Promise.all(mapped.map((u) => resolveUserProfileSignedUrls(u)));
         }
       }
@@ -1474,7 +1930,7 @@ export async function getUserFollowers(userId: string): Promise<User[]> {
 
     if (error || !data) return [];
     const users: User[] = data
-      .filter((row: any) => row.profiles)
+      .filter((row: any) => row.profiles && !isClientUserRestricted(row.profiles.id))
       .map((row: any) => ({
         id: row.profiles.id,
         username: row.profiles.username || 'user',
@@ -1511,27 +1967,35 @@ export async function getUserFollowing(userId: string): Promise<User[]> {
       if (p?.id) targetId = p.id;
     }
 
+    if (activeViewerUserId && targetId !== activeViewerUserId && isClientUserRestricted(targetId)) {
+      return [];
+    }
+
     // Try backend server endpoint first
     try {
-      const res = await fetch(`/api/users/${targetId}/following`);
+      const viewerQuery = activeViewerUserId ? `?viewerId=${encodeURIComponent(activeViewerUserId)}` : '';
+      const res = await fetch(`/api/users/${targetId}/following${viewerQuery}`);
+      if (res.status === 403) return [];
       if (res.ok) {
         const body = await res.json();
         if (body && Array.isArray(body.following) && body.following.length > 0) {
-          const mapped: User[] = body.following.map((p: any) => ({
-            id: p.id,
-            username: p.username || 'user',
-            name: p.name || p.username || 'Member',
-            avatar: getSafeAvatar(p.avatar, p.name || p.username, p.id),
-            bio: p.bio || '',
-            verified: p.verified ?? true,
-            aiTrustBadge: p.ai_trust_badge || 'Verified Human',
-            safetyScore: p.safety_score ?? 100,
-            followersCount: p.followers_count ?? 0,
-            followingCount: p.following_count ?? 0,
-            postsCount: p.posts_count ?? 0,
-            role: p.role || 'Member',
-            joinedDate: '',
-          }));
+          const mapped: User[] = body.following
+            .filter((p: any) => !isClientUserRestricted(p.id))
+            .map((p: any) => ({
+              id: p.id,
+              username: p.username || 'user',
+              name: p.name || p.username || 'Member',
+              avatar: getSafeAvatar(p.avatar, p.name || p.username, p.id),
+              bio: p.bio || '',
+              verified: p.verified ?? true,
+              aiTrustBadge: p.ai_trust_badge || 'Verified Human',
+              safetyScore: p.safety_score ?? 100,
+              followersCount: p.followers_count ?? 0,
+              followingCount: p.following_count ?? 0,
+              postsCount: p.posts_count ?? 0,
+              role: p.role || 'Member',
+              joinedDate: '',
+            }));
           return await Promise.all(mapped.map((u) => resolveUserProfileSignedUrls(u)));
         }
       }
@@ -1561,7 +2025,7 @@ export async function getUserFollowing(userId: string): Promise<User[]> {
 
     if (error || !data) return [];
     const users: User[] = data
-      .filter((row: any) => row.profiles)
+      .filter((row: any) => row.profiles && !isClientUserRestricted(row.profiles.id))
       .map((row: any) => ({
         id: row.profiles.id,
         username: row.profiles.username || 'user',
@@ -1618,6 +2082,15 @@ export async function toggleFollowUser(
     throw new Error('You cannot follow yourself.');
   }
 
+  // Enforce mutual block policy before allowing follow
+  if (isClientUserRestricted(resolvedFollowingId)) {
+    throw new Error('Action not available due to account privacy restrictions.');
+  }
+  const blockCheck = await checkUserBlockStatus(resolvedFollowerId, resolvedFollowingId);
+  if (blockCheck.restricted) {
+    throw new Error('Action not available due to account privacy restrictions.');
+  }
+
   let shouldFollow: boolean;
   if (targetFollowing !== undefined) {
     shouldFollow = targetFollowing;
@@ -1631,20 +2104,56 @@ export async function toggleFollowUser(
     shouldFollow = !data;
   }
 
-  let success = false;
+  // Always check server follow endpoint first so server-side block & count integrity is enforced
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (sessionData?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    }
 
-  // 1. Attempt direct Supabase client operation (authenticated session)
+    const res = await fetch(`/api/users/${resolvedFollowingId}/follow`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        followerId: resolvedFollowerId,
+        targetFollowing: shouldFollow,
+      }),
+    });
+
+    if (res.status === 403) {
+      throw new Error('Action not available due to account privacy restrictions.');
+    }
+    if (res.ok) {
+      const result = await res.json();
+      if (result.following) {
+        createNotification({
+          recipientId: resolvedFollowingId,
+          senderId: resolvedFollowerId,
+          type: 'follow',
+          message: 'started following you',
+        }).catch(() => {});
+      }
+      return Boolean(result.following);
+    }
+  } catch (apiErr: any) {
+    if (apiErr?.message?.includes('privacy restrictions')) {
+      throw apiErr;
+    }
+    console.warn('Server follow notice:', apiErr);
+  }
+
   if (!shouldFollow) {
-    const { error } = await supabase
+    const { error: unfollowErr } = await supabase
       .from('follows')
       .delete()
       .eq('follower_id', resolvedFollowerId)
       .eq('following_id', resolvedFollowingId);
-    if (!error) {
-      success = true;
+    if (unfollowErr) {
+      throw new Error(`Failed to unfollow user: ${unfollowErr.message}`);
     }
   } else {
-    const { error } = await supabase.from('follows').upsert(
+    const { error: followErr } = await supabase.from('follows').upsert(
       {
         follower_id: resolvedFollowerId,
         following_id: resolvedFollowingId,
@@ -1652,45 +2161,524 @@ export async function toggleFollowUser(
       },
       { onConflict: 'follower_id,following_id' }
     );
-    if (!error) {
-      success = true;
-      createNotification({
-        recipientId: resolvedFollowingId,
-        senderId: resolvedFollowerId,
-        type: 'follow',
-        message: 'started following you',
-      }).catch(() => {});
+    if (followErr) {
+      throw new Error(`Failed to follow user: ${followErr.message}`);
     }
-  }
-
-  // 2. If client-side failed (e.g. RLS limitation), route through server endpoint
-  if (!success) {
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (sessionData?.session?.access_token) {
-        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
-      }
-
-      const res = await fetch(`/api/users/${resolvedFollowingId}/follow`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          followerId: resolvedFollowerId,
-          targetFollowing: shouldFollow,
-        }),
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        return Boolean(result.following);
-      }
-    } catch (apiErr) {
-      console.warn('Server follow fallback notice:', apiErr);
-    }
+    createNotification({
+      recipientId: resolvedFollowingId,
+      senderId: resolvedFollowerId,
+      type: 'follow',
+      message: 'started following you',
+    }).catch(() => {});
   }
 
   return shouldFollow;
+}
+
+// ================= BLOCKED USERS ================= //
+
+export interface BlockedUserAccount {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string;
+  reason?: string;
+  blockedAt?: string;
+}
+
+export async function checkUserBlockStatus(
+  viewerId: string | undefined,
+  targetUserId: string
+): Promise<{ restricted: boolean; isBlocked: boolean; blockedByViewer: boolean }> {
+  if (!viewerId || !targetUserId || viewerId === targetUserId) {
+    return { restricted: false, isBlocked: false, blockedByViewer: false };
+  }
+  try {
+    const res = await fetch(
+      `/api/users/${encodeURIComponent(targetUserId)}/block-status?viewerId=${encodeURIComponent(viewerId)}`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data.restricted && (!activeViewerUserId || activeViewerUserId === viewerId)) {
+        activeRestrictedUserIds.add(targetUserId);
+        evictSignedUrlsForUser(targetUserId);
+      }
+      return {
+        restricted: Boolean(data.restricted),
+        isBlocked: Boolean(data.isBlocked ?? data.restricted),
+        blockedByViewer: Boolean(data.blockedByViewer),
+      };
+    }
+  } catch {}
+  const fallbackRestricted = isClientUserRestricted(targetUserId);
+  return {
+    restricted: fallbackRestricted,
+    isBlocked: fallbackRestricted,
+    blockedByViewer: fallbackRestricted,
+  };
+}
+
+export async function fetchUserBlockRelations(userId: string): Promise<{
+  blockedUsers: BlockedUserAccount[];
+  restrictedUserIds: string[];
+}> {
+  if (!userId) {
+    return { blockedUsers: [], restrictedUserIds: [] };
+  }
+  const blockedUsers = await getBlockedUsersList(userId);
+  const restrictedSet = new Set<string>(blockedUsers.map((u) => u.id));
+
+  // Query narrowly-scoped SECURITY DEFINER RPC for bilateral restrictions (both outgoing & incoming blocks for auth.uid())
+  try {
+    const { data: rpcRestricted, error: rpcErr } = await supabase.rpc('get_my_restricted_user_ids');
+    if (!rpcErr && Array.isArray(rpcRestricted)) {
+      for (const item of rpcRestricted) {
+        const restrictedId =
+          typeof item === 'string'
+            ? item
+            : item?.restricted_user_id || item?.get_my_restricted_user_ids || item?.id;
+        if (restrictedId && typeof restrictedId === 'string' && restrictedId !== userId) {
+          restrictedSet.add(restrictedId);
+        }
+      }
+    }
+  } catch {}
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {};
+    if (sessionData?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    }
+    const res = await fetch(`/api/users/${encodeURIComponent(userId)}/blocked`, { headers });
+    if (res.ok) {
+      const body = await res.json();
+      if (Array.isArray(body?.restrictedUserIds)) {
+        body.restrictedUserIds.forEach((id: string) => {
+          if (id && id !== userId) restrictedSet.add(id);
+        });
+      }
+    }
+  } catch {}
+
+  const restrictedUserIds = Array.from(restrictedSet);
+  setClientRestrictedUserIds(userId, restrictedUserIds);
+  return { blockedUsers, restrictedUserIds };
+}
+
+export async function blockUserAccount(
+  blockerId: string,
+  targetUser: { id: string; name?: string; username?: string; avatar?: string },
+  reason: string = 'Blocked by user'
+): Promise<boolean> {
+  if (!blockerId || !targetUser?.id) {
+    throw new Error('Blocker ID and target user ID are required.');
+  }
+  if (blockerId === targetUser.id) {
+    throw new Error('You cannot block yourself.');
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let resolvedBlockerId = blockerId;
+  let resolvedTargetId = targetUser.id;
+
+  if (!uuidRegex.test(resolvedBlockerId)) {
+    try {
+      const { data: bProf } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${blockerId},username.eq.${blockerId.toLowerCase()}`)
+        .maybeSingle();
+      if (bProf?.id) resolvedBlockerId = bProf.id;
+    } catch {}
+  }
+
+  if (!uuidRegex.test(resolvedTargetId)) {
+    try {
+      const { data: tProf } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${targetUser.id},username.eq.${(targetUser.username || targetUser.id).toLowerCase()}`)
+        .maybeSingle();
+      if (tProf?.id) resolvedTargetId = tProf.id;
+    } catch {}
+  }
+
+  if (resolvedBlockerId === resolvedTargetId) {
+    throw new Error('You cannot block yourself.');
+  }
+
+  // Immediately register in client restricted set and evict signed media URLs
+  activeViewerUserId = resolvedBlockerId;
+  activeRestrictedUserIds.add(resolvedTargetId);
+  evictSignedUrlsForUser(resolvedTargetId);
+
+  // 1. Persist block in Supabase blocked_users table (authoritative check)
+  let blockTableError: string | null = null;
+  let blockTableSaved = false;
+  try {
+    const { error: insertErr } = await supabase.from('blocked_users').insert({
+      blocker_id: resolvedBlockerId,
+      blocked_id: resolvedTargetId,
+      reason,
+      created_at: new Date().toISOString(),
+    });
+    if (!insertErr || insertErr.code === '23505') {
+      blockTableSaved = true;
+    } else {
+      blockTableError = insertErr.message || 'Failed to insert block record';
+    }
+  } catch (err: any) {
+    blockTableError = err?.message || 'Failed to insert block record';
+  }
+
+  // 2. Sync with backend server endpoint (verifies JWT, persists to Supabase blocked_users & updates counts)
+  let serverSynced = false;
+  let serverErrorMessage: string | null = null;
+  let serverExplicitFailure = false;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (sessionData?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    }
+
+    const res = await fetch(`/api/users/${encodeURIComponent(resolvedTargetId)}/block`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        blockerId: resolvedBlockerId,
+        reason,
+        targetName: targetUser.name || targetUser.username || 'Blocked User',
+        targetUsername: targetUser.username || 'blocked_user',
+        targetAvatar: targetUser.avatar || '',
+      }),
+    });
+
+    if (res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      if (payload?.success !== false && payload?.blocked !== false) {
+        serverSynced = true;
+      } else {
+        serverExplicitFailure = true;
+        serverErrorMessage = payload?.error || 'Server rejected block operation';
+      }
+    } else {
+      serverExplicitFailure = true;
+      const errBody = await res.json().catch(() => ({}));
+      serverErrorMessage = errBody?.error || `Block request failed with status ${res.status}`;
+    }
+  } catch (apiErr: any) {
+    serverErrorMessage = apiErr?.message || 'Failed to reach block endpoint';
+  }
+
+  // Never report success if the authoritative database write failed
+  if (serverExplicitFailure || (!blockTableSaved && !serverSynced)) {
+    activeRestrictedUserIds.delete(resolvedTargetId);
+    throw new Error(
+      serverErrorMessage || blockTableError || 'Failed to persist block relationship in Supabase.'
+    );
+  }
+
+  // 3. Remove follow relationships in both directions in Supabase directly
+  try {
+    await Promise.allSettled([
+      supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', resolvedBlockerId)
+        .eq('following_id', resolvedTargetId),
+      supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', resolvedTargetId)
+        .eq('following_id', resolvedBlockerId),
+    ]);
+  } catch {}
+
+  // 4. Persist block in Supabase moderation_logs via authoritative RPC
+  try {
+    await supabase.rpc('log_moderation_entry', {
+      p_target_id: resolvedTargetId,
+      p_target_type: 'user',
+      p_status: 'blocked',
+      p_category: 'USER_BLOCK',
+      p_confidence: 100,
+      p_reason: JSON.stringify({
+        reason,
+        name: targetUser.name || targetUser.username || 'Blocked User',
+        username: targetUser.username || 'blocked_user',
+        avatar: targetUser.avatar || '',
+      }),
+    });
+  } catch {}
+
+  return true;
+}
+
+export async function unblockUserAccount(
+  blockerId: string,
+  targetUserId: string
+): Promise<boolean> {
+  if (!blockerId || !targetUserId) {
+    throw new Error('Blocker ID and target user ID are required.');
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let resolvedBlockerId = blockerId;
+  let resolvedTargetId = targetUserId;
+
+  if (!uuidRegex.test(resolvedBlockerId)) {
+    try {
+      const { data: bProf } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${blockerId},username.eq.${blockerId.toLowerCase()}`)
+        .maybeSingle();
+      if (bProf?.id) resolvedBlockerId = bProf.id;
+    } catch {}
+  }
+
+  if (!uuidRegex.test(resolvedTargetId)) {
+    try {
+      const { data: tProf } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${targetUserId},username.eq.${targetUserId.toLowerCase()}`)
+        .maybeSingle();
+      if (tProf?.id) resolvedTargetId = tProf.id;
+    } catch {}
+  }
+
+  // 1. Delete from Supabase blocked_users table and check for errors
+  let unblockDbSaved = false;
+  let unblockDbError: string | null = null;
+  try {
+    const { error: delErr } = await supabase
+      .from('blocked_users')
+      .delete()
+      .eq('blocker_id', resolvedBlockerId)
+      .eq('blocked_id', resolvedTargetId);
+    if (!delErr) {
+      unblockDbSaved = true;
+    } else {
+      unblockDbError = delErr.message || 'Failed to delete block record';
+    }
+  } catch (err: any) {
+    unblockDbError = err?.message || 'Failed to delete block record';
+  }
+
+  // 2. Sync with backend server endpoint
+  let serverSynced = false;
+  let serverExplicitFailure = false;
+  let serverErrorMessage: string | null = null;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (sessionData?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    }
+
+    const res = await fetch(`/api/users/${encodeURIComponent(resolvedTargetId)}/unblock`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        blockerId: resolvedBlockerId,
+      }),
+    });
+
+    if (res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      if (payload?.success !== false) {
+        serverSynced = true;
+      } else {
+        serverExplicitFailure = true;
+        serverErrorMessage = payload?.error || 'Server rejected unblock operation';
+      }
+    } else {
+      serverExplicitFailure = true;
+      const errBody = await res.json().catch(() => ({}));
+      serverErrorMessage = errBody?.error || `Unblock request failed with status ${res.status}`;
+    }
+  } catch (apiErr: any) {
+    serverErrorMessage = apiErr?.message || 'Failed to reach unblock endpoint';
+  }
+
+  if (serverExplicitFailure || (!unblockDbSaved && !serverSynced)) {
+    throw new Error(
+      serverErrorMessage || unblockDbError || 'Failed to remove block relationship in Supabase.'
+    );
+  }
+
+  // 3. Record unblock event in Supabase moderation_logs via authoritative RPC
+  try {
+    await supabase.rpc('log_moderation_entry', {
+      p_target_id: resolvedTargetId,
+      p_target_type: 'user',
+      p_status: 'approved',
+      p_category: 'USER_UNBLOCK',
+      p_confidence: 100,
+      p_reason: 'Unblocked by user',
+    });
+  } catch {}
+
+  // Re-check whether target still blocks viewer before removing from client restricted set
+  const statusAfter = await checkUserBlockStatus(resolvedBlockerId, resolvedTargetId);
+  if (!statusAfter.restricted) {
+    activeRestrictedUserIds.delete(resolvedTargetId);
+  }
+
+  return true;
+}
+
+export async function getBlockedUsersList(blockerId: string): Promise<BlockedUserAccount[]> {
+  if (!blockerId) return [];
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let resolvedBlockerId = blockerId;
+  if (!uuidRegex.test(resolvedBlockerId)) {
+    try {
+      const { data: bProf } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`id.eq.${blockerId},username.eq.${blockerId.toLowerCase()}`)
+        .maybeSingle();
+      if (bProf?.id) resolvedBlockerId = bProf.id;
+    } catch {}
+  }
+
+  const unblockedSet = new Set<string>();
+  const blockedMap = new Map<string, BlockedUserAccount>();
+
+  // 1. Check Supabase moderation_logs first (authoritative chronological log per authenticated user)
+  try {
+    const { data: modLogs } = await supabase
+      .from('moderation_logs')
+      .select('target_id, status, category, reason, created_at')
+      .eq('user_id', resolvedBlockerId)
+      .eq('target_type', 'user')
+      .in('category', ['USER_BLOCK', 'USER_UNBLOCK'])
+      .order('created_at', { ascending: false });
+
+    if (Array.isArray(modLogs)) {
+      const seenTargets = new Set<string>();
+      for (const log of modLogs) {
+        const tId = log.target_id;
+        if (!tId || seenTargets.has(tId)) continue;
+        seenTargets.add(tId);
+
+        if (log.category === 'USER_UNBLOCK' || log.status === 'approved') {
+          unblockedSet.add(tId);
+        } else if (log.category === 'USER_BLOCK' && log.status === 'blocked') {
+          let meta: any = {};
+          if (log.reason && log.reason.startsWith('{')) {
+            try {
+              meta = JSON.parse(log.reason);
+            } catch {}
+          }
+          blockedMap.set(tId, {
+            id: tId,
+            name: meta.name || 'Blocked User',
+            username: meta.username || 'blocked_user',
+            avatar: meta.avatar || '',
+            reason: meta.reason || log.reason || 'Blocked by user',
+            blockedAt: log.created_at || new Date().toISOString(),
+          });
+        }
+      }
+    }
+  } catch {}
+
+  // 2. Check Supabase blocked_users table (if created)
+  try {
+    const { data: sbBlocked, error: sbErr } = await supabase
+      .from('blocked_users')
+      .select('blocked_id, reason, created_at')
+      .eq('blocker_id', resolvedBlockerId)
+      .order('created_at', { ascending: false });
+
+    if (!sbErr && Array.isArray(sbBlocked)) {
+      for (const row of sbBlocked) {
+        if (row.blocked_id && !unblockedSet.has(row.blocked_id) && !blockedMap.has(row.blocked_id)) {
+          blockedMap.set(row.blocked_id, {
+            id: row.blocked_id,
+            name: 'Blocked User',
+            username: 'blocked_user',
+            avatar: '',
+            reason: row.reason || 'Blocked by user',
+            blockedAt: row.created_at || new Date().toISOString(),
+          });
+        }
+      }
+    }
+  } catch {}
+
+  // 3. Check backend server endpoint
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {};
+    if (sessionData?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    }
+
+    const res = await fetch(`/api/users/${encodeURIComponent(resolvedBlockerId)}/blocked`, { headers });
+    if (res.ok) {
+      const body = await res.json();
+      if (body && Array.isArray(body.blockedUsers)) {
+        for (const item of body.blockedUsers) {
+          if (item?.id && !unblockedSet.has(item.id)) {
+            const existing = blockedMap.get(item.id);
+            blockedMap.set(item.id, {
+              id: item.id,
+              name: item.name && item.name !== 'Blocked User' ? item.name : existing?.name || 'Blocked User',
+              username: item.username && item.username !== 'blocked_user' ? item.username : existing?.username || 'blocked_user',
+              avatar: item.avatar || existing?.avatar || '',
+              reason: item.reason || existing?.reason || 'Blocked by user',
+              blockedAt: item.blockedAt || existing?.blockedAt || new Date().toISOString(),
+            });
+          }
+        }
+      }
+      if (body && Array.isArray(body.restrictedUserIds)) {
+        const unionIds = new Set<string>([...body.restrictedUserIds, ...Array.from(blockedMap.keys())]);
+        setClientRestrictedUserIds(resolvedBlockerId, Array.from(unionIds));
+      }
+    }
+  } catch {}
+
+  // 4. Hydrate real user profile details from public.profiles in Supabase
+  const targetIds = Array.from(blockedMap.keys()).filter((id) => uuidRegex.test(id));
+  if (targetIds.length > 0) {
+    try {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name, username, avatar')
+        .in('id', targetIds);
+
+      if (Array.isArray(profiles)) {
+        for (const p of profiles) {
+          const entry = blockedMap.get(p.id);
+          if (entry) {
+            entry.name = p.name || p.username || entry.name;
+            entry.username = p.username || entry.username;
+            entry.avatar = p.avatar || entry.avatar;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 5. Resolve signed URLs or fallback avatars
+  const finalEntries = await Promise.all(
+    Array.from(blockedMap.values()).map(async (item) => {
+      return {
+        ...item,
+        avatar: getSafeAvatar(item.avatar, item.name || item.username, item.id),
+      };
+    })
+  );
+
+  return finalEntries;
 }
 
 // ================= NOTIFICATIONS ================= //
@@ -1707,8 +2695,9 @@ export async function createNotification(notif: {
   detail?: string;
   sender?: User;
 }): Promise<void> {
-  // STRICT: Never allow self-notifications!
+  // STRICT: Never allow self-notifications or notifications between mutually blocked users!
   if (!notif.recipientId || !notif.senderId || notif.recipientId === notif.senderId) return;
+  if (isClientUserRestricted(notif.recipientId) || isClientUserRestricted(notif.senderId)) return;
 
   const senderObj = notif.sender || {
     id: notif.senderId,
@@ -1718,8 +2707,9 @@ export async function createNotification(notif: {
   };
 
   // 1. Send to server-authoritative API
+  let serverIgnored = false;
   try {
-    await fetch('/api/notifications', {
+    const res = await fetch('/api/notifications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1732,9 +2722,15 @@ export async function createNotification(notif: {
         sender: senderObj,
       }),
     });
+    if (res.ok) {
+      const body = await res.json();
+      if (body?.ignored) serverIgnored = true;
+    }
   } catch (apiErr: any) {
     console.warn('Server notification API notice:', apiErr.message);
   }
+
+  if (serverIgnored) return;
 
   // 2. Also attempt Supabase insert in background (catch RLS errors silently)
   try {
@@ -1809,7 +2805,13 @@ export function subscribeUserNotifications(
           const data = await res.json();
           if (data && Array.isArray(data.notifications)) {
             apiNotifs = data.notifications
-              .filter((row: any) => row.recipient_id !== row.sender_id && row.sender_id !== userId) // Strictly no self
+              .filter(
+                (row: any) =>
+                  row.recipient_id !== row.sender_id &&
+                  row.sender_id !== userId &&
+                  !isClientUserRestricted(row.sender_id) &&
+                  !isClientUserRestricted(row.sender?.id)
+              )
               .map((row: any) => {
                 const s = row.sender || {};
                 return {
@@ -1851,6 +2853,7 @@ export function subscribeUserNotifications(
           .from('notifications')
           .select(`
             id,
+            sender_id,
             type,
             message,
             read,
@@ -1872,7 +2875,12 @@ export function subscribeUserNotifications(
 
         if (data && Array.isArray(data)) {
           sbNotifs = data
-            .filter((row: any) => row.sender_id !== userId)
+            .filter(
+              (row: any) =>
+                row.sender_id !== userId &&
+                !isClientUserRestricted(row.sender_id) &&
+                !isClientUserRestricted(row.sender?.id)
+            )
             .map((row: any) => {
               const sender = row.sender || {};
               return {
@@ -1913,8 +2921,8 @@ export function subscribeUserNotifications(
         }
       }
 
-      // Filter out any self-notifications strictly!
-      const finalNotifs = merged.filter((n) => n.user?.id !== userId);
+      // Filter out any self-notifications or restricted users strictly!
+      const finalNotifs = merged.filter((n) => n.user?.id !== userId && !isClientUserRestricted(n.user?.id));
       callback(finalNotifs);
     } catch (err: any) {
       console.warn('subscribeUserNotifications error:', err.message);
@@ -1986,7 +2994,7 @@ export async function getUserSavedPosts(userId: string): Promise<Post[]> {
 
     if (error || !data) return [];
     const postsList: Post[] = data
-      .filter((row: any) => row.post)
+      .filter((row: any) => row.post && !isClientUserRestricted(row.post.profiles?.id || row.post.user_id))
       .map((row: any) => {
         const p = row.post;
         const author = p.profiles || {};
@@ -2091,6 +3099,15 @@ export async function sendMessage(
   voiceDuration?: number | string,
   options?: SendMessageOptions
 ): Promise<string> {
+  // 1. Enforce mutual block policy before creating message
+  if (isClientUserRestricted(receiverId)) {
+    throw new Error("Unable to send messages. Messaging isn't available between these accounts.");
+  }
+  const blockStatus = await checkUserBlockStatus(senderId, receiverId);
+  if (blockStatus.restricted) {
+    throw new Error("Unable to send messages. Messaging isn't available between these accounts.");
+  }
+
   const convId = [senderId, receiverId].sort().join('_');
   const messageId = crypto.randomUUID();
 
@@ -2166,12 +3183,39 @@ export async function updateMessageText(
   senderId: string,
   newText: string
 ): Promise<void> {
-  const { data: row } = await supabase
+  if (!messageId || !senderId) {
+    throw new Error('Message ID and sender ID are required.');
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const sessionUserId = sessionData?.session?.user?.id;
+  if (sessionUserId && sessionUserId !== senderId) {
+    throw new Error('Forbidden: authenticated user does not match message sender.');
+  }
+
+  const { data: row, error: fetchErr } = await supabase
     .from('messages')
-    .select('text')
+    .select('id, text, sender_id, receiver_id')
     .eq('id', messageId)
-    .eq('sender_id', senderId)
-    .single();
+    .maybeSingle();
+
+  if (fetchErr || !row) {
+    throw new Error('Message not found or access denied.');
+  }
+
+  if (row.sender_id !== senderId) {
+    throw new Error('Forbidden: only the original sender can edit a message.');
+  }
+
+  if (row.receiver_id) {
+    if (isClientUserRestricted(row.receiver_id)) {
+      throw new Error('Messaging unavailable due to account privacy restrictions.');
+    }
+    const blockStatus = await checkUserBlockStatus(senderId, row.receiver_id);
+    if (blockStatus.restricted) {
+      throw new Error('Messaging unavailable due to account privacy restrictions.');
+    }
+  }
 
   let embeddedMeta: any = null;
   if (row?.text && row.text.startsWith('{"_v_meta":')) {
@@ -2184,7 +3228,14 @@ export async function updateMessageText(
   if (embeddedMeta) {
     embeddedMeta.editedAt = nowIso;
     const packed = JSON.stringify({ _v_meta: embeddedMeta, text: newText });
-    await supabase.from('messages').update({ text: packed }).eq('id', messageId).eq('sender_id', senderId);
+    const { error: metaErr } = await supabase
+      .from('messages')
+      .update({ text: packed })
+      .eq('id', messageId)
+      .eq('sender_id', senderId);
+    if (metaErr) {
+      throw new Error(`Failed to edit message: ${metaErr.message}`);
+    }
     return;
   }
 
@@ -2200,11 +3251,14 @@ export async function updateMessageText(
   if (error) {
     if (error.message.includes('column') || error.message.includes('edited_at')) {
       // Fallback: update text only if edited_at column is not present
-      await supabase
+      const { error: fallbackErr } = await supabase
         .from('messages')
         .update({ text: newText })
         .eq('id', messageId)
         .eq('sender_id', senderId);
+      if (fallbackErr) {
+        throw new Error(`Failed to edit message: ${fallbackErr.message}`);
+      }
       return;
     }
     throw new Error(`Failed to edit message: ${error.message}`);
@@ -2229,7 +3283,7 @@ export async function deleteMessageSoft(
   if (error) {
     if (error.message.includes('column') || error.message.includes('deleted_at')) {
       // Fallback if deleted_at column does not exist yet: clear text and media
-      await supabase
+      const { error: fallbackErr } = await supabase
         .from('messages')
         .update({
           text: 'This message was deleted',
@@ -2238,6 +3292,9 @@ export async function deleteMessageSoft(
         })
         .eq('id', messageId)
         .eq('sender_id', senderId);
+      if (fallbackErr) {
+        throw new Error(`Failed to delete message: ${fallbackErr.message}`);
+      }
       return;
     }
     throw new Error(`Failed to delete message: ${error.message}`);
@@ -2273,6 +3330,23 @@ export async function toggleMessageReaction(
 
     if (!row) return {};
 
+    // Verify caller is a conversation participant
+    if (userId !== row.sender_id && userId !== row.receiver_id) {
+      throw new Error('Forbidden: only conversation participants can react to this message.');
+    }
+
+    // Prevent message reactions when accounts have a mutual block relationship
+    const partnerId = row.sender_id === userId ? row.receiver_id : row.sender_id;
+    if (partnerId) {
+      if (isClientUserRestricted(partnerId)) {
+        throw new Error("Messaging isn't available between these accounts.");
+      }
+      const blockStatus = await checkUserBlockStatus(userId, partnerId);
+      if (blockStatus.restricted) {
+        throw new Error("Messaging isn't available between these accounts.");
+      }
+    }
+
     let currentReactions: Record<string, string> = {};
     let embeddedMeta: any = null;
     let rowText = row.text || '';
@@ -2300,14 +3374,36 @@ export async function toggleMessageReaction(
       .eq('id', messageId);
 
     if (updateErr) {
-      // Fallback: embed into _v_meta
-      const newMeta = { ...(embeddedMeta || {}), reactions: currentReactions };
-      const packed = JSON.stringify({ _v_meta: newMeta, text: rowText });
-      await supabase.from('messages').update({ text: packed }).eq('id', messageId);
+      // Only fallback to _v_meta text packing if reactions column is absent AND caller is the sender
+      // (DB trigger enforce_message_update_security forbids receivers from mutating text)
+      if (
+        (updateErr.message?.includes('reactions') || updateErr.message?.includes('column')) &&
+        userId === row.sender_id
+      ) {
+        const newMeta = { ...(embeddedMeta || {}), reactions: currentReactions };
+        const packed = JSON.stringify({ _v_meta: newMeta, text: rowText });
+        const { error: metaErr } = await supabase
+          .from('messages')
+          .update({ text: packed })
+          .eq('id', messageId)
+          .eq('sender_id', userId);
+        if (metaErr) {
+          throw new Error(`Failed to update reaction: ${metaErr.message}`);
+        }
+      } else {
+        throw new Error(`Failed to update reaction: ${updateErr.message}`);
+      }
     }
 
     return currentReactions;
   } catch (err: any) {
+    if (
+      err?.message?.includes("Messaging isn't available") ||
+      err?.message?.includes('Forbidden:') ||
+      err?.message?.includes('Failed to update reaction')
+    ) {
+      throw err;
+    }
     console.warn('Reaction toggle notice:', err.message);
     return {};
   }
@@ -2329,6 +3425,7 @@ export async function markMessagesAsDelivered(recipientId: string): Promise<void
 }
 
 export async function markConversationAsRead(currentUserId: string, partnerId: string): Promise<void> {
+  if (isClientUserRestricted(partnerId)) return;
   try {
     const convId = [currentUserId, partnerId].sort().join('_');
     await supabase
@@ -2349,22 +3446,49 @@ export async function uploadVoiceNote(
   userId: string,
   audioBlob: Blob
 ): Promise<{ path: string; signedUrl: string }> {
+  if (!(audioBlob instanceof Blob)) {
+    throw new Error('Valid audio blob is required for voice note upload.');
+  }
+
+  // Verify authenticated Supabase session user and enforce strict path ownership (STOR-04)
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user?.id) {
+    throw new Error(authError?.message || 'User must be authenticated to upload voice notes.');
+  }
+
+  if (userId && userId !== user.id) {
+    throw new Error('Forbidden: voice note path owner does not match authenticated user.');
+  }
+
   const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
-  const filePath = `${userId}/audio/voice_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+  const filePath = `${user.id}/audio/voice_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+  if (!hasValidStorageObjectPath(filePath, user.id).valid) {
+    throw new Error('Forbidden: invalid storage object path for voice note.');
+  }
+
   const { data, error } = await supabase.storage
     .from('app-files')
     .upload(filePath, audioBlob, {
       contentType: audioBlob.type || 'audio/webm',
-      upsert: true,
+      upsert: false,
     });
 
-  if (error) {
-    console.error('Supabase uploadVoiceNote error:', error.message);
-    throw new Error(`Failed to upload voice note: ${error.message}`);
+  if (error || !data?.path) {
+    console.error('Supabase uploadVoiceNote error:', error?.message);
+    throw new Error(`Failed to upload voice note: ${error?.message || 'No storage path returned'}`);
   }
 
+  // Never fall back to raw storage path when signed URL generation fails (STOR-01 / STOR-03)
   const signedUrl = await getSignedMediaUrl(data.path);
-  return { path: data.path, signedUrl: signedUrl || data.path };
+  if (!signedUrl) {
+    throw new Error('Voice note uploaded but signed media URL could not be generated.');
+  }
+  return { path: data.path, signedUrl };
 }
 
 export function subscribeMessages(
@@ -2470,8 +3594,10 @@ export function subscribeMessages(
         const msgs = await Promise.all(mappedPromises);
         if (isSubscribed) {
           callback(msgs);
-          // Mark conversation as read since user is viewing it
-          markConversationAsRead(userId, otherUserId);
+          // Mark conversation as read since user is viewing it (only if not mutually blocked)
+          if (!isClientUserRestricted(otherUserId)) {
+            markConversationAsRead(userId, otherUserId);
+          }
         }
       }
     } catch (err: any) {
@@ -2487,7 +3613,9 @@ export function subscribeMessages(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` },
       () => {
-        fetchMsgs();
+        if (!isClientUserRestricted(otherUserId)) {
+          fetchMsgs();
+        }
       }
     )
     .subscribe();
@@ -2517,8 +3645,12 @@ export function subscribeIncomingMessages(
       async (payload: any) => {
         if (!isSubscribed || !payload?.new) return;
         const row = payload.new;
+        if (isClientUserRestricted(row.sender_id)) return;
+        const status = await checkUserBlockStatus(userId, row.sender_id);
+        if (status.restricted) return;
+
         let resolvedMedia = row.media_url || undefined;
-        if (resolvedMedia && !resolvedMedia.startsWith('http') && !resolvedMedia.startsWith('blob:') && !resolvedMedia.startsWith('data:')) {
+        if (resolvedMedia) {
           resolvedMedia = await getSignedMediaUrl(resolvedMedia);
         }
         const msg: ChatMessage = {
@@ -2563,14 +3695,16 @@ export async function getRecentIncomingMessages(
       .limit(100);
 
     if (error || !data) return [];
-    return data.map((r: any) => ({
-      id: r.id,
-      senderId: r.sender_id,
-      text: r.text || '',
-      mediaUrl: r.media_url || undefined,
-      isVoice: r.is_voice || r.media_url?.includes('/audio/') || false,
-      createdAt: r.created_at || '',
-    }));
+    return data
+      .filter((r: any) => !isClientUserRestricted(r.sender_id))
+      .map((r: any) => ({
+        id: r.id,
+        senderId: r.sender_id,
+        text: r.text || '',
+        mediaUrl: r.media_url || undefined,
+        isVoice: r.is_voice || r.media_url?.includes('/audio/') || false,
+        createdAt: r.created_at || '',
+      }));
   } catch (err) {
     console.warn('Notice loading recent incoming messages:', err);
     return [];
@@ -2629,6 +3763,17 @@ export async function getUserConversationsOverview(
     for (const row of data) {
       const partnerId = row.sender_id === userId ? row.receiver_id : row.sender_id;
       if (!partnerId || overview[partnerId]) continue;
+
+      if (isClientUserRestricted(partnerId)) {
+        overview[partnerId] = {
+          partnerId,
+          lastText: 'Messaging unavailable',
+          lastSenderId: row.sender_id,
+          lastTime: row.created_at ? formatConversationTime(row.created_at) : '',
+          createdAt: row.created_at || '',
+        };
+        continue;
+      }
 
       let snippetText = row.text || '';
       if (row.is_voice || row.media_url?.includes('/audio/')) {
@@ -2722,24 +3867,26 @@ export async function getAllProfiles(excludeUserId?: string): Promise<User[]> {
     }
     const { data, error } = await query;
     if (error || !data) return [];
-    const mapped: User[] = data.map((row: any) => ({
-      id: row.id,
-      username: row.username || 'user',
-      name: row.name || row.username || 'Member',
-      avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-      bio: row.bio || '',
-      verified: row.verified ?? true,
-      aiTrustBadge: row.ai_trust_badge || 'Verified Human',
-      safetyScore: row.safety_score ?? 100,
-      followersCount: row.followers_count ?? 0,
-      followingCount: row.following_count ?? 0,
-      postsCount: row.posts_count ?? 0,
-      role: row.role || 'Member',
-      joinedDate: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recently',
-      website: row.website,
-      location: row.location,
-      cover: row.cover,
-    }));
+    const mapped: User[] = data
+      .filter((row: any) => !isClientUserRestricted(row.id))
+      .map((row: any) => ({
+        id: row.id,
+        username: row.username || 'user',
+        name: row.name || row.username || 'Member',
+        avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+        bio: row.bio || '',
+        verified: row.verified ?? true,
+        aiTrustBadge: row.ai_trust_badge || 'Verified Human',
+        safetyScore: row.safety_score ?? 100,
+        followersCount: row.followers_count ?? 0,
+        followingCount: row.following_count ?? 0,
+        postsCount: row.posts_count ?? 0,
+        role: row.role || 'Member',
+        joinedDate: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recently',
+        website: row.website,
+        location: row.location,
+        cover: row.cover,
+      }));
     return await Promise.all(mapped.map((u) => resolveUserProfileSignedUrls(u)));
   } catch (err) {
     console.warn('Error loading all profiles:', err);
@@ -2841,7 +3988,7 @@ export async function deleteCurrentUserAccount(): Promise<void> {
 export async function uploadFileToSupabase(
   file: File,
   folder: 'profileImages' | 'posts' | 'covers' | 'messages' = 'posts',
-  _ignoredUid?: string
+  callerUid?: string
 ): Promise<string> {
   if (!(file instanceof File)) {
     throw new Error('Valid file is required for upload.');
@@ -2862,6 +4009,10 @@ export async function uploadFileToSupabase(
     throw new Error('User must be authenticated to upload files.');
   }
 
+  if (callerUid && callerUid !== user.id) {
+    throw new Error('Forbidden: upload user ID does not match authenticated user.');
+  }
+
   // Generate a unique filename.
   const fileExt =
     file.name.split('.').pop()?.toLowerCase() || 'bin';
@@ -2875,6 +4026,10 @@ export async function uploadFileToSupabase(
   // Every file path starts with the authenticated user's ID.
   const filePath =
     `${user.id}/${folder}/${Date.now()}_${uniqueId}.${fileExt}`;
+
+  if (!hasValidStorageObjectPath(filePath, user.id).valid) {
+    throw new Error('Forbidden: invalid storage object path.');
+  }
 
   const { data, error } = await supabase.storage
     .from('app-files')
@@ -2913,8 +4068,9 @@ export async function uploadProfilePicture(
   maybeFile?: File
 ): Promise<string> {
   const file = fileOrUid instanceof File ? fileOrUid : (maybeFile as File);
+  const callerUid = typeof fileOrUid === 'string' ? fileOrUid : undefined;
   if (!file) throw new Error('Valid file required for avatar upload.');
-  return uploadFileToSupabase(file, 'profileImages');
+  return uploadFileToSupabase(file, 'profileImages', callerUid);
 }
 
 export async function uploadPostMedia(
@@ -2922,8 +4078,9 @@ export async function uploadPostMedia(
   maybeFile?: File
 ): Promise<string> {
   const file = fileOrUid instanceof File ? fileOrUid : (maybeFile as File);
+  const callerUid = typeof fileOrUid === 'string' ? fileOrUid : undefined;
   if (!file) throw new Error('Valid file required for post media upload.');
-  return uploadFileToSupabase(file, 'posts');
+  return uploadFileToSupabase(file, 'posts', callerUid);
 }
 
 export async function uploadCoverImage(
@@ -2931,8 +4088,9 @@ export async function uploadCoverImage(
   maybeFile?: File
 ): Promise<string> {
   const file = fileOrUid instanceof File ? fileOrUid : (maybeFile as File);
+  const callerUid = typeof fileOrUid === 'string' ? fileOrUid : undefined;
   if (!file) throw new Error('Valid file required for cover image upload.');
-  return uploadFileToSupabase(file, 'covers');
+  return uploadFileToSupabase(file, 'covers', callerUid);
 }
 
 export async function uploadMessageAttachment(
@@ -2940,31 +4098,49 @@ export async function uploadMessageAttachment(
   maybeFile?: File
 ): Promise<string> {
   const file = fileOrUid instanceof File ? fileOrUid : (maybeFile as File);
+  const callerUid = typeof fileOrUid === 'string' ? fileOrUid : undefined;
   if (!file) throw new Error('Valid file required for message attachment.');
-  return uploadFileToSupabase(file, 'messages');
+  return uploadFileToSupabase(file, 'messages', callerUid);
 }
 
 export async function deleteStorageFile(filePath: string): Promise<void> {
   if (
     !filePath ||
-    filePath.startsWith('http://') ||
-    filePath.startsWith('https://') ||
     filePath.startsWith('data:') ||
     filePath.startsWith('blob:')
   ) {
     return;
   }
-  try {
-    let bucketName = 'app-files';
-    let objectPath = filePath;
-    if (filePath.includes(':')) {
-      const parts = filePath.split(':');
-      bucketName = parts[0];
-      objectPath = parts.slice(1).join(':');
-    }
-    await supabase.storage.from(bucketName).remove([objectPath]);
-  } catch (err: any) {
-    console.warn('Failed to delete storage file:', filePath, err?.message);
+
+  let bucketName = 'app-files';
+  let objectPath = filePath;
+
+  const extractedTarget = extractStorageObjectTarget(filePath);
+  if (extractedTarget.isProtected && extractedTarget.objectPath) {
+    bucketName = extractedTarget.bucketName;
+    objectPath = extractedTarget.objectPath;
+  } else if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    // External non-Supabase URL — nothing to delete in storage
+    return;
+  }
+
+  // Verify authenticated user and strict path ownership before deleting (STOR-04)
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user?.id) {
+    throw new Error(authError?.message || 'User must be authenticated to delete storage files.');
+  }
+
+  if (!hasValidStorageObjectPath(objectPath, user.id).valid) {
+    throw new Error('Forbidden: cannot delete storage file owned by another user.');
+  }
+
+  const { error } = await supabase.storage.from(bucketName).remove([objectPath]);
+  if (error) {
+    throw new Error(`Failed to delete storage file: ${error.message}`);
   }
 }
 
@@ -3259,46 +4435,48 @@ export async function fetchPersonalizedFeed(
       const data = await res.json();
       if (Array.isArray(data.posts) && data.posts.length > 0) {
         // Map ranked items to Post interface with attached explainability
-        const mappedPosts: Post[] = data.posts.map((item: any) => {
-          const p = item.post;
-          return {
-            id: p.id,
-            user: {
-              id: p.user_id || 'unknown',
-              username: p.author_username || 'member',
-              name: p.author_name || 'VERIXA Member',
-              avatar: p.author_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-              bio: 'Verified Member',
-              verified: true,
-              aiTrustBadge: 'Verified Member',
-              safetyScore: p.author_safety_score ?? 100,
-              followersCount: 0,
-              followingCount: 0,
-              postsCount: 0,
-              role: p.author_role || 'Verified Member',
-              joinedDate: 'Joined Today',
-            },
-            caption: p.caption || '',
-            mediaUrl: p.media_url || undefined,
-            mediaType: p.media_type || 'image',
-            likes: p.likes_count || 0,
-            comments: [],
-            shares: p.shares_count || 0,
-            timestamp: p.created_at ? new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-            tags: p.hashtags || ['VERIXA'],
-            category: p.category || 'General',
-            aiSafetyScore: p.ai_safety_score ?? 100,
-            aiScanDetails: p.ai_scan_details || {
-              nsfwScore: 0,
-              violenceScore: 0,
-              fakeConfidence: 0,
-              labels: ['Verified Safe'],
-              summary: 'Evaluated compliant by Neural Defense.',
-              safe: true,
-            },
-            explainability: item.explainability,
-          };
-        });
+        const mappedPosts: Post[] = data.posts
+          .filter((item: any) => !isClientUserRestricted(item?.post?.user_id))
+          .map((item: any) => {
+            const p = item.post;
+            return {
+              id: p.id,
+              user: {
+                id: p.user_id || 'unknown',
+                username: p.author_username || 'member',
+                name: p.author_name || 'VERIXA Member',
+                avatar: p.author_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+                bio: 'Verified Member',
+                verified: true,
+                aiTrustBadge: 'Verified Member',
+                safetyScore: p.author_safety_score ?? 100,
+                followersCount: 0,
+                followingCount: 0,
+                postsCount: 0,
+                role: p.author_role || 'Verified Member',
+                joinedDate: 'Joined Today',
+              },
+              caption: p.caption || '',
+              mediaUrl: p.media_url || undefined,
+              mediaType: p.media_type || 'image',
+              likes: p.likes_count || 0,
+              comments: [],
+              shares: p.shares_count || 0,
+              timestamp: p.created_at ? new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+              tags: p.hashtags || ['VERIXA'],
+              category: p.category || 'General',
+              aiSafetyScore: p.ai_safety_score ?? 100,
+              aiScanDetails: p.ai_scan_details || {
+                nsfwScore: 0,
+                violenceScore: 0,
+                fakeConfidence: 0,
+                labels: ['Verified Safe'],
+                summary: 'Evaluated compliant by Neural Defense.',
+                safe: true,
+              },
+              explainability: item.explainability,
+            };
+          });
 
         const postIds = mappedPosts.map((p) => p.id);
         const likedPostIds = new Set<string>();
@@ -3327,6 +4505,7 @@ export async function fetchPersonalizedFeed(
               .select(`
                 id,
                 post_id,
+                user_id,
                 text,
                 toxicity_score,
                 moderation_status,
@@ -3348,11 +4527,14 @@ export async function fetchPersonalizedFeed(
             if (commentsData) {
               commentsData.forEach((c: any) => {
                 const author = c.profiles || {};
+                const authorId = author.id || c.user_id || 'unknown';
+                if (isClientUserRestricted(authorId)) return;
+
                 const commentObj: Comment = {
                   id: c.id,
                   postId: c.post_id,
                   user: {
-                    id: author.id || c.user_id || 'unknown',
+                    id: authorId,
                     username: author.username || 'user',
                     name: author.name || author.username || 'User',
                     avatar: author.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
@@ -3453,6 +4635,34 @@ export async function toggleStoryLike(
   targetLiked?: boolean
 ): Promise<{ success: boolean; isLiked: boolean }> {
   try {
+    // Check client & server mutual block status on story owner
+    const { data: storyRow } = await supabase.from('stories').select('user_id').eq('id', storyId).maybeSingle();
+    if (storyRow?.user_id && storyRow.user_id !== userId) {
+      if (isClientUserRestricted(storyRow.user_id)) {
+        return { success: false, isLiked: false };
+      }
+      const status = await checkUserBlockStatus(userId, storyRow.user_id);
+      if (status.restricted) {
+        return { success: false, isLiked: false };
+      }
+    }
+
+    // Check server first to enforce mutual block restriction
+    const { data: sessionData } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (sessionData?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    }
+
+    const serverRes = await fetch(`/api/stories/${storyId}/like`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, targetLiked }),
+    });
+    if (serverRes.status === 403) {
+      return { success: false, isLiked: false };
+    }
+
     let shouldLike = targetLiked;
     if (shouldLike === undefined) {
       const { data } = await supabase
@@ -3473,12 +4683,8 @@ export async function toggleStoryLike(
         },
         { onConflict: 'story_id,user_id' }
       );
-      if (error) {
-        await fetch(`/api/stories/${storyId}/like`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, targetLiked: true }),
-        });
+      if (error && !serverRes.ok) {
+        return { success: false, isLiked: false };
       }
     } else {
       const { error } = await supabase
@@ -3486,31 +4692,20 @@ export async function toggleStoryLike(
         .delete()
         .eq('story_id', storyId)
         .eq('user_id', userId);
-      if (error) {
-        await fetch(`/api/stories/${storyId}/like`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, targetLiked: false }),
-        });
+      if (error && !serverRes.ok) {
+        return { success: false, isLiked: true };
       }
     }
 
     return { success: true, isLiked: shouldLike };
   } catch (err: any) {
     console.warn('Notice syncing story like with Supabase:', err?.message || err);
-    try {
-      await fetch(`/api/stories/${storyId}/like`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, targetLiked }),
-      });
-    } catch {}
-    return { success: true, isLiked: targetLiked ?? true };
+    return { success: false, isLiked: false };
   }
 }
 
 /**
- * Records a story view in Supabase database idempotently
+ * Records a story view in Supabase database idempotently using UUID[] array
  */
 export async function recordStoryViewInDatabase(
   storyId: string,
@@ -3518,25 +4713,40 @@ export async function recordStoryViewInDatabase(
 ): Promise<number> {
   if (!storyId || !viewerUserId) return 0;
   try {
+    // 1. Prefer atomic SECURITY DEFINER RPC record_story_view (uses UUID[] and row-level locking)
+    const { error: rpcErr } = await supabase.rpc('record_story_view', {
+      p_story_id: storyId,
+    });
+
     const { data } = await supabase
       .from('stories')
-      .select('views_count, viewed_by')
+      .select('user_id, views_count, viewed_by')
       .eq('id', storyId)
       .maybeSingle();
 
     if (data) {
+      if (data.user_id && data.user_id !== viewerUserId && isClientUserRestricted(data.user_id)) {
+        return data.views_count || 0;
+      }
       const list: string[] = Array.isArray(data.viewed_by) ? data.viewed_by : [];
-      if (!list.includes(viewerUserId)) {
+      if (!rpcErr) {
+        return data.views_count || list.length;
+      }
+
+      // 2. Fallback only if RPC is not yet deployed: ensure viewerUserId is a valid UUID before appending to UUID[]
+      if (UUID_REGEX.test(viewerUserId) && !list.includes(viewerUserId)) {
         const nextList = [...list, viewerUserId];
-        const nextCount = (data.views_count || 0) + 1;
-        await supabase
+        const nextCount = Math.max((data.views_count || 0) + 1, nextList.length);
+        const { error: updateErr } = await supabase
           .from('stories')
           .update({
             views_count: nextCount,
             viewed_by: nextList,
           })
           .eq('id', storyId);
-        return nextCount;
+        if (!updateErr) {
+          return nextCount;
+        }
       }
       return data.views_count || list.length;
     }
@@ -3565,16 +4775,20 @@ export async function fetchStoryInsightsFromDatabase(storyId: string): Promise<{
       .eq('id', storyId)
       .maybeSingle();
 
-    const { data: likesRows, count: likesCountFromTable } = await supabase
+    const { data: likesRows } = await supabase
       .from('story_likes')
-      .select('user_id', { count: 'exact' })
+      .select('user_id')
       .eq('story_id', storyId);
 
     if (storyData || likesRows) {
-      const viewedBy: string[] = Array.isArray(storyData?.viewed_by) ? storyData.viewed_by : [];
-      const likedBy: string[] = likesRows ? likesRows.map((r: any) => r.user_id) : [];
-      const likesCount = likesCountFromTable ?? likedBy.length;
-      const viewsCount = storyData?.views_count ?? viewedBy.length;
+      const viewedBy: string[] = (Array.isArray(storyData?.viewed_by) ? storyData.viewed_by : []).filter(
+        (uid: string) => !isClientUserRestricted(uid)
+      );
+      const likedBy: string[] = (likesRows ? likesRows.map((r: any) => r.user_id) : []).filter(
+        (uid: string) => !isClientUserRestricted(uid)
+      );
+      const likesCount = likedBy.length;
+      const viewsCount = viewedBy.length;
 
       // Fetch profiles for users who viewed or liked
       const userIdsToFetch = Array.from(new Set([...viewedBy, ...likedBy].filter(Boolean)));

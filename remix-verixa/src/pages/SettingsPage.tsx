@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { deleteCurrentUserAccount } from '../lib/supabaseServices';
+import {
+  deleteCurrentUserAccount,
+  getBlockedUsersList,
+  unblockUserAccount,
+  BlockedUserAccount,
+} from '../lib/supabaseServices';
 import {
   ShieldCheck,
   Moon,
@@ -26,20 +31,62 @@ import {
   CheckCircle2,
   Mail,
   Zap,
+  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type SettingsTab = 'moderation' | 'privacy' | 'notifications' | 'appearance' | 'account';
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, addToast, logout, currentUser } = useApp();
+  const {
+    settings,
+    updateSettings,
+    addToast,
+    logout,
+    currentUser,
+    openUserProfile,
+    blockedUsers: contextBlockedUsers,
+    unblockUser: contextUnblockUser,
+    refreshBlockRelations,
+  } = useApp();
   const [activeTab, setActiveTab] = useState<SettingsTab>('moderation');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [blockedUsers, setBlockedUsers] = useState([
-    { id: 'b_1', name: 'Crypto Bot 9000', username: 'crypto_spammer_x', reason: 'Automated Phishing Links' },
-    { id: 'b_2', name: 'Troll Account #88', username: 'hater_anon', reason: 'Toxicity & Harassment' },
-  ]);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUserAccount[]>(contextBlockedUsers || []);
+  const [isLoadingBlocked, setIsLoadingBlocked] = useState(false);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBlockedUsers(contextBlockedUsers || []);
+  }, [contextBlockedUsers]);
+
+  useEffect(() => {
+    let active = true;
+    if (!currentUser?.id) {
+      setBlockedUsers([]);
+      return;
+    }
+    setIsLoadingBlocked(true);
+    refreshBlockRelations()
+      .then(() => getBlockedUsersList(currentUser.id))
+      .then((list) => {
+        if (active) {
+          setBlockedUsers(list);
+        }
+      })
+      .catch((err) => {
+        console.warn('Error loading blocked users list:', err);
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoadingBlocked(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser?.id, activeTab]);
 
   const tabs: { id: SettingsTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'moderation', label: 'AI Shield', icon: <ShieldCheck className="w-4 h-4" />, badge: 'Active' },
@@ -58,9 +105,23 @@ export const SettingsPage: React.FC = () => {
 
   const languages = ['English (US)', 'Spanish (Español)', 'Japanese (日本語)', 'German (Deutsch)', 'French (Français)'];
 
-  const unblockUser = (id: string, name: string) => {
-    setBlockedUsers((prev) => prev.filter((u) => u.id !== id));
-    addToast('info', 'User Unblocked', `${name} has been removed from your blocked list.`);
+  const unblockUser = async (id: string, name: string) => {
+    if (!currentUser?.id || unblockingId === id) return;
+    setUnblockingId(id);
+    try {
+      const ok = await contextUnblockUser(id, name);
+      if (ok) {
+        setBlockedUsers((prev) => prev.filter((u) => u.id !== id));
+      } else {
+        await unblockUserAccount(currentUser.id, id);
+        setBlockedUsers((prev) => prev.filter((u) => u.id !== id));
+        addToast('info', 'User Unblocked', `${name} has been removed from your blocked list.`);
+      }
+    } catch (err: any) {
+      addToast('error', 'Unblock Failed', err?.message || `Failed to unblock ${name}.`);
+    } finally {
+      setUnblockingId(null);
+    }
   };
 
   const exportDataArchive = () => {
@@ -333,21 +394,53 @@ export const SettingsPage: React.FC = () => {
                   <UserX className="w-5 h-5 text-rose-400" /> Blocked Accounts ({blockedUsers.length})
                 </h3>
 
-                {blockedUsers.length === 0 ? (
+                {isLoadingBlocked ? (
+                  <div className="flex items-center justify-center gap-2 py-6 text-xs text-gray-400">
+                    <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                    <span>Loading blocked accounts from database...</span>
+                  </div>
+                ) : blockedUsers.length === 0 ? (
                   <p className="text-xs text-gray-500 py-4 text-center">You have no blocked users on your list.</p>
                 ) : (
                   <div className="space-y-2">
                     {blockedUsers.map((u) => (
                       <div key={u.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
-                        <div>
-                          <p className="font-bold text-white">{u.name} <span className="text-gray-500 font-normal">@{u.username}</span></p>
-                          <p className="text-[11px] text-rose-400/80 mt-0.5">Reason: {u.reason}</p>
+                        <div
+                          onClick={() => openUserProfile(u.id)}
+                          className="flex items-center gap-3 cursor-pointer group"
+                        >
+                          {u.avatar ? (
+                            <img
+                              src={u.avatar}
+                              alt={u.name}
+                              className="w-9 h-9 rounded-full object-cover border border-slate-700"
+                            />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 font-bold">
+                              {(u.name || u.username || 'U').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-bold text-white group-hover:text-purple-400 transition">
+                              {u.name} <span className="text-gray-500 font-normal">@{u.username}</span>
+                            </p>
+                            <p className="text-[11px] text-rose-400/80 mt-0.5">
+                              Reason: {u.reason || 'Blocked by user'}
+                            </p>
+                          </div>
                         </div>
                         <button
-                          onClick={() => unblockUser(u.id, u.name)}
-                          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-bold text-xs transition"
+                          onClick={() => unblockUser(u.id, u.name || u.username)}
+                          disabled={unblockingId === u.id}
+                          className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-bold text-xs transition flex items-center gap-1.5 disabled:opacity-50"
                         >
-                          Unblock
+                          {unblockingId === u.id ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Unblocking...
+                            </>
+                          ) : (
+                            'Unblock'
+                          )}
                         </button>
                       </div>
                     ))}
